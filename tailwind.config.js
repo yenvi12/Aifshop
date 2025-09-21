@@ -1,9 +1,28 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [],
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        brand: {
+          dark: "#1C2135",
+          primary: "#5A6794",
+          secondary: "#8794C0",
+          light: "#E7E9EE",
+          accent: "#D8CDB0",
+        },
+      },
+      boxShadow: {
+        smooth: "0 10px 30px rgba(28,33,53,0.10)",
+      },
+      borderRadius: {
+        "2xl": "1rem",
+      },
+    },
   },
   plugins: [],
-}
-
+};
