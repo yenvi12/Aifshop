@@ -14,9 +14,12 @@ import {
 } from "react-icons/md";
 import { FcGoogle } from "react-icons/fc";
 
+type Step = 'register' | 'otp'
+
 export default function RegisterPage() {
   const router = useRouter();
 
+  const [step, setStep] = useState<Step>('register')
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
@@ -31,11 +34,20 @@ export default function RegisterPage() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
+  // OTP step
+  const [transactionId, setTransactionId] = useState('')
+  const [otp, setOtp] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
+
+  async function onRegisterSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    if (!first.trim() || !email.includes("@") || pwd.length < 6) {
-      setErr("Vui lòng nhập đầy đủ: họ tên, email hợp lệ và mật khẩu ≥ 6 ký tự.");
+    if (!first.trim() || !last.trim() || !email.includes("@") || pwd.length < 6) {
+      setErr("Vui lòng nhập đầy đủ thông tin bắt buộc.");
+      return;
+    }
+    if (!dob) {
+      setErr("Vui lòng nhập ngày sinh.");
       return;
     }
     if (pwd !== cpwd) {
@@ -48,9 +60,102 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600)); // mock
+    try {
+      const payload = {
+        firstName: first.trim(),
+        lastName: last.trim(),
+        email: email.trim(),
+        phoneNumber: phone.trim() || undefined,
+        dateOfBirth: dob,
+        password: pwd,
+        confirmPassword: cpwd
+      };
+
+      console.log('Sending payload:', payload); // Debug log
+
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      console.log('API Response:', data); // Debug response
+
+      // Show raw response for debugging
+      alert(`API Response: ${JSON.stringify(data, null, 2)}`);
+
+      if (data.success) {
+        setTransactionId(data.transactionId);
+        setStep('otp');
+      } else {
+        // Show detailed error
+        let errorMessage = data.error || 'Có lỗi xảy ra. Vui lòng thử lại.';
+
+        if (data.details) {
+          const errorMessages = Object.values(data.details)
+            .filter(detail => detail && typeof detail === 'object' && '_errors' in detail)
+            .map(detail => (detail as any)._errors?.[0])
+            .filter(Boolean)
+            .join(', ');
+          errorMessage = errorMessages || errorMessage;
+        }
+
+        // Show debug info in development
+        if (data.debug) {
+          errorMessage += ` (Debug: ${data.debug})`;
+        }
+
+        setErr(errorMessage);
+      }
+    } catch (error) {
+      setErr('Không thể kết nối đến server. Vui lòng thử lại.');
+    }
     setLoading(false);
-    router.push("/login");
+  }
+
+  async function onOtpSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    if (otp.length !== 6) {
+      setErr("OTP phải có 6 chữ số.");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      console.log(`Submitting OTP: "${otp}" (length: ${otp.length}) for transactionId: ${transactionId}`)
+
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transactionId: transactionId.trim(),
+          otp: otp.trim()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Lưu tokens vào localStorage hoặc context (tùy vào app architecture)
+        localStorage.setItem('accessToken', data.tokens.accessToken);
+        localStorage.setItem('refreshToken', data.tokens.refreshToken);
+
+        alert('Đăng ký thành công! Chào mừng bạn đến với AIFShop.');
+        router.push("/");
+      } else {
+        setErr(data.error || 'OTP không hợp lệ.');
+      }
+    } catch (error) {
+      setErr('Không thể kết nối đến server. Vui lòng thử lại.');
+    }
+    setOtpLoading(false);
   }
 
   return (
@@ -67,24 +172,32 @@ export default function RegisterPage() {
   </div>
 
   {/* Image card */}
-  <div className="w-[500px] h-[500px] rounded-2xl shadow-smooth overflow-hidden">
-    <img
-      src="/login-model.jpg"
-      alt="AIFShop model"
-      className="w-full h-full object-cover"
-    />
+  <div className="w-[500px] h-[500px] rounded-2xl shadow-smooth overflow-hidden bg-gradient-to-br from-brand-primary/10 to-brand-secondary/10 flex items-center justify-center">
+    <div className="text-center">
+      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg">
+        <span className="text-white font-bold text-3xl">A</span>
+      </div>
+      <h3 className="text-xl font-bold text-brand-dark mb-2">Join AIFShop</h3>
+      <p className="text-brand-secondary text-sm">Discover Your Perfect Style</p>
+    </div>
         </div>
       </div>
 
       {/* RIGHT: form card */}
       <div className="w-full max-w-lg mx-auto">
         <div className="rounded-2xl bg-white shadow-smooth border border-brand-light/70 p-6">
-          <h2 className="text-lg font-semibold text-center">Create Account</h2>
+          <h2 className="text-lg font-semibold text-center">
+            {step === 'register' ? 'Create Account' : 'Verify Your Email'}
+          </h2>
           <p className="text-sm text-center text-brand-secondary mb-4">
-            Join AIFShop and discover your perfect style
+            {step === 'register'
+              ? 'Join AIFShop and discover your perfect style'
+              : `We've sent a 6-digit code to ${email}`
+            }
           </p>
 
-          <form onSubmit={onSubmit} className="space-y-4">
+          {step === 'register' ? (
+            <form onSubmit={onRegisterSubmit} className="space-y-4">
             {/* Name row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -241,10 +354,85 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full rounded-xl py-2.5 bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-accent/90 disabled:opacity-60 transition"
             >
-              {loading ? "Creating..." : "Create Account"}
+              {loading ? "Sending OTP..." : "Create Account"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={onOtpSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Enter 6-digit code</label>
+              <input
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                className="w-full rounded-xl border border-brand-light px-4 py-2 text-center text-2xl font-mono outline-none focus:ring-2 focus:ring-brand-primary/40"
+                maxLength={6}
+              />
+            </div>
+
+            {err && <div className="text-sm text-red-600">{err}</div>}
+
+            <button
+              type="submit"
+              disabled={otpLoading || otp.length !== 6}
+              className="w-full rounded-xl py-2.5 bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-accent/90 disabled:opacity-60 transition"
+            >
+              {otpLoading ? "Verifying..." : "Verify & Complete Registration"}
             </button>
 
-            {/* Divider */}
+            <button
+              type="button"
+              onClick={() => setStep('register')}
+              className="w-full rounded-xl py-2.5 border border-brand-light hover:bg-brand-light/40 transition"
+            >
+              Back to Registration
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                if (!email) return;
+                setOtpLoading(true);
+                try {
+                  // Note: Rate limiting is handled server-side
+
+                  const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      firstName: 'Resend',
+                      lastName: 'OTP',
+                      email: email,
+                      phoneNumber: '0987654321',
+                      dateOfBirth: '2000-01-01',
+                      password: 'TempPass123!',
+                      confirmPassword: 'TempPass123!'
+                    }),
+                  });
+
+                  const data = await response.json();
+                  if (data.success) {
+                    alert('OTP resent! Check your email.');
+                  } else {
+                    alert('Failed to resend OTP: ' + data.error);
+                  }
+                } catch (error) {
+                  alert('Failed to resend OTP');
+                }
+                setOtpLoading(false);
+              }}
+              disabled={otpLoading || !email}
+              className="w-full rounded-xl py-2.5 bg-gray-500 text-white hover:bg-gray-600 transition"
+            >
+              {otpLoading ? 'Sending...' : 'Resend OTP'}
+            </button>
+          </form>
+        )}
+
+        {/* Divider - only show on register step */}
+        {step === 'register' && (
+          <>
             <div className="my-2 flex items-center gap-3">
               <div className="h-px flex-1 bg-brand-light" />
               <span className="text-xs text-brand-secondary">Or sign up with</span>
@@ -258,14 +446,15 @@ export default function RegisterPage() {
             >
               <FcGoogle className="w-5 h-5" /> Google
             </button>
+          </>
+        )}
 
-            <p className="text-center text-sm text-brand-secondary">
-              Already have an account?{" "}
-              <Link href="/login" className="text-brand-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </form>
+        <p className="text-center text-sm text-brand-secondary">
+          Already have an account?{" "}
+          <Link href="/login" className="text-brand-primary hover:underline">
+            Sign in
+          </Link>
+        </p>
         </div>
 
         <p className="mt-4 text-xs text-center text-brand-secondary">
