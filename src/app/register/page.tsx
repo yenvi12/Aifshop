@@ -172,15 +172,15 @@ export default function RegisterPage() {
   </div>
 
   {/* Image card */}
-  <div className="w-[500px] h-[500px] rounded-2xl shadow-smooth overflow-hidden bg-gradient-to-br from-brand-primary/10 to-brand-secondary/10 flex items-center justify-center">
-    <div className="text-center">
-      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg">
-        <span className="text-white font-bold text-3xl">A</span>
+  <div className="hidden lg:block">
+      <div className="rounded-2xl shadow-smooth overflow-hidden max-w-[720px] ml-auto">
+        <img
+          src="/demo/login.jpg"
+          alt="AIFShop model"
+          className="w-full h-[78vh] object-cover"
+        />
       </div>
-      <h3 className="text-xl font-bold text-brand-dark mb-2">Join AIFShop</h3>
-      <p className="text-brand-secondary text-sm">Discover Your Perfect Style</p>
     </div>
-        </div>
       </div>
 
       {/* RIGHT: form card */}
