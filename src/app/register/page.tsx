@@ -163,13 +163,7 @@ export default function RegisterPage() {
       {/* LEFT: brand header (tách riêng) + image card */}
       <div className="hidden lg:flex flex-col items-center">
   {/* Brand header */}
-  <div className="flex flex-col items-center mb-6">
-    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center shadow-smooth">
-      <span className="text-white font-bold text-xl">A</span>
-    </div>
-    <h1 className="mt-2 text-2xl font-bold text-brand-dark">AIFShop</h1>
-    <p className="text-sm text-brand-secondary">AI-Powered Fashion Shopping</p>
-  </div>
+  
 
   {/* Image card */}
   <div className="hidden lg:block">
@@ -177,7 +171,7 @@ export default function RegisterPage() {
         <img
           src="/demo/login.jpg"
           alt="AIFShop model"
-          className="w-full h-[78vh] object-cover"
+          className="w-full h-full object-cover"
         />
       </div>
     </div>
@@ -185,7 +179,13 @@ export default function RegisterPage() {
 
       {/* RIGHT: form card */}
       <div className="w-full max-w-lg mx-auto">
+        
         <div className="rounded-2xl bg-white shadow-smooth border border-brand-light/70 p-6">
+        <div className="flex flex-col items-center mb-6">
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center shadow-smooth">
+      <span className="text-white font-bold text-xl">A</span>
+    </div>
+  </div>
           <h2 className="text-lg font-semibold text-center">
             {step === 'register' ? 'Create Account' : 'Verify Your Email'}
           </h2>

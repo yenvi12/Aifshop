@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 3
       })
-      console.log(`All OTP records for ${registrationData.email}:`, allRecords.map(r => ({
+      console.log(`All OTP records for ${registrationData.email}:`, allRecords.map((r: { id: String; isUsed: Boolean; expiresAt: Date; createdAt: Date }) => ({
         id: r.id,
         isUsed: r.isUsed,
         expiresAt: r.expiresAt,
