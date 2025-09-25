@@ -159,42 +159,45 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1fr_560px] items-start gap-10 px-6 md:px-10 py-10">
-      {/* LEFT: brand header (tách riêng) + image card */}
-      <div className="hidden lg:flex flex-col items-center">
-  {/* Brand header */}
-  
-
-  {/* Image card */}
-  <div className="hidden lg:block">
-      <div className="rounded-2xl shadow-smooth overflow-hidden max-w-[720px] ml-auto">
-        <img
-          src="/demo/login.jpg"
-          alt="AIFShop model"
-          className="w-full h-full object-cover"
-        />
-      </div>
-    </div>
-      </div>
-
-      {/* RIGHT: form card */}
-      <div className="w-full max-w-lg mx-auto">
+  <div className="min-h-screen flex items-center">
+    <div className="max-w-screen-xl w-full mx-auto px-6 md:px-10">
+      {/* Grid 2 cột: ảnh trái + form phải */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_560px] gap-10 items-center my-6">
         
-        <div className="rounded-2xl bg-white shadow-smooth border border-brand-light/70 p-6">
-        <div className="flex flex-col items-center mb-6">
-    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center shadow-smooth">
-      <span className="text-white font-bold text-xl">A</span>
-    </div>
-  </div>
-          <h2 className="text-lg font-semibold text-center">
-            {step === 'register' ? 'Create Account' : 'Verify Your Email'}
-          </h2>
-          <p className="text-sm text-center text-brand-secondary mb-4">
-            {step === 'register'
-              ? 'Join AIFShop and discover your perfect style'
-              : `We've sent a 6-digit code to ${email}`
-            }
-          </p>
+        {/* LEFT: image */}
+        <div className="hidden lg:flex flex-col items-center">
+          <div className="rounded-2xl shadow-smooth overflow-hidden max-w-[720px] w-full">
+            <img
+              src="/demo/dky.jpg"
+              alt="AIFShop model"
+              className="w-full h-full object-cover object-center"
+            />
+          </div>
+        </div>
+
+        {/* RIGHT: form card */}
+        <div className="w-full max-w-lg mx-auto">
+          <div className="rounded-2xl bg-white shadow-smooth border border-brand-light/70 p-6">
+            {/* Logo nhỏ trên form */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center shadow-smooth">
+                <span className="text-white font-bold text-xl">A</span>
+              </div>
+            </div>
+
+            <h2 className="text-lg font-semibold text-center">
+              {step === "register" ? "Create Account" : "Verify Your Email"}
+            </h2>
+            <p className="text-sm text-center text-brand-secondary mb-4">
+              {step === "register"
+                ? "Join AIFShop and discover your perfect style"
+                : `We've sent a 6-digit code to ${email}`}
+            </p>
+
+
+
+
+
 
           {step === 'register' ? (
             <form onSubmit={onRegisterSubmit} className="space-y-4">
@@ -449,18 +452,20 @@ export default function RegisterPage() {
           </>
         )}
 
-        <p className="text-center text-sm text-brand-secondary">
-          Already have an account?{" "}
-          <Link href="/login" className="text-brand-primary hover:underline">
-            Sign in
-          </Link>
-        </p>
-        </div>
+     <p className="text-center text-sm text-brand-secondary mt-4">
+              Already have an account?{" "}
+              <Link href="/login" className="text-brand-primary hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </div>
 
-        <p className="mt-4 text-xs text-center text-brand-secondary">
-          By creating an account, you agree to our Terms of Service and Privacy Policy
-        </p>
+          <p className="mt-4 text-xs text-center text-brand-secondary">
+            By creating an account, you agree to our Terms of Service and Privacy Policy
+          </p>
+        </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
