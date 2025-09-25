@@ -175,7 +175,7 @@ export default function RegisterPage() {
   <div className="hidden lg:block">
       <div className="rounded-2xl shadow-smooth overflow-hidden max-w-[720px] ml-auto">
         <img
-          src="/demo/login.jpg"
+          src="/demo/dky.jpg"
           alt="AIFShop model"
           className="w-full h-[78vh] object-cover"
         />
