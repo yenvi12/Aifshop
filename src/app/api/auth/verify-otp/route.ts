@@ -5,7 +5,6 @@ import { verifyOTP, hashPassword, generateAccessToken, generateRefreshToken, has
 import { sendWelcomeEmail } from '@/lib/email'
 import { checkOTPVerifyLimit } from '@/lib/rateLimit'
 import { getRegistrationData, removeRegistrationData } from '@/lib/tempStore'
-import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,8 +69,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    
-
     console.log(`OTP record found:`, otpRecord ? {
       id: otpRecord.id,
       email: otpRecord.email,
@@ -82,25 +79,17 @@ export async function POST(request: NextRequest) {
 
     if (!otpRecord) {
       // Check if there are any OTP records for this email
-     const allRecords = await prisma.otp.findMany({
-  where: { email: registrationData.email },
-  orderBy: { createdAt: 'desc' },
-  take: 3,
-  select: {
-    id: true,
-    isUsed: true,
-    expiresAt: true,
-    createdAt: true,
-  },
-});
-
-console.log(`All OTP records for ${registrationData.email}:`,allRecords.map((r) => ({
-    id: r.id,
-    isUsed: r.isUsed,
-    expiresAt: r.expiresAt,
-    createdAt: r.createdAt,
-  }))
-);
+      const allRecords = await prisma.otp.findMany({
+        where: { email: registrationData.email },
+        orderBy: { createdAt: 'desc' },
+        take: 3
+      })
+      console.log(`All OTP records for ${registrationData.email}:`, allRecords.map((r: { id: String; isUsed: Boolean; expiresAt: Date; createdAt: Date }) => ({
+        id: r.id,
+        isUsed: r.isUsed,
+        expiresAt: r.expiresAt,
+        createdAt: r.createdAt
+      })))
 
       return NextResponse.json(
         {
@@ -193,6 +182,7 @@ console.log(`All OTP records for ${registrationData.email}:`,allRecords.map((r) 
       {
         success: false,
         error: 'Internal server error',
+      
         debug: process.env.NODE_ENV === 'development' ? (error as Error)?.message : undefined
       },
       { status: 500 }
