@@ -1,9 +1,52 @@
 "use client";
 
 import Link from "next/link";
-import { MdSearch, MdShoppingCart } from "react-icons/md";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { MdSearch, MdShoppingCart, MdPerson, MdLogout } from "react-icons/md";
 
 export default function Header() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+
+    const checkLogin = () => {
+      const token = localStorage.getItem('accessToken');
+      setIsLoggedIn(!!token);
+    };
+
+    checkLogin();
+
+    // Listen for storage changes (in case login/logout happens in another tab)
+    window.addEventListener('storage', checkLogin);
+
+    // Close dropdown on outside click
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.user-menu')) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('storage', checkLogin);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setIsLoggedIn(false);
+    setDropdownOpen(false);
+    router.push('/');
+  };
   return (
     <header className="sticky top-0 z-50 bg-brand-light shadow-sm border-b border-brand-accent">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
@@ -40,15 +83,42 @@ export default function Header() {
           </div>
 
           {/* Auth */}
-          <div className="flex items-center gap-3 text-sm">
-            <Link href="/login" className="text-brand-dark hover:text-brand-primary">Sign in</Link>
-            <Link
-              href="/register"
-              className="rounded-lg px-3 py-1.5 bg-brand-primary text-white hover:opacity-90"
-            >
-              Sign up
-            </Link>
-          </div>
+          {mounted && (
+            <div className="flex items-center gap-3 text-sm">
+              {isLoggedIn ? (
+                <div className="relative user-menu">
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center gap-2 text-brand-dark hover:text-brand-primary p-1"
+                  >
+                    <MdPerson className="w-5 h-5" />
+                  </button>
+
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-brand-light rounded-lg shadow-lg z-50 user-menu">
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-brand-dark hover:bg-brand-light/50"
+                      >
+                        <MdLogout className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link href="/login" className="text-brand-dark hover:text-brand-primary">Sign in</Link>
+                  <Link
+                    href="/register"
+                    className="rounded-lg px-3 py-1.5 bg-brand-primary text-white hover:opacity-90"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>

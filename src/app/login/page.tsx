@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MdPhoneIphone, MdLockOutline, MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { MdMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff } from "react-icons/md";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [remember, setRemember] = useState(true);
@@ -17,7 +17,7 @@ export default function LoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!phone.trim()) return setError("Please enter your phone number.");
+    if (!email.trim()) return setError("Please enter your email.");
     if (pwd.length < 6) return setError("Password must be at least 6 characters.");
 
     setLoading(true);
@@ -28,7 +28,7 @@ export default function LoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: phone, // Using phone variable for email in this form
+          email: email,
           password: pwd
         }),
       });
@@ -91,15 +91,15 @@ export default function LoginPage() {
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Phone Number
+                  Email
                 </label>
                 <div className="relative">
-                  <MdPhoneIphone className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-secondary w-5 h-5" />
+                  <MdMailOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-secondary w-5 h-5" />
                   <input
-                    type="number"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter your phone number"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
                     className="w-full rounded-xl border border-brand-light px-10 py-2 outline-none focus:ring-2 focus:ring-brand-primary/40"
                   />
                 </div>

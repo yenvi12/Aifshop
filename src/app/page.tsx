@@ -18,7 +18,7 @@ export default function HomePage() {
   const [q, setQ] = useState("");
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen" suppressHydrationWarning={true}>
       <Header></Header>
       {/* ===== HERO ===== */}
       <section className="bg-brand-accent/20">
@@ -171,7 +171,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="rounded-xl border border-brand-light p-4 flex items-center gap-3">
-              <Image src="/login-model.jpg" alt="Gift" width={56} height={56} className="w-14 h-14 object-cover rounded-lg" />
+              <Image src="/demo/login.jpg" alt="Gift" width={56} height={56} className="w-14 h-14 object-cover rounded-lg" />
               <div>
                 <h4 className="font-semibold text-brand-dark">Gift Ideas</h4>
                 <p className="text-sm text-brand-secondary">Curated picks for someone special</p>
@@ -184,7 +184,7 @@ export default function HomePage() {
       {/* ===== FOOTER BAR ===== */}
       <footer className="bg-brand-light border-t border-brand-accent">
         <div className="max-w-6xl mx-auto px-4 py-6 text-xs text-brand-secondary flex flex-col md:flex-row items-center justify-between gap-2">
-          <p>© {new Date().getFullYear()} AIFShop. All rights reserved.</p>
+          <p>© 2025 AIFShop. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link href="#" className="hover:text-brand-primary">Privacy Policy</Link>
             <Link href="#" className="hover:text-brand-primary">Terms of Service</Link>
