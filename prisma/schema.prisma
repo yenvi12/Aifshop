@@ -11,50 +11,32 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  firstName   String
-  lastName    String
-  phoneNumber String?
-  dateOfBirth DateTime
-  password    String
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+   id             String   @id @default(cuid())
+   supabaseUserId String?  @unique
+   email          String   @unique
+   firstName      String
+   lastName       String
+   phoneNumber    String?
+   dateOfBirth    DateTime
+   password       String
+   isVerified     Boolean  @default(false)
+   createdAt      DateTime @default(now())
+   updatedAt      DateTime @updatedAt
 
-  // Relations
-  otps Otp[]
-
-  @@map("users")
-}
-
-model Otp {
-  id          String   @id @default(cuid())
-  email       String
-  hashedOtp   String
-  salt        String
-  expiresAt   DateTime
-  isUsed      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  // Relations
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("otps")
+   @@map("users")
 }
 
 model TempRegistration {
-  id            String   @id @default(cuid())
-  transactionId String   @unique
-  email         String
-  firstName     String
-  lastName      String
-  phoneNumber   String?
-  dateOfBirth   DateTime
-  password      String   // Plain text, will be hashed when verified
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
+   id            String   @id @default(cuid())
+   transactionId String   @unique
+   email         String
+   firstName     String
+   lastName      String
+   phoneNumber   String?
+   dateOfBirth   DateTime
+   password      String
+   expiresAt     DateTime
+   createdAt     DateTime @default(now())
 
-  @@map("temp_registrations")
+   @@map("temp_registrations")
 }

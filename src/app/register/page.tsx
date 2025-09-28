@@ -13,6 +13,7 @@ import {
   MdVisibilityOff,
 } from "react-icons/md";
 import { FcGoogle } from "react-icons/fc";
+import { supabase } from "@/lib/supabase";
 
 type Step = 'register' | 'otp'
 
@@ -83,11 +84,6 @@ export default function RegisterPage() {
 
       const data = await response.json();
 
-      console.log('API Response:', data); // Debug response
-
-      // Show raw response for debugging
-      alert(`API Response: ${JSON.stringify(data, null, 2)}`);
-
       if (data.success) {
         setTransactionId(data.transactionId);
         setStep('otp');
@@ -127,8 +123,6 @@ export default function RegisterPage() {
 
     setOtpLoading(true);
     try {
-      console.log(`Submitting OTP: "${otp}" (length: ${otp.length}) for transactionId: ${transactionId}`)
-
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: {
@@ -143,7 +137,7 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Lưu tokens vào localStorage hoặc context (tùy vào app architecture)
+        // Lưu tokens vào localStorage
         localStorage.setItem('accessToken', data.tokens.accessToken);
         localStorage.setItem('refreshToken', data.tokens.refreshToken);
 
@@ -157,6 +151,7 @@ export default function RegisterPage() {
     }
     setOtpLoading(false);
   }
+
 
   return (
   <div className="min-h-screen flex items-center">
@@ -199,7 +194,7 @@ export default function RegisterPage() {
 
 
 
-          {step === 'register' ? (
+            {step === 'register' ? (
             <form onSubmit={onRegisterSubmit} className="space-y-4">
             {/* Name row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -360,7 +355,7 @@ export default function RegisterPage() {
               {loading ? "Sending OTP..." : "Create Account"}
             </button>
           </form>
-        ) : (
+          ) : (
           <form onSubmit={onOtpSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Enter 6-digit code</label>
@@ -391,45 +386,6 @@ export default function RegisterPage() {
             >
               Back to Registration
             </button>
-
-            <button
-              type="button"
-              onClick={async () => {
-                if (!email) return;
-                setOtpLoading(true);
-                try {
-                  // Note: Rate limiting is handled server-side
-
-                  const response = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      firstName: 'Resend',
-                      lastName: 'OTP',
-                      email: email,
-                      phoneNumber: '0987654321',
-                      dateOfBirth: '2000-01-01',
-                      password: 'TempPass123!',
-                      confirmPassword: 'TempPass123!'
-                    }),
-                  });
-
-                  const data = await response.json();
-                  if (data.success) {
-                    alert('OTP resent! Check your email.');
-                  } else {
-                    alert('Failed to resend OTP: ' + data.error);
-                  }
-                } catch (error) {
-                  alert('Failed to resend OTP');
-                }
-                setOtpLoading(false);
-              }}
-              disabled={otpLoading || !email}
-              className="w-full rounded-xl py-2.5 bg-gray-500 text-white hover:bg-gray-600 transition"
-            >
-              {otpLoading ? 'Sending...' : 'Resend OTP'}
-            </button>
           </form>
         )}
 
@@ -444,7 +400,21 @@ export default function RegisterPage() {
 
             <button
               type="button"
-              onClick={() => alert("Google Sign-Up (demo)")}
+              onClick={async () => {
+                try {
+                  const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                      redirectTo: window.location.origin
+                    }
+                  })
+                  if (error) {
+                    setErr(error.message)
+                  }
+                } catch (error) {
+                  setErr('Failed to sign in with Google')
+                }
+              }}
               className="w-full rounded-xl py-2.5 border border-brand-light flex items-center justify-center gap-2 hover:bg-brand-light/40 transition"
             >
               <FcGoogle className="w-5 h-5" /> Google

@@ -1,4 +1,4 @@
-// Temporary storage cho registration data (sử dụng database thay vì in-memory)
+// Temporary storage cho registration data (sử dụng database)
 
 import { prisma } from './prisma'
 
@@ -13,10 +13,9 @@ export async function storeRegistrationData(transactionId: string, data: {
 }): Promise<void> {
   console.log(`Storing temp data for transactionId: ${transactionId}`)
 
-  // Set expiry 10 phút từ bây giờ (Vietnam time)
+  // Set expiry 10 phút từ bây giờ
   const now = new Date()
-  const vietnamOffset = 7 * 60 * 60 * 1000
-  const expiresAt = new Date(now.getTime() + vietnamOffset + 10 * 60 * 1000)
+  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000)
 
   await (prisma as any).tempRegistration.create({
     data: {
@@ -57,10 +56,7 @@ export async function getRegistrationData(transactionId: string): Promise<{
 
     // Check expiry
     const now = new Date()
-    const vietnamOffset = 7 * 60 * 60 * 1000
-    const nowVietnam = new Date(now.getTime() + vietnamOffset)
-
-    if (tempData.expiresAt < nowVietnam) {
+    if (tempData.expiresAt < now) {
       console.log('Temp registration data expired, deleting...')
       await (prisma as any).tempRegistration.delete({
         where: { transactionId }
