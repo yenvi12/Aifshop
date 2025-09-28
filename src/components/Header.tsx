@@ -4,25 +4,32 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MdSearch, MdShoppingCart, MdPerson, MdLogout } from "react-icons/md";
+import { supabase } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 export default function Header() {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
 
-    const checkLogin = () => {
-      const token = localStorage.getItem('accessToken');
-      setIsLoggedIn(!!token);
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
     };
 
-    checkLogin();
+    getInitialSession();
 
-    // Listen for storage changes (in case login/logout happens in another tab)
-    window.addEventListener('storage', checkLogin);
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
 
     // Close dropdown on outside click
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,15 +42,14 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      window.removeEventListener('storage', checkLogin);
+      subscription.unsubscribe();
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
     setDropdownOpen(false);
     router.push('/');
   };
@@ -85,7 +91,7 @@ export default function Header() {
           {/* Auth */}
           {mounted && (
             <div className="flex items-center gap-3 text-sm">
-              {isLoggedIn ? (
+              {user ? (
                 <div className="relative user-menu">
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}

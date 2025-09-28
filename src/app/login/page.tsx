@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MdMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,28 +23,16 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: pwd
-        }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: pwd
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Lưu tokens
-        localStorage.setItem('accessToken', data.tokens.accessToken);
-        localStorage.setItem('refreshToken', data.tokens.refreshToken);
-
+      if (error) {
+        setError(error.message);
+      } else if (data.user) {
         alert('Đăng nhập thành công!');
         router.push("/");
-      } else {
-        setError(data.error || 'Đăng nhập thất bại.');
       }
     } catch (error) {
       setError('Không thể kết nối đến server. Vui lòng thử lại.');
@@ -173,7 +162,21 @@ export default function LoginPage() {
               {/* Google button */}
               <button
                 type="button"
-                onClick={() => alert("Google Sign-In (demo)")}
+                onClick={async () => {
+                  try {
+                    const { data, error } = await supabase.auth.signInWithOAuth({
+                      provider: 'google',
+                      options: {
+                        redirectTo: window.location.origin
+                      }
+                    })
+                    if (error) {
+                      setError(error.message)
+                    }
+                  } catch (error) {
+                    setError('Failed to sign in with Google')
+                  }
+                }}
                 className="w-full rounded-xl py-2.5 border border-brand-light flex items-center justify-center gap-2 hover:bg-brand-light/40 transition"
               >
                 <img
