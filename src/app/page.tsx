@@ -6,12 +6,12 @@ import { useState } from "react";
 import { MdStar, MdLocalShipping, MdStraighten } from "react-icons/md";import ProductCard, { type Product } from "@/components/ProductCard";
 import Header from "@/components/Header";
 const PRODUCTS: Product[] = [
-  { id: "1", name: "Desert Pearl Drops", price: 129, compareAtPrice: 159, image: "/demo/dc10.jpg", badge: "New", rating: 4.8 },
-  { id: "2", name: "Scarfy Necklace", price: 149, image: "/demo/dc3.jpg", rating: 4.5 },
-  { id: "3", name: "Classic Leather Jacket (Ear)", price: 99, compareAtPrice: 119, image: "/demo/ring1.jpg", badge: "Sale", rating: 4.7 },
-  { id: "4", name: "Minimal Pearl Studs", price: 89, image: "/demo/dc11.jpg", rating: 4.4 },
-  { id: "5", name: "Layered Chain", price: 139, image: "/demo/dc12.jpg", rating: 4.6 },
-  { id: "6", name: "Gemstone Pendant", price: 169, image: "/demo/ring2.jpg", rating: 4.9 },
+  { id: "1", slug: "desert-pearl-drops", name: "Desert Pearl Drops", price: 129, compareAtPrice: 159, image: "/demo/dc10.jpg", badge: "New", rating: 4.8 },
+  { id: "2", slug: "scarfy-necklace", name: "Scarfy Necklace", price: 149, image: "/demo/dc3.jpg", rating: 4.5 },
+  { id: "3", slug: "classic-leather-jacket-ear", name: "Classic Leather Jacket (Ear)", price: 99, compareAtPrice: 119, image: "/demo/ring1.jpg", badge: "Sale", rating: 4.7 },
+  { id: "4", slug: "minimal-pearl-studs", name: "Minimal Pearl Studs", price: 89, image: "/demo/dc11.jpg", rating: 4.4 },
+  { id: "5", slug: "layered-chain", name: "Layered Chain", price: 139, image: "/demo/dc12.jpg", rating: 4.6 },
+  { id: "6", slug: "gemstone-pendant", name: "Gemstone Pendant", price: 169, image: "/demo/ring2.jpg", rating: 4.9 },
 ];
 
 export default function HomePage() {

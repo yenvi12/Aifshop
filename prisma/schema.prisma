@@ -27,16 +27,34 @@ model User {
 }
 
 model TempRegistration {
-   id            String   @id @default(cuid())
-   transactionId String   @unique
-   email         String
-   firstName     String
-   lastName      String
-   phoneNumber   String?
-   dateOfBirth   DateTime
-   password      String
-   expiresAt     DateTime
-   createdAt     DateTime @default(now())
+    id            String   @id @default(cuid())
+    transactionId String   @unique
+    email         String
+    firstName     String
+    lastName      String
+    phoneNumber   String?
+    dateOfBirth   DateTime
+    password      String
+    expiresAt     DateTime
+    createdAt     DateTime @default(now())
 
-   @@map("temp_registrations")
+    @@map("temp_registrations")
+}
+
+model Product {
+    id          String   @id @default(cuid())
+    name        String
+    description String?
+    price       Float
+    category    String
+    image       String?
+    images      String[] // Array of image URLs
+    stock       Int      @default(0)
+    isActive    Boolean  @default(true)
+    slug        String   @unique
+    sku         String?  @unique
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@map("products")
 }
