@@ -101,14 +101,22 @@ export default function Header() {
                   </button>
 
                   {dropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-brand-light rounded-lg shadow-lg z-50 user-menu">
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-brand-dark hover:bg-brand-light/50"
-                      >
-                        <MdLogout className="w-4 h-4" />
-                        Logout
-                      </button>
+  <div className="absolute right-0 mt-2 w-48 bg-white border border-brand-light rounded-lg shadow-lg z-50 user-menu">
+    <Link
+      href="/profile"
+      className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-brand-dark hover:bg-brand-light/50"
+      onClick={() => setDropdownOpen(false)}
+    >
+      <MdPerson className="w-4 h-4" />
+      Profile
+    </Link>
+    <button
+      onClick={handleLogout}
+      className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-brand-dark hover:bg-brand-light/50"
+    >
+      <MdLogout className="w-4 h-4" />
+      Logout
+    </button>
                     </div>
                   )}
                 </div>
