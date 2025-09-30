@@ -44,6 +44,10 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     product.compareAtPrice && product.compareAtPrice > product.price
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
       : 0;
+ const handleBuyNow = () => {
+    // Nếu muốn truyền dữ liệu product, có thể lưu tạm vào localStorage / context
+    router.push("/payment");
+  };
 
   return (
     <>
@@ -175,7 +179,9 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
               </button>
 
               {/* Buy Now Button */}
-              <button className="flex-1 bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition font-medium">
+              <button 
+              onClick={handleBuyNow}
+              className="flex-1 bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition font-medium">
                 Buy Now
               </button>
 
