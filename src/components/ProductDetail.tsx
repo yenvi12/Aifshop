@@ -160,7 +160,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   onClick={() => setSelectedSize(size)}
                   className={`w-12 h-12 border rounded-lg font-medium transition ${
                     selectedSize === size
-                      ? "border-black bg-black text-white"
+                      ? "border-gray bg-brand-primary text-white"
                       : "border-gray-300 hover:border-gray-400"
                   }`}
                 >
@@ -174,14 +174,14 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               {/* Add to Cart Button */}
-              <button className="flex-1 bg-orange-200 text-black py-3 px-6 rounded-lg hover:bg-orange-300 transition font-medium">
+              <button className="flex-1 rounded-xl py-2.5 px-6  bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-light/90 disabled:opacity-60 transition">
                 Add to cart
               </button>
 
               {/* Buy Now Button */}
               <button 
               onClick={handleBuyNow}
-              className="flex-1 bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition font-medium">
+              className="flex-1 rounded-xl py-2.5 px-6  bg-brand-dark text-brand-light font-semibold border border-brand-light hover:bg-brand-primary/90 disabled:opacity-60 transition">
                 Buy Now
               </button>
 
