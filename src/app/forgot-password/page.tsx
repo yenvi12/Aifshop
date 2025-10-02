@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MdMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
+import toast from "react-hot-toast";
 
 type Step = 'email' | 'otp' | 'password';
 
@@ -119,7 +120,7 @@ export default function ForgotPasswordPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert('Password reset successful! Please log in with your new password.');
+        toast.success('Password reset successful! Please log in with your new password.');
         router.push("/login");
       } else {
         setError(data.error || 'Failed to reset password.');

@@ -4,6 +4,7 @@ import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { MdOutlineCalendarToday } from "react-icons/md";
+import toast from "react-hot-toast";
 
 export type ProfileForm = {
    name: string;
@@ -64,7 +65,7 @@ export default function EditProfileModal({
       setForm((s) => ({ ...s, avatar: url }));
     } catch (e) {
       console.error(e);
-      alert("Upload failed");
+      toast.error("Upload failed");
     } finally {
       setUploading(false);
     }
