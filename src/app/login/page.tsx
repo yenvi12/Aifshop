@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MdMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
       } else if (data.user) {
-        alert('Đăng nhập thành công!');
+        toast.success('Đăng nhập thành công!');
         router.push("/");
       }
     } catch (error) {

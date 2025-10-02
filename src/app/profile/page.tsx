@@ -18,6 +18,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import EditProfileModal, { ProfileForm } from "@/components/profile/EditProfileModal";
 import Header from "@/components/Header";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import toast from "react-hot-toast";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -95,17 +97,18 @@ export default function ProfilePage() {
           stylePreferences: data.user.stylePreferences || [],
           defaultAddress: data.user.defaultAddress || { shipping: '', billing: '' }
         });
-        alert(data.message || 'Profile updated successfully');
+        toast.success(data.message || 'Profile updated successfully');
       } else {
-        alert('Failed to update profile');
+        toast.error('Failed to update profile');
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
-      alert('Failed to update profile');
+      toast.error('Failed to update profile');
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <LoadingSpinner />;
+
   if (!user) return <div>Please log in</div>;
 
   return (

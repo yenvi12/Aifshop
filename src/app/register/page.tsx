@@ -16,6 +16,7 @@ import {
 } from "react-icons/md";
 import { FcGoogle } from "react-icons/fc";
 import { supabase } from "@/lib/supabase";
+import toast from "react-hot-toast";
 
 type Step = 'register' | 'otp'
 
@@ -143,7 +144,7 @@ export default function RegisterPage() {
         localStorage.setItem('accessToken', data.tokens.accessToken);
         localStorage.setItem('refreshToken', data.tokens.refreshToken);
 
-        alert('Đăng ký thành công! Chào mừng bạn đến với AIFShop.');
+        toast.success('Đăng ký thành công! Chào mừng bạn đến với AIFShop.');
         router.push("/");
       } else {
         setErr(data.error || 'OTP không hợp lệ.');
