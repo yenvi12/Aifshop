@@ -11,19 +11,23 @@ datasource db {
 }
 
 model User {
-   id             String   @id @default(cuid())
-   supabaseUserId String?  @unique
-   email          String   @unique
-   firstName      String
-   lastName       String
-   phoneNumber    String?
-   dateOfBirth    DateTime
-   password       String
-   isVerified     Boolean  @default(false)
-   createdAt      DateTime @default(now())
-   updatedAt      DateTime @updatedAt
+    id                String   @id @default(cuid())
+    supabaseUserId    String?  @unique
+    email             String   @unique
+    firstName         String
+    lastName          String
+    phoneNumber       String?
+    dateOfBirth       DateTime
+    bio               String?
+    avatar            String?
+    stylePreferences  String[] // Array of preference strings
+    defaultAddress    Json?    // JSON object for shipping and billing
+    password          String
+    isVerified        Boolean  @default(false)
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @updatedAt
 
-   @@map("users")
+    @@map("users")
 }
 
 model TempRegistration {

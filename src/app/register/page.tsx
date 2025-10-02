@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   MdPersonOutline,
   MdMailOutline,
@@ -25,7 +27,7 @@ export default function RegisterPage() {
   const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [dob, setDob] = useState("");
+  const [dob, setDob] = useState<Date | null>(null);
   const [pwd, setPwd] = useState("");
   const [cpwd, setCpwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -67,7 +69,7 @@ export default function RegisterPage() {
         lastName: last.trim(),
         email: email.trim(),
         phoneNumber: phone.trim() || undefined,
-        dateOfBirth: dob,
+        dateOfBirth: dob ? dob.toISOString().split('T')[0] : '',
         password: pwd,
         confirmPassword: cpwd
       };
@@ -258,13 +260,21 @@ export default function RegisterPage() {
             <div>
               <label className="block text-sm font-medium mb-1">Date of Birth</label>
               <div className="relative">
-                <MdOutlineCalendarToday className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-secondary w-5 h-5" />
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
+                <DatePicker
+                  selected={dob}
+                  onChange={(date) => setDob(date)}
+                  dateFormat="yyyy-MM-dd"
+                  placeholderText="Select your birthday"
                   className="w-full rounded-xl border border-brand-light px-10 py-2 outline-none focus:ring-2 focus:ring-brand-primary/40"
+                  wrapperClassName="w-full"
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  yearDropdownItemNumber={50}
+                  scrollableYearDropdown
+                  maxDate={new Date()}
                 />
+                <MdOutlineCalendarToday className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-secondary w-5 h-5 pointer-events-none" />
               </div>
             </div>
 

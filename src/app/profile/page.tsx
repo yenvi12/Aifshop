@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   MdKeyboardArrowRight,
@@ -15,6 +15,7 @@ import {
   MdShoppingCart,
   MdStyle,
 } from "react-icons/md";
+import { supabase } from "@/lib/supabase";
 import EditProfileModal, { ProfileForm } from "@/components/profile/EditProfileModal";
 import Header from "@/components/Header";
 
@@ -23,15 +24,89 @@ export default function ProfilePage() {
   const [openPayments, setOpenPayments] = useState(true);
   const [openRecent, setOpenRecent] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<ProfileForm | null>(null);
+  const [session, setSession] = useState<any>(null);
 
-  const [user, setUser] = useState<ProfileForm>({
-    name: "Jane Nguyen",
-    email: "jane@aifshop.com",
-    phone: "+84 903 246 098",
-    birthday: "May 12, 1996",
-    bio: "Sustainable fashion enthusiast. I love minimal fits and neutral palettes.",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=300&auto=format&fit=crop",
-  });
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      if (session?.access_token) {
+        await fetchProfile(session.access_token);
+      } else {
+        router.push('/login');
+      }
+    };
+    getSession();
+  }, []);
+
+  const fetchProfile = async (token: string) => {
+    try {
+      const response = await fetch('/api/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUser({
+          name: data.name,
+          email: data.email,
+          phone: data.phone || '',
+          birthday: data.birthday ? new Date(data.birthday) : null,
+          bio: data.bio,
+          avatar: data.avatar,
+          stylePreferences: data.stylePreferences,
+          defaultAddress: data.defaultAddress
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async (updatedProfile: ProfileForm) => {
+    if (!session?.access_token) return;
+
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          ...updatedProfile,
+          birthday: updatedProfile.birthday ? updatedProfile.birthday.toISOString().split('T')[0] : '',
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update user state immediately with API response data
+        setUser({
+          name: data.user.name,
+          email: data.user.email,
+          phone: data.user.phone || '',
+          birthday: data.user.birthday ? new Date(data.user.birthday) : null,
+          bio: data.user.bio || '',
+          avatar: data.user.avatar || '',
+          stylePreferences: data.user.stylePreferences || [],
+          defaultAddress: data.user.defaultAddress || { shipping: '', billing: '' }
+        });
+        alert(data.message || 'Profile updated successfully');
+      } else {
+        alert('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      alert('Failed to update profile');
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <div>Please log in</div>;
 
   return (
     <main className="min-h-screen bg-white text-brand-dark">
@@ -47,7 +122,7 @@ export default function ProfilePage() {
             <div className="rounded-2xl border border-brand-accent bg-brand-light/50 p-4">
               <div className="flex items-center gap-3">
                 <div className="relative w-14 h-14 rounded-2xl overflow-hidden">
-                  <img src={user.avatar} alt={user.name} className="object-cover w-full h-full" loading="lazy" />
+                  <img src={user.avatar || 'https://via.placeholder.com/56x56?text=No+Avatar'} alt={user.name} className="object-cover w-full h-full" loading="lazy" />
                 </div>
                 <div>
                   <p className="font-semibold">{user.name}</p>
@@ -100,7 +175,7 @@ export default function ProfilePage() {
                 <Field label="Full name" defaultValue={user.name} />
                 <Field label="Email" defaultValue={user.email} />
                 <Field label="Phone" defaultValue={user.phone} />
-                <Field label="Birthday" defaultValue={user.birthday} />
+                <Field label="Birthday" defaultValue={user.birthday ? user.birthday.toLocaleDateString('en-CA') : ''} />
               </div>
               <Field label="Bio" defaultValue={user.bio} className="mt-3" />
             </Section>
@@ -108,7 +183,7 @@ export default function ProfilePage() {
             {/* Style preferences */}
             <Section title="Style preferences">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {["Neutral colors", "Relaxed fit", "Natural fabrics", "Capsule wardrobe"].map((t) => (
+                {user.stylePreferences.map((t) => (
                   <Tag key={t}>{t}</Tag>
                 ))}
               </div>
@@ -117,8 +192,8 @@ export default function ProfilePage() {
             {/* Default address */}
             <Section title="Default address">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Field label="Shipping address" defaultValue="12 Nguyen Trai, District 1, HCMC" />
-                <Field label="Billing address" defaultValue="Same as shipping" />
+                <Field label="Shipping address" defaultValue={user.defaultAddress.shipping || ''} />
+                <Field label="Billing address" defaultValue={user.defaultAddress.billing || ''} />
               </div>
             </Section>
 
@@ -202,8 +277,8 @@ export default function ProfilePage() {
         open={editOpen}
         initial={user}
         onClose={() => setEditOpen(false)}
-        onSave={(val) => {
-          setUser(val);
+        onSave={async (val) => {
+          await handleSaveProfile(val);
           setEditOpen(false);
         }}
       />

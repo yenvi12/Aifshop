@@ -1,15 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { MdOutlineCalendarToday } from "react-icons/md";
 
 export type ProfileForm = {
-  name: string;
-  email: string;
-  phone: string;
-  birthday: string;
-  bio: string;
-  avatar: string;
+   name: string;
+   email: string;
+   phone: string;
+   birthday: Date | null;
+   bio: string;
+   avatar: string;
+   stylePreferences: string[];
+   defaultAddress: {
+     shipping: string;
+     billing: string;
+   };
 };
+
+const STYLE_OPTIONS = ["Neutral colors", "Relaxed fit", "Natural fabrics", "Capsule wardrobe", "Minimalist", "Vintage", "Bohemian", "Streetwear"];
 
 export default function EditProfileModal({
   open,
@@ -29,6 +39,22 @@ export default function EditProfileModal({
     (k: keyof ProfileForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((s) => ({ ...s, [k]: e.target.value }));
+
+  const handleStyleToggle = (style: string) => {
+    setForm((s) => ({
+      ...s,
+      stylePreferences: s.stylePreferences.includes(style)
+        ? s.stylePreferences.filter((p) => p !== style)
+        : [...s.stylePreferences, style]
+    }));
+  };
+
+  const handleAddressChange = (type: 'shipping' | 'billing') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((s) => ({
+      ...s,
+      defaultAddress: { ...s.defaultAddress, [type]: e.target.value }
+    }));
+  };
 
   const handleFile = async (file?: File) => {
     if (!file) return;
@@ -86,7 +112,22 @@ export default function EditProfileModal({
               <I defaultValue={form.phone} onChange={handleChange("phone")} />
             </L>
             <L label="Birthday">
-              <I defaultValue={form.birthday} onChange={handleChange("birthday")} />
+              <div className="relative">
+                <DatePicker
+                  selected={form.birthday}
+                  onChange={(date) => setForm((s) => ({ ...s, birthday: date }))}
+                  dateFormat="yyyy-MM-dd"
+                  placeholderText="Select your birthday"
+                  className="w-full rounded-xl border border-brand-accent bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/40"
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  yearDropdownItemNumber={50}
+                  scrollableYearDropdown
+                  maxDate={new Date()}
+                />
+                <MdOutlineCalendarToday className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-secondary w-5 h-5 pointer-events-none" />
+              </div>
             </L>
             <L label="Bio" className="md:col-span-2">
               <textarea
@@ -95,6 +136,37 @@ export default function EditProfileModal({
                 defaultValue={form.bio}
                 onChange={handleChange("bio")}
               />
+            </L>
+          </div>
+
+          {/* Style preferences */}
+          <div className="mt-4">
+            <span className="mb-2 block text-xs text-brand-secondary">Style preferences</span>
+            <div className="flex flex-wrap gap-2">
+              {STYLE_OPTIONS.map((style) => (
+                <button
+                  key={style}
+                  type="button"
+                  onClick={() => handleStyleToggle(style)}
+                  className={`rounded-xl border px-3 py-1.5 text-sm transition-colors ${
+                    form.stylePreferences.includes(style)
+                      ? 'border-brand-primary bg-brand-primary text-white'
+                      : 'border-brand-accent bg-white text-brand-dark hover:bg-brand-light/60'
+                  }`}
+                >
+                  {style}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Default address */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <L label="Shipping address">
+              <I defaultValue={form.defaultAddress.shipping} onChange={handleAddressChange('shipping')} />
+            </L>
+            <L label="Billing address">
+              <I defaultValue={form.defaultAddress.billing} onChange={handleAddressChange('billing')} />
             </L>
           </div>
         </div>
