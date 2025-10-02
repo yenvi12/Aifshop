@@ -54,6 +54,22 @@ export const otpVerificationSchema = z.object({
   otp: z.string().length(6, 'OTP phải có 6 chữ số').regex(/^\d{6}$/, 'OTP chỉ chứa số')
 })
 
+export const createProductSchema = z.object({
+  name: z.string().min(1, 'Tên sản phẩm không được rỗng').max(100, 'Tên sản phẩm quá dài'),
+  description: z.string().optional(),
+  price: z.number().min(0, 'Giá phải lớn hơn hoặc bằng 0'),
+  category: z.string().min(1, 'Danh mục không được rỗng'),
+  image: z.string().url('Ảnh chính phải là URL hợp lệ').optional(),
+  images: z.array(z.string().url('Ảnh phải là URL hợp lệ')).default([]),
+  stock: z.number().int().min(0, 'Số lượng tồn kho phải lớn hơn hoặc bằng 0').default(0),
+  isActive: z.boolean().default(true),
+})
+
+export const updateProductSchema = createProductSchema.partial()
+
+export type CreateProductInput = z.infer<typeof createProductSchema>
+export type UpdateProductInput = z.infer<typeof updateProductSchema>
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type OtpVerificationInput = z.infer<typeof otpVerificationSchema>
