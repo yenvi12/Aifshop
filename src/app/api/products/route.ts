@@ -61,10 +61,14 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id')
     const slug = searchParams.get('slug')
 
+    // Check if this is an admin request
+    const authHeader = request.headers.get('authorization')
+    const isAdminRequest = authHeader && authHeader.startsWith('Bearer ')
+
     if (id) {
       // Get specific product by id
       const product = await prisma.product.findUnique({
-        where: { id }
+        where: { id, ...(isAdminRequest ? {} : { isActive: true }) }
       })
 
       if (!product) {
@@ -84,7 +88,7 @@ export async function GET(request: NextRequest) {
     } else if (slug) {
       // Get specific product by slug
       const product = await prisma.product.findUnique({
-        where: { slug }
+        where: { slug, ...(isAdminRequest ? {} : { isActive: true }) }
       })
 
       if (!product) {
@@ -104,6 +108,7 @@ export async function GET(request: NextRequest) {
     } else {
       // List all products
       const products = await prisma.product.findMany({
+        where: isAdminRequest ? {} : { isActive: true }, // Only active products for public requests
         orderBy: { createdAt: 'desc' }
       })
 
@@ -307,24 +312,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-
-    // Validate input
-    const validationResult = updateProductSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.format()
-        },
-        { status: 400 }
-      )
-    }
-
-    let updateData: any = validationResult.data
-
-    // Check if product exists
+    // Check if product exists first
     const existingProduct = await prisma.product.findUnique({
       where: { id }
     })
@@ -338,6 +326,143 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    let data: any = {}
+
+    const contentType = request.headers.get('content-type') || ''
+
+    if (contentType.includes('multipart/form-data')) {
+      // Handle FormData for file uploads
+      const formData = await request.formData()
+
+      // Extract text fields
+      const name = formData.get('name') as string
+      if (name) data.name = name
+
+      const description = formData.get('description') as string
+      if (description) data.description = description
+
+      const priceStr = formData.get('price') as string
+      if (priceStr && !isNaN(parseFloat(priceStr))) {
+        data.price = parseFloat(priceStr)
+      }
+
+      const compareAtPriceStr = formData.get('compareAtPrice') as string
+      if (compareAtPriceStr && !isNaN(parseFloat(compareAtPriceStr))) {
+        data.compareAtPrice = parseFloat(compareAtPriceStr)
+      }
+
+      const category = formData.get('category') as string
+      if (category) data.category = category
+
+      const stockStr = formData.get('stock') as string
+      if (stockStr && !isNaN(parseInt(stockStr))) {
+        data.stock = parseInt(stockStr)
+      }
+
+      const sizesStr = formData.get('sizes') as string
+      if (sizesStr) {
+        try {
+          data.sizes = JSON.parse(sizesStr)
+        } catch (e) {
+          data.sizes = []
+        }
+      }
+
+      const ratingStr = formData.get('rating') as string
+      if (ratingStr && !isNaN(parseFloat(ratingStr))) {
+        data.rating = parseFloat(ratingStr)
+      }
+
+      const badge = formData.get('badge') as string
+      if (badge) data.badge = badge
+
+      data.isActive = formData.get('isActive') === 'true'
+
+      // Handle main image
+      const imageFile = formData.get('image') as File | null
+      const removeMainImage = formData.get('removeMainImage') === 'true'
+
+      if (removeMainImage) {
+        data.image = null // Will be set to null in database to remove the image
+      } else if (imageFile) {
+        if (!ALLOWED_IMAGE_TYPES.includes(imageFile.type)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Invalid image type for main image. Allowed: jpeg, png, gif, webp, svg'
+            },
+            { status: 400 }
+          )
+        }
+        data.image = await uploadToCloudinary(imageFile)
+      }
+      // If no new image and not removing, don't include image in update data to keep existing
+
+      // Handle additional images
+      const imagesFiles = formData.getAll('images') as File[]
+      const imagesToRemoveStr = formData.get('imagesToRemove') as string
+      const imagesToRemove = imagesToRemoveStr ? JSON.parse(imagesToRemoveStr) : []
+
+      if (imagesFiles.length > 5) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Maximum 5 additional images allowed'
+          },
+          { status: 400 }
+        )
+      }
+
+      for (const file of imagesFiles) {
+        if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Invalid image type. Allowed: jpeg, png, gif, webp, svg'
+            },
+            { status: 400 }
+          )
+        }
+      }
+
+      // Update images: keep existing ones (minus removed), add new ones
+      if (imagesFiles.length > 0 || imagesToRemove.length > 0) {
+        const currentImages = existingProduct.images || []
+        const remainingImages = currentImages.filter(img => !imagesToRemove.includes(img))
+        const newImages = imagesFiles.length > 0
+          ? await Promise.all(imagesFiles.map(file => uploadToCloudinary(file)))
+          : []
+        data.images = [...remainingImages, ...newImages]
+      }
+      // If no changes to images, don't include images in update data to keep existing
+    } else {
+      // Handle JSON
+      data = await request.json()
+      data.description = data.description ?? null
+      // For JSON updates, if image is not provided or is null, don't include it to keep existing
+      if (!data.image) {
+        delete data.image
+      }
+      if (!data.images || data.images.length === 0) {
+        delete data.images
+      }
+    }
+
+    // Validate input
+    const validationResult = updateProductSchema.safeParse(data)
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Validation failed',
+          details: validationResult.error.format()
+        },
+        { status: 400 }
+      )
+    }
+
+    let updateData: any = validationResult.data
 
     // Generate new slug if name is being updated
     if (updateData.name && updateData.name !== existingProduct.name) {
