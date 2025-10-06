@@ -25,13 +25,13 @@ interface Product {
 export default function ManageProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,43 +42,74 @@ export default function ManageProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   useEffect(() => {
-    fetchProducts();
+    fetchCategories();
   }, []);
 
-  // Filter products based on search and filters
+  // Fetch products when filters or page change
   useEffect(() => {
-    let filtered = products;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    if (searchTerm || categoryFilter || statusFilter || currentPage > 1) {
+      fetchProducts(currentPage, searchTerm, categoryFilter, statusFilter);
+    } else {
+      // If no filters, still fetch paginated
+      fetchProducts(currentPage);
     }
+  }, [searchTerm, categoryFilter, statusFilter, currentPage]);
 
-    // Category filter
-    if (categoryFilter) {
-      filtered = filtered.filter(product => product.category === categoryFilter);
-    }
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, statusFilter]);
 
-    // Status filter
-    if (statusFilter) {
-      const isActive = statusFilter === 'active';
-      filtered = filtered.filter(product => product.isActive === isActive);
-    }
-
-    setFilteredProducts(filtered);
-  }, [products, searchTerm, categoryFilter, statusFilter]);
-
-  const fetchProducts = async () => {
+  const fetchProducts = async (page: number = 1, search?: string, category?: string, status?: string) => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
         router.push('/login');
         return;
       }
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '6'
+      });
+
+      if (search) params.append('search', search);
+      if (category) params.append('category', category);
+      if (status) params.append('status', status);
+
+      const response = await fetch(`/api/products?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setProducts(result.data);
+          setTotalPages(result.pagination.totalPages);
+          setTotalCount(result.pagination.totalCount);
+          setCurrentPage(result.pagination.page);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      toast.error('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
 
       const response = await fetch('/api/products', {
         headers: {
@@ -89,14 +120,11 @@ export default function ManageProductsPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          setProducts(result.data);
+          setAllProducts(result.data); // For categories
         }
       }
     } catch (error) {
-      console.error('Failed to fetch products:', error);
-      toast.error('Failed to load products');
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch categories:', error);
     }
   };
 
@@ -135,10 +163,10 @@ export default function ManageProductsPage() {
 
   // Bulk operations
   const handleSelectAll = () => {
-    if (selectedProducts.length === filteredProducts.length) {
+    if (selectedProducts.length === products.length) {
       setSelectedProducts([]);
     } else {
-      setSelectedProducts(filteredProducts.map(p => p.id));
+      setSelectedProducts(products.map(p => p.id));
     }
   };
 
@@ -215,7 +243,7 @@ export default function ManageProductsPage() {
   };
 
   // Get unique categories for filter dropdown
-  const categories = Array.from(new Set(products.map(p => p.category)));
+  const categories = Array.from(new Set(allProducts.map(p => p.category)));
 
   if (loading) {
     return (
@@ -277,7 +305,7 @@ export default function ManageProductsPage() {
         </div>
 
         {/* Search and Filter Controls */}
-        {products.length > 0 && (
+        {allProducts.length > 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-brand-light p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               {/* Search */}
@@ -353,13 +381,13 @@ export default function ManageProductsPage() {
         )}
 
         {/* Products Display */}
-        {filteredProducts.length === 0 && products.length > 0 ? (
+        {products.length === 0 && totalCount > 0 ? (
           <div className="text-center py-12">
             <MdSearch className="w-16 h-16 text-brand-secondary mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-brand-dark mb-2">No products found</h3>
             <p className="text-brand-secondary">Try adjusting your search or filters</p>
           </div>
-        ) : products.length === 0 ? (
+        ) : totalCount === 0 ? (
           <div className="text-center py-12">
             <MdInventory className="w-16 h-16 text-brand-secondary mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-brand-dark mb-2">No products yet</h3>
@@ -375,7 +403,7 @@ export default function ManageProductsPage() {
         ) : viewMode === 'grid' ? (
           /* Grid View */
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map((product) => (
+            {products.map((product) => (
               <div key={product.id} className="bg-white rounded-xl shadow-sm border border-brand-light overflow-hidden">
                 {/* Checkbox for bulk selection */}
                 <div className="absolute top-2 left-2 z-10">
@@ -485,7 +513,7 @@ export default function ManageProductsPage() {
                         onClick={handleSelectAll}
                         className="flex items-center gap-2 hover:bg-brand-light/50 px-2 py-1 rounded"
                       >
-                        {selectedProducts.length === filteredProducts.length && filteredProducts.length > 0 ? (
+                        {selectedProducts.length === products.length && products.length > 0 ? (
                           <MdCheckBox className="w-5 h-5 text-brand-primary" />
                         ) : (
                           <MdCheckBoxOutlineBlank className="w-5 h-5 text-brand-secondary" />
@@ -502,7 +530,7 @@ export default function ManageProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-light">
-                  {filteredProducts.map((product) => (
+                  {products.map((product) => (
                     <tr key={product.id} className="hover:bg-brand-light/25">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -593,6 +621,54 @@ export default function ManageProductsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center mt-8">
+            <div className="flex items-center gap-2">
+              {/* Previous Button */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-2 rounded-lg border text-sm font-medium ${
+                  currentPage === 1
+                    ? 'border-brand-light text-brand-secondary cursor-not-allowed'
+                    : 'border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white'
+                }`}
+              >
+                Previous
+              </button>
+
+              {/* Page Numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-2 rounded-lg border text-sm font-medium ${
+                    currentPage === page
+                      ? 'bg-brand-primary text-white border-brand-primary'
+                      : 'border-brand-light text-brand-secondary hover:bg-brand-light/50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              {/* Next Button */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-2 rounded-lg border text-sm font-medium ${
+                  currentPage === totalPages
+                    ? 'border-brand-light text-brand-secondary cursor-not-allowed'
+                    : 'border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white'
+                }`}
+              >
+                Next
+              </button>
             </div>
           </div>
         )}
