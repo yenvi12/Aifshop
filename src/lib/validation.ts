@@ -58,10 +58,17 @@ export const createProductSchema = z.object({
   name: z.string().min(1, 'Tên sản phẩm không được rỗng').max(100, 'Tên sản phẩm quá dài'),
   description: z.string().optional(),
   price: z.number().min(0, 'Giá phải lớn hơn hoặc bằng 0'),
+  compareAtPrice: z.number().min(0, 'Giá gốc phải lớn hơn hoặc bằng 0').optional(),
   category: z.string().min(1, 'Danh mục không được rỗng'),
   image: z.string().url('Ảnh chính phải là URL hợp lệ').optional(),
   images: z.array(z.string().url('Ảnh phải là URL hợp lệ')).default([]),
   stock: z.number().int().min(0, 'Số lượng tồn kho phải lớn hơn hoặc bằng 0').default(0),
+  sizes: z.array(z.object({
+    name: z.string().min(1, 'Tên size không được rỗng'),
+    stock: z.number().int().min(0, 'Số lượng size phải lớn hơn hoặc bằng 0')
+  })).optional(),
+  rating: z.number().min(0, 'Rating phải từ 0-5').max(5, 'Rating phải từ 0-5').default(0),
+  badge: z.string().optional(),
   isActive: z.boolean().default(true),
 })
 

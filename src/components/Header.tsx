@@ -12,6 +12,7 @@ export default function Header() {
   const [user, setUser] = useState<User | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -27,7 +28,15 @@ export default function Header() {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
+        const sessionUser = session?.user ?? null;
+        setUser(sessionUser);
+        if (sessionUser) {
+          await getUserSession(sessionUser);
+        } else {
+          setUserRole(null);
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+        }
       }
     );
 
@@ -50,8 +59,37 @@ export default function Header() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setUserRole(null);
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setDropdownOpen(false);
     router.push('/');
+  };
+
+  const getUserSession = async (sessionUser: User) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const response = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            localStorage.setItem('accessToken', result.tokens.accessToken);
+            localStorage.setItem('refreshToken', result.tokens.refreshToken);
+            setUserRole(result.user.role);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to get user session:', error);
+    }
   };
   return (
     <header className="sticky top-0 z-50 bg-brand-light shadow-sm border-b border-brand-accent">
@@ -110,6 +148,16 @@ export default function Header() {
       <MdPerson className="w-4 h-4" />
       Profile
     </Link>
+    {userRole === 'ADMIN' && (
+      <Link
+        href="/admin"
+        className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-brand-dark hover:bg-brand-light/50"
+        onClick={() => setDropdownOpen(false)}
+      >
+        <MdPerson className="w-4 h-4" />
+        Admin Panel
+      </Link>
+    )}
     <button
       onClick={handleLogout}
       className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-brand-dark hover:bg-brand-light/50"

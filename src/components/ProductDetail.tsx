@@ -7,11 +7,20 @@ import { MdStar, MdFavoriteBorder, MdFavorite, MdShoppingBag, MdAdd, MdRemove } 
 import { type Product } from "./ProductCard";
 import Header from "./Header";
 
+type SizeOption = {
+  name: string;
+  stock: number;
+};
+
 type Props = {
   product: Product & {
     description?: string;
     features?: string[];
-    sizes?: string[];
+    sizes?: SizeOption[];
+    images?: string[];
+    compareAtPrice?: number;
+    rating?: number;
+    badge?: string;
     reviews?: Array<{
       id: string;
       name: string;
@@ -29,16 +38,12 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const [activeTab, setActiveTab] = useState("description");
   const [quantity, setQuantity] = useState(1);
   const [wished, setWished] = useState(false);
-  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedSize, setSelectedSize] = useState<SizeOption | null>(null);
 
-  const images = [
-    product.image,
-    "/demo/dc11.jpg",
-    "/demo/dc12.jpg",
-    "/demo/ring1.jpg"
-  ];
+  const images = [product.image, ...(product.images || [])].filter(Boolean);
 
-  const sizes = product.sizes || ["42", "43", "44", "45"];
+  const sizes = product.sizes || [];
+  const defaultSizes = sizes.length > 0 ? sizes : [{ name: "S", stock: 10 }, { name: "M", stock: 15 }, { name: "L", stock: 8 }];
 
   const discount =
     product.compareAtPrice && product.compareAtPrice > product.price
@@ -150,25 +155,38 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             </div>
           )}
 
-          {/* Size Selection */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900">Size</h3>
-            <div className="flex gap-3">
-              {sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`w-12 h-12 border rounded-lg font-medium transition ${
-                    selectedSize === size
-                      ? "border-gray bg-brand-primary text-white"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+          {/* Size Selection - Only show if product has custom sizes */}
+          {sizes.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-900">Size</h3>
+              <div className="flex gap-3">
+                {sizes.map((size) => (
+                  <button
+                    key={size.name}
+                    onClick={() => setSelectedSize(size)}
+                    disabled={size.stock === 0}
+                    className={`px-4 py-2 border rounded-lg font-medium transition ${
+                      selectedSize?.name === size.name
+                        ? "border-brand-primary bg-brand-primary text-white"
+                        : size.stock === 0
+                        ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    {size.name}
+                    {size.stock > 0 && (
+                      <span className="block text-xs opacity-75">
+                        ({size.stock} left)
+                      </span>
+                    )}
+                    {size.stock === 0 && (
+                      <span className="block text-xs">Out of stock</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quantity and Actions */}
           <div className="space-y-4">

@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createProductSchema, updateProductSchema } from '@/lib/validation'
+import jwt from 'jsonwebtoken'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789'
+
+// Helper function to verify admin token
+function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { error: 'Authorization header missing', status: 401 }
+  }
+
+  const token = authHeader.substring(7)
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    if (decoded.role !== 'ADMIN') {
+      return { error: 'Admin access required', status: 403 }
+    }
+    return { userId: decoded.userId, email: decoded.email, role: decoded.role }
+  } catch (error) {
+    return { error: 'Invalid or expired token', status: 401 }
+  }
+}
 
 // Helper function to generate slug from name
 function generateSlug(name: string): string {
@@ -36,11 +59,32 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const slug = searchParams.get('slug')
 
     if (id) {
-      // Get specific product
+      // Get specific product by id
       const product = await prisma.product.findUnique({
         where: { id }
+      })
+
+      if (!product) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Product not found'
+          },
+          { status: 404 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: product
+      })
+    } else if (slug) {
+      // Get specific product by slug
+      const product = await prisma.product.findUnique({
+        where: { slug }
       })
 
       if (!product) {
@@ -83,6 +127,14 @@ export async function GET(request: NextRequest) {
 // POST - Create new product
 export async function POST(request: NextRequest) {
   try {
+    // Verify admin token
+    const authResult = verifyAdminToken(request)
+    if (authResult.error) {
+      return NextResponse.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      )
+    }
     let data: any = {}
 
     const contentType = request.headers.get('content-type') || ''
@@ -95,8 +147,12 @@ export async function POST(request: NextRequest) {
       data.name = formData.get('name') as string
       data.description = (formData.get('description') as string) || null
       data.price = parseFloat(formData.get('price') as string)
+      data.compareAtPrice = formData.get('compareAtPrice') ? parseFloat(formData.get('compareAtPrice') as string) : null
       data.category = formData.get('category') as string
       data.stock = parseInt(formData.get('stock') as string) || 0
+      data.sizes = formData.get('sizes') ? JSON.parse(formData.get('sizes') as string) : []
+      data.rating = formData.get('rating') ? parseFloat(formData.get('rating') as string) : 0
+      data.badge = (formData.get('badge') as string) || null
       data.isActive = formData.get('isActive') === 'true'
 
       // Handle main image
@@ -164,7 +220,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, description, price, category, image, images, stock, isActive } = validationResult.data
+    const { name, description, price, compareAtPrice, category, image, images, stock, sizes, rating, badge, isActive } = validationResult.data
 
     // Generate slug
     const slug = generateSlug(name)
@@ -190,13 +246,17 @@ export async function POST(request: NextRequest) {
         name,
         description,
         price,
+        compareAtPrice,
         category,
         image,
         images,
         stock,
+        sizes,
+        rating,
+        badge,
         isActive,
         slug,
-      }
+      } as any
     })
 
     return NextResponse.json(
@@ -225,6 +285,15 @@ export async function POST(request: NextRequest) {
 // PUT - Update existing product
 export async function PUT(request: NextRequest) {
   try {
+    // Verify admin token
+    const authResult = verifyAdminToken(request)
+    if (authResult.error) {
+      return NextResponse.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
@@ -319,6 +388,15 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete product
 export async function DELETE(request: NextRequest) {
   try {
+    // Verify admin token
+    const authResult = verifyAdminToken(request)
+    if (authResult.error) {
+      return NextResponse.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
