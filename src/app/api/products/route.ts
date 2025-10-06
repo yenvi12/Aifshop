@@ -106,15 +106,56 @@ export async function GET(request: NextRequest) {
         data: product
       })
     } else {
-      // List all products
-      const products = await prisma.product.findMany({
-        where: isAdminRequest ? {} : { isActive: true }, // Only active products for public requests
-        orderBy: { createdAt: 'desc' }
-      })
+      // List all products with pagination and filters
+      const page = parseInt(searchParams.get('page') || '1')
+      const limit = parseInt(searchParams.get('limit') || '6')
+      const search = searchParams.get('search') || ''
+      const category = searchParams.get('category') || ''
+      const status = searchParams.get('status') || ''
+      const skip = (page - 1) * limit
+
+      const whereClause: any = isAdminRequest ? {} : { isActive: true }
+
+      if (search) {
+        whereClause.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { category: { contains: search, mode: 'insensitive' } }
+        ]
+      }
+
+      if (category) {
+        whereClause.category = category
+      }
+
+      if (status) {
+        whereClause.isActive = status === 'active'
+      }
+
+      const [products, totalCount] = await Promise.all([
+        prisma.product.findMany({
+          where: whereClause,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit
+        }),
+        prisma.product.count({
+          where: whereClause
+        })
+      ])
+
+      const totalPages = Math.ceil(totalCount / limit)
 
       return NextResponse.json({
         success: true,
-        data: products
+        data: products,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
+        }
       })
     }
   } catch (error) {
