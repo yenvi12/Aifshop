@@ -27,7 +27,7 @@ export default function HomePage() {
               name: p.name,
               price: p.price,
               compareAtPrice: p.compareAtPrice || undefined,
-              image: p.image || '/demo/dc10.jpg', // fallback image
+              image: p.image || undefined, // Don't use fallback for main page, let component handle it
               images: p.images || [],
               badge: p.badge || undefined,
               rating: p.rating || undefined

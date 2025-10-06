@@ -27,7 +27,7 @@ async function getProduct(slug: string) {
       name: p.name,
       price: p.price,
       compareAtPrice: p.compareAtPrice || undefined,
-      image: p.image || '/demo/dc10.jpg',
+      image: p.image || undefined,
       images: p.images || [],
       badge: p.badge || undefined,
       rating: p.rating || undefined,
@@ -69,7 +69,7 @@ async function getRelatedProducts(currentProductId: string) {
         name: p.name,
         price: p.price,
         compareAtPrice: p.compareAtPrice || undefined,
-        image: p.image || '/demo/dc10.jpg',
+        image: p.image || undefined,
         badge: p.badge || undefined,
         rating: p.rating || undefined
       }));

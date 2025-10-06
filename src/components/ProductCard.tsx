@@ -11,12 +11,12 @@ export type Product = {
    name: string;
    price: number;          // giá hiện tại
    compareAtPrice?: number; // giá gốc (để hiển thị giảm)
-   image: string;          // /public path or remote (if remote, configure next.config)
+   image?: string;         // /public path or remote (if remote, configure next.config)
    images?: string[];      // additional images
    badge?: "New" | "Hot" | "Sale" | string;
    rating?: number;        // 0..5
    colors?: string[];      // hex list
-};
+ };
 
 type Props = {
   p: Product;
@@ -39,7 +39,7 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
       <div className="relative">
         <Link href={p.slug ? `/products/${p.slug}` : "#"} className="block">
           <Image
-            src={p.image}
+            src={p.image || '/demo/dc10.jpg'}
             alt={p.name}
             width={600}
             height={600}

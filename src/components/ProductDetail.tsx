@@ -40,7 +40,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const [wished, setWished] = useState(false);
   const [selectedSize, setSelectedSize] = useState<SizeOption | null>(null);
 
-  const images = [product.image, ...(product.images || [])].filter(Boolean);
+  const images = [product.image, ...(product.images || [])].filter((img): img is string => Boolean(img && img.trim()));
 
   const sizes = product.sizes || [];
   const defaultSizes = sizes.length > 0 ? sizes : [{ name: "S", stock: 10 }, { name: "M", stock: 15 }, { name: "L", stock: 8 }];
@@ -334,7 +334,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
               >
                 <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 mb-4">
                   <Image
-                    src={relatedProduct.image}
+                    src={relatedProduct.image || '/demo/dc10.jpg'}
                     alt={relatedProduct.name}
                     width={300}
                     height={300}
