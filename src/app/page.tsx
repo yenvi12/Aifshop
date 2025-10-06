@@ -2,20 +2,65 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
-import { MdStar, MdLocalShipping, MdStraighten } from "react-icons/md";import ProductCard, { type Product } from "@/components/ProductCard";
+import { useState, useEffect } from "react";
+import { MdStar, MdLocalShipping, MdStraighten } from "react-icons/md";
+import ProductCard, { type Product } from "@/components/ProductCard";
 import Header from "@/components/Header";
-const PRODUCTS: Product[] = [
-  { id: "1", slug: "desert-pearl-drops", name: "Desert Pearl Drops", price: 129, compareAtPrice: 159, image: "/demo/dc10.jpg", badge: "New", rating: 4.8 },
-  { id: "2", slug: "scarfy-necklace", name: "Scarfy Necklace", price: 149, image: "/demo/dc3.jpg", rating: 4.5 },
-  { id: "3", slug: "classic-leather-jacket-ear", name: "Classic Leather Jacket (Ear)", price: 99, compareAtPrice: 119, image: "/demo/ring1.jpg", badge: "Sale", rating: 4.7 },
-  { id: "4", slug: "minimal-pearl-studs", name: "Minimal Pearl Studs", price: 89, image: "/demo/dc11.jpg", rating: 4.4 },
-  { id: "5", slug: "layered-chain", name: "Layered Chain", price: 139, image: "/demo/dc12.jpg", rating: 4.6 },
-  { id: "6", slug: "gemstone-pendant", name: "Gemstone Pendant", price: 169, image: "/demo/ring2.jpg", rating: 4.9 },
-];
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function HomePage() {
   const [q, setQ] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            // Transform API data to match ProductCard interface
+            const transformedProducts = result.data.map((p: any) => ({
+              id: p.id,
+              slug: p.slug,
+              name: p.name,
+              price: p.price,
+              compareAtPrice: p.compareAtPrice || undefined,
+              image: p.image || '/demo/dc10.jpg', // fallback image
+              images: p.images || [],
+              badge: p.badge || undefined,
+              rating: p.rating || undefined
+            }));
+            setProducts(transformedProducts);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+        // Fallback to mock data if API fails
+        setProducts([
+          { id: "1", slug: "desert-pearl-drops", name: "Desert Pearl Drops", price: 129, compareAtPrice: 159, image: "/demo/dc10.jpg", badge: "New", rating: 4.8 },
+          { id: "2", slug: "scarfy-necklace", name: "Scarfy Necklace", price: 149, image: "/demo/dc3.jpg", rating: 4.5 },
+          { id: "3", slug: "classic-leather-jacket-ear", name: "Classic Leather Jacket (Ear)", price: 99, compareAtPrice: 119, image: "/demo/ring1.jpg", badge: "Sale", rating: 4.7 },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen" suppressHydrationWarning={true}>
+        <Header />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <LoadingSpinner />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen" suppressHydrationWarning={true}>
@@ -76,14 +121,14 @@ export default function HomePage() {
         </div>
 
         <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {PRODUCTS.slice(0, 3).map((p) => (
+          {products.slice(0, 3).map((p) => (
             <ProductCard key={p.id} p={p} />
           ))}
         </div>
 
         {/* row 2 (nếu muốn nhiều hơn) */}
         <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {PRODUCTS.slice(3, 6).map((p) => (
+          {products.slice(3, 6).map((p) => (
             <ProductCard key={p.id} p={p} />
           ))}
         </div>

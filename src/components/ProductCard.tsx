@@ -6,15 +6,16 @@ import { MdFavoriteBorder, MdFavorite, MdShoppingBag, MdStar } from "react-icons
 import { useState } from "react";
 
 export type Product = {
-  id: string;
-  slug?: string;
-  name: string;
-  price: number;          // giá hiện tại
-  compareAtPrice?: number; // giá gốc (để hiển thị giảm)
-  image: string;          // /public path or remote (if remote, configure next.config)
-  badge?: "New" | "Hot" | "Sale" | string;
-  rating?: number;        // 0..5
-  colors?: string[];      // hex list
+   id: string;
+   slug?: string;
+   name: string;
+   price: number;          // giá hiện tại
+   compareAtPrice?: number; // giá gốc (để hiển thị giảm)
+   image: string;          // /public path or remote (if remote, configure next.config)
+   images?: string[];      // additional images
+   badge?: "New" | "Hot" | "Sale" | string;
+   rating?: number;        // 0..5
+   colors?: string[];      // hex list
 };
 
 type Props = {
