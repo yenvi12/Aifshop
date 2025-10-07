@@ -25,7 +25,7 @@ export default function ClientWrapper({ children }: { children: React.ReactNode 
         containerClassName=""
         containerStyle={{}}
         toastOptions={{
-          duration: 5000,
+          duration: 2000,
           className: '',
           style: {
             background: '#363636',
