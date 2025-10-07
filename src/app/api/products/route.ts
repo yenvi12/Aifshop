@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
       // Extract text fields
       data.name = formData.get('name') as string
       data.description = (formData.get('description') as string) || null
-      data.price = parseFloat(formData.get('price') as string)
+      data.price = formData.get('price') ? parseFloat(formData.get('price') as string) : null
       data.compareAtPrice = formData.get('compareAtPrice') ? parseFloat(formData.get('compareAtPrice') as string) : null
       data.category = formData.get('category') as string
       data.stock = parseInt(formData.get('stock') as string) || 0
@@ -267,6 +267,30 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, description, price, compareAtPrice, category, image, images, stock, sizes, rating, badge, isActive } = validationResult.data
+
+    // Additional validations
+    if (price !== null && price !== undefined && compareAtPrice < price) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Giá gốc (Sale) phải lớn hơn hoặc bằng giá bán'
+        },
+        { status: 400 }
+      )
+    }
+
+    if (sizes && Array.isArray(sizes) && sizes.length > 0) {
+      const totalSizeStock = sizes.reduce((sum: number, size: any) => sum + (size.stock || 0), 0);
+      if (totalSizeStock > stock) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Tổng số lượng size không được vượt quá số lượng tồn kho'
+          },
+          { status: 400 }
+        )
+      }
+    }
 
     // Generate slug
     const slug = generateSlug(name)

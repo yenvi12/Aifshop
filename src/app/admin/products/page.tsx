@@ -9,18 +9,18 @@ import EditProductModal from "@/components/admin/EditProductModal";
 import toast from "react-hot-toast";
 
 interface Product {
-  id: string;
-  name: string;
-  price: number;
-  compareAtPrice?: number;
-  category: string;
-  image?: string;
-  stock: number;
-  rating?: number;
-  badge?: string;
-  isActive: boolean;
-  createdAt: string;
-}
+   id: string;
+   name: string;
+   price: number | null;
+   compareAtPrice?: number | null;
+   category: string;
+   image?: string;
+   stock: number;
+   rating?: number;
+   badge?: string;
+   isActive: boolean;
+   createdAt: string;
+ }
 
 export default function ManageProductsPage() {
   const router = useRouter();
@@ -465,8 +465,10 @@ export default function ManageProductsPage() {
 
                   {/* Price */}
                   <div className="flex items-baseline gap-2 mb-3">
-                    <span className="font-bold text-brand-dark">${product.price.toFixed(2)}</span>
-                    {product.compareAtPrice && (
+                    <span className="font-bold text-brand-dark">
+                      {product.price ? `$${product.price.toFixed(2)}` : product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : 'Price not set'}
+                    </span>
+                    {product.compareAtPrice && product.price && (
                       <span className="text-sm text-brand-secondary line-through">
                         ${product.compareAtPrice.toFixed(2)}
                       </span>
@@ -570,8 +572,10 @@ export default function ManageProductsPage() {
                       <td className="px-6 py-4 text-sm text-brand-secondary">{product.category}</td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="font-medium text-brand-dark">${product.price.toFixed(2)}</span>
-                          {product.compareAtPrice && (
+                          <span className="font-medium text-brand-dark">
+                            {product.price ? `$${product.price.toFixed(2)}` : product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : 'Price not set'}
+                          </span>
+                          {product.compareAtPrice && product.price && (
                             <span className="text-sm text-brand-secondary line-through">
                               ${product.compareAtPrice.toFixed(2)}
                             </span>

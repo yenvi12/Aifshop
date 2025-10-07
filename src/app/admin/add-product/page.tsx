@@ -115,33 +115,59 @@ export default function AddProductPage() {
       newErrors.category = "Category is required";
     }
 
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      newErrors.price = "Valid price is required";
+    // Price validation (optional)
+    let priceValue: number | null = null;
+    if (formData.price.trim()) {
+      priceValue = parseFloat(formData.price);
+      if (isNaN(priceValue) || priceValue <= 0) {
+        newErrors.price = "Price must be a number greater than 0";
+      }
     }
 
-    if (!formData.stock || parseInt(formData.stock) < 0) {
-      newErrors.stock = "Stock quantity is required";
+    // Stock quantity validation
+    const stockValue = parseInt(formData.stock);
+    if (!formData.stock.trim() || isNaN(stockValue) || stockValue < 0) {
+      newErrors.stock = "Stock quantity is required and must be a number greater than or equal to 0";
     }
 
-    // Optional but validated fields
-    if (formData.compareAtPrice && parseFloat(formData.compareAtPrice) <= 0) {
-      newErrors.compareAtPrice = "Compare at price must be greater than 0";
+    // Original Price (Sale) validation (required)
+    if (!formData.compareAtPrice.trim()) {
+      newErrors.compareAtPrice = "Original price (Sale) is required";
+    } else {
+      const compareValue = parseFloat(formData.compareAtPrice);
+      if (isNaN(compareValue) || compareValue <= 0) {
+        newErrors.compareAtPrice = "Original price (Sale) must be a number greater than 0";
+      } else if (priceValue !== null && compareValue < priceValue) {
+        newErrors.compareAtPrice = "Original price (Sale) must be greater than or equal to Price";
+      }
     }
 
-    if (formData.rating && (parseFloat(formData.rating) < 0 || parseFloat(formData.rating) > 5)) {
-      newErrors.rating = "Rating must be between 0 and 5";
+    // Rating validation
+    if (formData.rating.trim()) {
+      const ratingValue = parseFloat(formData.rating);
+      if (isNaN(ratingValue) || ratingValue < 0 || ratingValue > 5) {
+        newErrors.rating = "Rating must be a number between 0 and 5";
+      }
     }
 
     // Size validation
+    let totalSizeStock = 0;
     if (formData.sizes.length > 0) {
       formData.sizes.forEach((size, index) => {
         if (!size.name.trim()) {
           newErrors[`size_${index}_name`] = `Size ${index + 1} name is required`;
         }
-        if (size.stock < 0) {
-          newErrors[`size_${index}_stock`] = `Size ${index + 1} stock must be 0 or more`;
+        if (isNaN(size.stock) || size.stock < 0) {
+          newErrors[`size_${index}_stock`] = `Size ${index + 1} stock must be a number 0 or more`;
+        } else {
+          totalSizeStock += size.stock;
         }
       });
+
+      // Check total size stocks <= stock quantity
+      if (stockValue && totalSizeStock > stockValue) {
+        newErrors.sizes = `Total size stocks (${totalSizeStock}) cannot exceed stock quantity (${stockValue})`;
+      }
     }
 
     // Image validation
@@ -179,10 +205,10 @@ export default function AddProductPage() {
       const submitData = new FormData();
       submitData.append('name', formData.name);
       submitData.append('description', formData.description);
-      submitData.append('price', formData.price);
-      if (formData.compareAtPrice) {
-        submitData.append('compareAtPrice', formData.compareAtPrice);
+      if (formData.price.trim()) {
+        submitData.append('price', formData.price);
       }
+      submitData.append('compareAtPrice', formData.compareAtPrice);
       submitData.append('category', formData.category);
       submitData.append('stock', formData.stock);
       if (formData.sizes.length > 0) {
@@ -330,13 +356,12 @@ export default function AddProductPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price ($) *</label>
+                  <label className="block text-sm font-medium mb-1">Price ($)</label>
                   <input
                     type="number"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
-                    required
                     min="0"
                     step="0.01"
                     className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
@@ -350,18 +375,23 @@ export default function AddProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Original Price (Sale)</label>
+                  <label className="block text-sm font-medium mb-1">Original Price (Sale) *</label>
                   <input
                     type="number"
                     name="compareAtPrice"
                     value={formData.compareAtPrice}
                     onChange={handleInputChange}
+                    required
                     min="0"
                     step="0.01"
-                    className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
+                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
+                      errors.compareAtPrice ? 'border-red-500' : 'border-brand-light'
+                    }`}
                     placeholder="0.00"
                   />
-                  <p className="text-xs text-brand-secondary mt-1">Leave empty if not on sale</p>
+                  {errors.compareAtPrice && (
+                    <p className="text-red-500 text-xs mt-1">{errors.compareAtPrice}</p>
+                  )}
                 </div>
               </div>
 
