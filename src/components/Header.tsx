@@ -18,8 +18,9 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
 
-    // Check JWT token from localStorage
-    const checkAuthToken = () => {
+    // Check authentication from both localStorage and Supabase session
+    const checkAuth = async () => {
+      // First, check JWT token from localStorage
       const token = localStorage.getItem("accessToken");
       if (token) {
         try {
@@ -45,12 +46,47 @@ export default function Header() {
           localStorage.removeItem("refreshToken");
         }
       } else {
-        setUser(null);
-        setUserRole(null);
+        // If no localStorage token, check Supabase session (for Google OAuth)
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            // Create session tokens for Google OAuth users
+            try {
+              const response = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`
+                }
+              });
+
+              const sessionData = await response.json();
+              if (sessionData.success) {
+                localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+                localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+                setUser(session.user);
+                setUserRole(sessionData.tokens.role || 'USER');
+              } else {
+                setUser(session.user);
+                setUserRole('USER');
+              }
+            } catch (error) {
+              // If session creation fails, still use Supabase user
+              setUser(session.user);
+              setUserRole('USER');
+            }
+          } else {
+            setUser(null);
+            setUserRole(null);
+          }
+        } catch (error) {
+          setUser(null);
+          setUserRole(null);
+        }
       }
     };
 
-    checkAuthToken();
+    checkAuth();
 
     // Close dropdown on outside click
     const handleClickOutside = (event: MouseEvent) => {
@@ -67,9 +103,49 @@ export default function Header() {
     };
   }, []);
 
+  // Listen for auth state changes from Supabase
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Handle Google OAuth sign in
+        try {
+          const response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
+
+          const sessionData = await response.json();
+          if (sessionData.success) {
+            localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+            localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+            setUser(session.user);
+            setUserRole(sessionData.tokens.role || 'USER');
+          } else {
+            setUser(session.user);
+            setUserRole('USER');
+          }
+        } catch (error) {
+          setUser(session.user);
+          setUserRole('USER');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setUserRole(null);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Refresh auth on route change
   useEffect(() => {
-    const checkAuthToken = () => {
+    const checkAuth = async () => {
+      // First, check JWT token from localStorage
       const token = localStorage.getItem("accessToken");
       if (token) {
         try {
@@ -92,12 +168,47 @@ export default function Header() {
           localStorage.removeItem("refreshToken");
         }
       } else {
-        setUser(null);
-        setUserRole(null);
+        // If no localStorage token, check Supabase session (for Google OAuth)
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            // Create session tokens for Google OAuth users
+            try {
+              const response = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`
+                }
+              });
+
+              const sessionData = await response.json();
+              if (sessionData.success) {
+                localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+                localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+                setUser(session.user);
+                setUserRole(sessionData.tokens.role || 'USER');
+              } else {
+                setUser(session.user);
+                setUserRole('USER');
+              }
+            } catch (error) {
+              // If session creation fails, still use Supabase user
+              setUser(session.user);
+              setUserRole('USER');
+            }
+          } else {
+            setUser(null);
+            setUserRole(null);
+          }
+        } catch (error) {
+          setUser(null);
+          setUserRole(null);
+        }
       }
     };
 
-    checkAuthToken();
+    checkAuth();
   }, [pathname]);
 
   const handleLogout = async () => {
