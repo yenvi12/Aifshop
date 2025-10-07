@@ -6,16 +6,17 @@ import { MdFavoriteBorder, MdFavorite, MdShoppingBag, MdStar } from "react-icons
 import { useState } from "react";
 
 export type Product = {
-  id: string;
-  slug?: string;
-  name: string;
-  price: number;          // giá hiện tại
-  compareAtPrice?: number; // giá gốc (để hiển thị giảm)
-  image: string;          // /public path or remote (if remote, configure next.config)
-  badge?: "New" | "Hot" | "Sale" | string;
-  rating?: number;        // 0..5
-  colors?: string[];      // hex list
-};
+   id: string;
+   slug?: string;
+   name: string;
+   price: number | null;   // giá hiện tại (có thể null)
+   compareAtPrice?: number | null; // giá gốc (để hiển thị giảm)
+   image?: string;         // /public path or remote (if remote, configure next.config)
+   images?: string[];      // additional images
+   badge?: "New" | "Hot" | "Sale" | string;
+   rating?: number;        // 0..5
+   colors?: string[];      // hex list
+ };
 
 type Props = {
   p: Product;
@@ -27,7 +28,7 @@ type Props = {
 export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
   const [wished, setWished] = useState(false);
   const discount =
-    p.compareAtPrice && p.compareAtPrice > p.price
+    p.compareAtPrice && p.price && p.compareAtPrice > p.price
       ? Math.round(((p.compareAtPrice - p.price) / p.compareAtPrice) * 100)
       : 0;
 
@@ -38,7 +39,7 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
       <div className="relative">
         <Link href={p.slug ? `/products/${p.slug}` : "#"} className="block">
           <Image
-            src={p.image}
+            src={p.image || '/demo/dc10.jpg'}
             alt={p.name}
             width={600}
             height={600}
@@ -116,8 +117,10 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
         {/* Price + Add */}
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-brand-dark font-semibold">${p.price.toFixed(2)}</span>
-            {p.compareAtPrice && p.compareAtPrice > p.price && (
+            <span className="text-brand-dark font-semibold">
+              {p.price ? `$${p.price.toFixed(2)}` : p.compareAtPrice ? `$${p.compareAtPrice.toFixed(2)}` : 'Price TBA'}
+            </span>
+            {p.compareAtPrice && p.price && p.compareAtPrice > p.price && (
               <span className="text-sm text-brand-secondary line-through">
                 ${p.compareAtPrice.toFixed(2)}
               </span>

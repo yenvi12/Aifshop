@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MdMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,9 +31,29 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message);
-      } else if (data.user) {
-        alert('Đăng nhập thành công!');
-        router.push("/");
+      } else if (data.session) {
+        // Lưu JWT custom tokens vào localStorage
+        try {
+          const response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.session.access_token}`
+            }
+          });
+
+          const sessionData = await response.json();
+          if (sessionData.success) {
+            localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+            localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+            toast.success('Đăng nhập thành công!');
+            router.push("/");
+          } else {
+            setError(sessionData.error || 'Không thể tạo session.');
+          }
+        } catch (error) {
+          setError('Không thể tạo session. Vui lòng thử lại.');
+        }
       }
     } catch (error) {
       setError('Không thể kết nối đến server. Vui lòng thử lại.');
@@ -134,9 +155,9 @@ export default function LoginPage() {
                   />
                   Remember me
                 </label>
-                <a href="#" className="text-brand-primary hover:underline">
+                <Link href="/forgot-password" className="text-brand-primary hover:underline">
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               {error && <div className="text-sm text-red-600">{error}</div>}

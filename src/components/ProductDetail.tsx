@@ -7,11 +7,20 @@ import { MdStar, MdFavoriteBorder, MdFavorite, MdShoppingBag, MdAdd, MdRemove } 
 import { type Product } from "./ProductCard";
 import Header from "./Header";
 
+type SizeOption = {
+  name: string;
+  stock: number;
+};
+
 type Props = {
   product: Product & {
     description?: string;
     features?: string[];
-    sizes?: string[];
+    sizes?: SizeOption[];
+    images?: string[];
+    compareAtPrice?: number;
+    rating?: number;
+    badge?: string;
     reviews?: Array<{
       id: string;
       name: string;
@@ -29,31 +38,26 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const [activeTab, setActiveTab] = useState("description");
   const [quantity, setQuantity] = useState(1);
   const [wished, setWished] = useState(false);
-  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedSize, setSelectedSize] = useState<SizeOption | null>(null);
 
-  const images = [
-    product.image,
-    "/demo/dc11.jpg",
-    "/demo/dc12.jpg",
-    "/demo/ring1.jpg"
-  ];
+  const images = [product.image, ...(product.images || [])].filter((img): img is string => Boolean(img && img.trim()));
 
-  const sizes = product.sizes || ["42", "43", "44", "45"];
+  const sizes = product.sizes || [];
+  const defaultSizes = sizes.length > 0 ? sizes : [{ name: "S", stock: 10 }, { name: "M", stock: 15 }, { name: "L", stock: 8 }];
 
   const discount =
-    product.compareAtPrice && product.compareAtPrice > product.price
+    product.compareAtPrice && product.price && product.compareAtPrice > product.price
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
       : 0;
+ const handleBuyNow = () => {
+    // Nếu muốn truyền dữ liệu product, có thể lưu tạm vào localStorage / context
+    router.push("/payment");
+  };
 
   return (
     <>
       <Header />
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav className="text-sm text-gray-500 mb-6">
-          <span>Home</span>  <span>Products</span>  <span>Necklaces</span>
-        </nav>
-
       <div className="grid lg:grid-cols-2 gap-12">
         {/* Image Gallery */}
         <div className="space-y-4">
@@ -120,9 +124,9 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
           {/* Price */}
           <div className="flex items-center gap-3">
             <span className="text-3xl font-bold text-gray-900">
-              ${product.price.toFixed(2)}
+              {product.price ? `$${product.price.toFixed(2)}` : product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : 'Price TBA'}
             </span>
-            {product.compareAtPrice && (
+            {product.compareAtPrice && product.price && (
               <span className="text-xl text-gray-500 line-through">
                 ${product.compareAtPrice.toFixed(2)}
               </span>
@@ -146,36 +150,51 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             </div>
           )}
 
-          {/* Size Selection */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900">Size</h3>
-            <div className="flex gap-3">
-              {sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`w-12 h-12 border rounded-lg font-medium transition ${
-                    selectedSize === size
-                      ? "border-black bg-black text-white"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+          {/* Size Selection - Only show if product has custom sizes */}
+          {sizes.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-900">Size</h3>
+              <div className="flex gap-3">
+                {sizes.map((size) => (
+                  <button
+                    key={size.name}
+                    onClick={() => setSelectedSize(size)}
+                    disabled={size.stock === 0}
+                    className={`px-4 py-2 border rounded-lg font-medium transition ${
+                      selectedSize?.name === size.name
+                        ? "border-brand-primary bg-brand-primary text-white"
+                        : size.stock === 0
+                        ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    {size.name}
+                    {size.stock > 0 && (
+                      <span className="block text-xs opacity-75">
+                        ({size.stock} left)
+                      </span>
+                    )}
+                    {size.stock === 0 && (
+                      <span className="block text-xs">Out of stock</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quantity and Actions */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               {/* Add to Cart Button */}
-              <button className="flex-1 bg-orange-200 text-black py-3 px-6 rounded-lg hover:bg-orange-300 transition font-medium">
+              <button className="flex-1 rounded-xl py-2.5 px-6  bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-light/90 disabled:opacity-60 transition">
                 Add to cart
               </button>
 
               {/* Buy Now Button */}
-              <button className="flex-1 bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition font-medium">
+              <button 
+              onClick={handleBuyNow}
+              className="flex-1 rounded-xl py-2.5 px-6  bg-brand-dark text-brand-light font-semibold border border-brand-light hover:bg-brand-primary/90 disabled:opacity-60 transition">
                 Buy Now
               </button>
 
@@ -310,7 +329,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
               >
                 <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 mb-4">
                   <Image
-                    src={relatedProduct.image}
+                    src={relatedProduct.image || '/demo/dc10.jpg'}
                     alt={relatedProduct.name}
                     width={300}
                     height={300}
@@ -319,8 +338,10 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                 </div>
                 <h3 className="font-semibold mb-1">{relatedProduct.name}</h3>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold">${relatedProduct.price.toFixed(2)}</span>
-                  {relatedProduct.compareAtPrice && (
+                  <span className="font-bold">
+                    {relatedProduct.price ? `$${relatedProduct.price.toFixed(2)}` : 'Price TBA'}
+                  </span>
+                  {relatedProduct.compareAtPrice && relatedProduct.price && (
                     <span className="text-sm text-gray-500 line-through">
                       ${relatedProduct.compareAtPrice.toFixed(2)}
                     </span>

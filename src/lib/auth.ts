@@ -17,9 +17,9 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 // Tạo JWT access token (short-lived)
-export function generateAccessToken(userId: string, email: string): string {
+export function generateAccessToken(userId: string, email: string, role: string = 'USER'): string {
   return jwt.sign(
-    { userId, email, type: 'access' },
+    { userId, email, role, type: 'access' },
     JWT_SECRET,
     { expiresIn: '15m' } // 15 phút
   )
