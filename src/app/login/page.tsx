@@ -81,15 +81,19 @@ export default function LoginPage() {
 
         {/* RIGHT: Form column (giới hạn bề ngang để cân đối) */}
         <div className="w-full max-w-md">
-          <div className="text-center mb-6">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center shadow-smooth">
-              <span className="text-white font-bold text-xl">A</span>
-            </div>
-            <h1 className="mt-3 text-2xl font-bold text-brand-dark">AIFShop</h1>
-            <p className="text-sm text-brand-secondary">
-              AI-Powered Jewelry Shopping
-            </p>
-          </div>
+                  <div className="text-center mb-8">
+  <div className="flex items-center justify-center">
+    <img
+      src="/AIFShop.svg"
+      alt="AIFShop Logo"
+      className="w-40 h-40 sm:w-50 sm:h-50 object-contain"
+    />
+  </div>
+  
+  <p className="text-base text-brand-secondary mt-1">
+    AI-Powered Jewelry Shopping
+  </p>
+</div>
 
           <div className="rounded-2xl bg-white shadow-smooth border border-brand-light/70 p-6">
             <h2 className="text-xl font-semibold text-center">Welcome Back</h2>

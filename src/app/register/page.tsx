@@ -175,15 +175,23 @@ export default function RegisterPage() {
 
         {/* RIGHT: form card */}
         <div className="w-full max-w-lg mx-auto">
+          
           <div className="rounded-2xl bg-white shadow-smooth border border-brand-light/70 p-6">
             {/* Logo nhỏ trên form */}
             <div className="flex flex-col items-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center shadow-smooth">
-                <span className="text-white font-bold text-xl">A</span>
-              </div>
+              <div className="flex items-center justify-center">
+                <img
+                  src="/AIFShop.svg"
+                  alt="AIFShop Logo"
+                  className="w-40 h-40 sm:w-40 sm:h-40 object-contain"
+                />
+              </div> 
+            </div>
+             <div className="text-center mb-8">
+  
             </div>
 
-            <h2 className="text-lg font-semibold text-center">
+            <h2 className="text-lg font-bold text-center">
               {step === "register" ? "Create Account" : "Verify Your Email"}
             </h2>
             <p className="text-sm text-center text-brand-secondary mb-4">
