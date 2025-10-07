@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { MdSearch, MdShoppingCart, MdPerson, MdLogout } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -17,30 +18,39 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
 
-    // Get initial session
-    const getInitialSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+    // Check JWT token from localStorage
+    const checkAuthToken = () => {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        try {
+          // Decode JWT payload (simple decode, not verify)
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          // Create mock user object from payload
+          const mockUser: User = {
+            id: payload.userId,
+            email: payload.email,
+            user_metadata: {},
+            app_metadata: {},
+            aud: "",
+            created_at: "",
+            updated_at: "",
+          };
+          setUser(mockUser);
+          setUserRole(payload.role);
+        } catch (error) {
+          // Invalid token
+          setUser(null);
+          setUserRole(null);
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+        }
+      } else {
+        setUser(null);
+        setUserRole(null);
+      }
     };
 
-    getInitialSession();
-
-    // Listen for auth state changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const sessionUser = session?.user ?? null;
-      setUser(sessionUser);
-      if (sessionUser) {
-        await getUserSession(sessionUser);
-      } else {
-        setUserRole(null);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-      }
-    });
+    checkAuthToken();
 
     // Close dropdown on outside click
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,10 +63,42 @@ export default function Header() {
     document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      subscription.unsubscribe();
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Refresh auth on route change
+  useEffect(() => {
+    const checkAuthToken = () => {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          const mockUser: User = {
+            id: payload.userId,
+            email: payload.email,
+            user_metadata: {},
+            app_metadata: {},
+            aud: "",
+            created_at: "",
+            updated_at: "",
+          };
+          setUser(mockUser);
+          setUserRole(payload.role);
+        } catch (error) {
+          setUser(null);
+          setUserRole(null);
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+        }
+      } else {
+        setUser(null);
+        setUserRole(null);
+      }
+    };
+
+    checkAuthToken();
+  }, [pathname]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -68,33 +110,6 @@ export default function Header() {
     router.push("/");
   };
 
-  const getUserSession = async (sessionUser: User) => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        const response = await fetch("/api/auth/session", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            localStorage.setItem("accessToken", result.tokens.accessToken);
-            localStorage.setItem("refreshToken", result.tokens.refreshToken);
-            setUserRole(result.user.role);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Failed to get user session:", error);
-    }
-  };
   return (
     <header className="sticky top-0 z-50 bg-brand-light shadow-sm border-b border-brand-accent">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
