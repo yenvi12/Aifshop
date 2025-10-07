@@ -267,9 +267,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
       const submitData = new FormData();
       submitData.append('name', formData.name);
       submitData.append('description', formData.description);
-      if (formData.price.trim()) {
-        submitData.append('price', formData.price);
-      }
+      submitData.append('price', formData.price);
       submitData.append('compareAtPrice', formData.compareAtPrice);
       submitData.append('category', formData.category);
       submitData.append('stock', formData.stock);

@@ -408,8 +408,12 @@ export async function PUT(request: NextRequest) {
       if (description) data.description = description
 
       const priceStr = formData.get('price') as string
-      if (priceStr && !isNaN(parseFloat(priceStr))) {
-        data.price = parseFloat(priceStr)
+      if (priceStr !== undefined && priceStr !== null) {
+        if (priceStr.trim() === '') {
+          data.price = null
+        } else if (!isNaN(parseFloat(priceStr))) {
+          data.price = parseFloat(priceStr)
+        }
       }
 
       const compareAtPriceStr = formData.get('compareAtPrice') as string
