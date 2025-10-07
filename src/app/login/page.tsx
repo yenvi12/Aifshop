@@ -32,8 +32,15 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
       } else if (data.user) {
-        toast.success('Đăng nhập thành công!');
-        router.push("/");
+        // Đảm bảo session được cập nhật trước khi redirect
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          toast.success('Đăng nhập thành công!');
+          router.push("/");
+        } else {
+          setError('Session không được tạo. Vui lòng thử lại.');
+        }
       }
     } catch (error) {
       setError('Không thể kết nối đến server. Vui lòng thử lại.');
