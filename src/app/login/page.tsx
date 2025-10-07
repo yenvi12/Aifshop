@@ -31,15 +31,28 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message);
-      } else if (data.user) {
-        // Đảm bảo session được cập nhật trước khi redirect
-        await new Promise(resolve => setTimeout(resolve, 100));
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          toast.success('Đăng nhập thành công!');
-          router.push("/");
-        } else {
-          setError('Session không được tạo. Vui lòng thử lại.');
+      } else if (data.session) {
+        // Lưu JWT custom tokens vào localStorage
+        try {
+          const response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.session.access_token}`
+            }
+          });
+
+          const sessionData = await response.json();
+          if (sessionData.success) {
+            localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+            localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+            toast.success('Đăng nhập thành công!');
+            router.push("/");
+          } else {
+            setError(sessionData.error || 'Không thể tạo session.');
+          }
+        } catch (error) {
+          setError('Không thể tạo session. Vui lòng thử lại.');
         }
       }
     } catch (error) {
