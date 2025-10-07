@@ -58,11 +58,6 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     <>
       <Header />
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav className="text-sm text-gray-500 mb-6">
-          <span>Home</span>  <span>Products</span>  <span>Necklaces</span>
-        </nav>
-
       <div className="grid lg:grid-cols-2 gap-12">
         {/* Image Gallery */}
         <div className="space-y-4">
