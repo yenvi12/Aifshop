@@ -10,20 +10,20 @@ interface SizeOption {
 }
 
 interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  compareAtPrice?: number;
-  category: string;
-  image?: string;
-  images?: string[];
-  stock: number;
-  sizes?: SizeOption[];
-  rating?: number;
-  badge?: string;
-  isActive: boolean;
-}
+   id: string;
+   name: string;
+   description?: string;
+   price: number | null;
+   compareAtPrice?: number | null;
+   category: string;
+   image?: string;
+   images?: string[];
+   stock: number;
+   sizes?: SizeOption[];
+   rating?: number;
+   badge?: string;
+   isActive: boolean;
+ }
 
 interface EditProductModalProps {
   product: Product | null;
@@ -84,7 +84,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
        setFormData({
          name: product.name,
          description: product.description || "",
-         price: product.price.toString(),
+         price: product.price?.toString() || "",
          compareAtPrice: product.compareAtPrice?.toString() || "",
          category: product.category,
          stock: product.stock.toString(),
@@ -209,12 +209,24 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
       newErrors.category = "Category is required";
     }
 
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      newErrors.price = "Valid price is required";
+    if (formData.price.trim() && (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) <= 0)) {
+      newErrors.price = "Price must be a number greater than 0";
     }
 
-    if (!formData.stock || parseInt(formData.stock) < 0) {
-      newErrors.stock = "Stock quantity is required";
+    if (!formData.stock.trim() || isNaN(parseInt(formData.stock)) || parseInt(formData.stock) < 0) {
+      newErrors.stock = "Stock quantity is required and must be a number greater than or equal to 0";
+    }
+
+    // Original Price (Sale) validation (required)
+    if (!formData.compareAtPrice.trim()) {
+      newErrors.compareAtPrice = "Original price (Sale) is required";
+    } else {
+      const compareValue = parseFloat(formData.compareAtPrice);
+      if (isNaN(compareValue) || compareValue <= 0) {
+        newErrors.compareAtPrice = "Original price (Sale) must be a number greater than 0";
+      } else if (formData.price.trim() && compareValue < parseFloat(formData.price)) {
+        newErrors.compareAtPrice = "Original price (Sale) must be greater than or equal to Price";
+      }
     }
 
     if (formData.sizes.length > 0) {
@@ -255,9 +267,10 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
       const submitData = new FormData();
       submitData.append('name', formData.name);
       submitData.append('description', formData.description);
-      if (formData.compareAtPrice) {
-        submitData.append('compareAtPrice', formData.compareAtPrice);
+      if (formData.price.trim()) {
+        submitData.append('price', formData.price);
       }
+      submitData.append('compareAtPrice', formData.compareAtPrice);
       submitData.append('category', formData.category);
       submitData.append('stock', formData.stock);
       if (formData.sizes.length > 0) {
@@ -389,13 +402,12 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price ($) *</label>
+                  <label className="block text-sm font-medium mb-1">Price ($)</label>
                   <input
                     type="number"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
-                    required
                     min="0"
                     step="0.01"
                     className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
@@ -409,18 +421,23 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Original Price (Sale)</label>
+                  <label className="block text-sm font-medium mb-1">Original Price (Sale) *</label>
                   <input
                     type="number"
                     name="compareAtPrice"
                     value={formData.compareAtPrice}
                     onChange={handleInputChange}
+                    required
                     min="0"
                     step="0.01"
-                    className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
+                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
+                      errors.compareAtPrice ? 'border-red-500' : 'border-brand-light'
+                    }`}
                     placeholder="0.00"
                   />
-                  <p className="text-xs text-brand-secondary mt-1">Leave empty if not on sale</p>
+                  {errors.compareAtPrice && (
+                    <p className="text-red-500 text-xs mt-1">{errors.compareAtPrice}</p>
+                  )}
                 </div>
               </div>
 

@@ -52,22 +52,22 @@ model TempRegistration {
 }
 
 model Product {
-     id             String   @id @default(cuid())
-     name           String
-     description    String?
-     price          Float
-     compareAtPrice Float?  // Original price for sale display
-     category       String
-     image          String?
-     images         String[] // Array of image URLs
-     stock          Int      @default(0)
-     sizes          Json?    // Custom sizes: [{name: "S", stock: 10}, {name: "M", stock: 15}]
-     rating         Float?   @default(0) // Average rating (0-5)
-     badge          String?  // Badge like "New", "Sale", "Hot"
-     isActive       Boolean  @default(true)
-     slug           String   @unique
-     createdAt      DateTime @default(now())
-     updatedAt      DateTime @updatedAt
+      id             String   @id @default(cuid())
+      name           String
+      description    String?
+      price          Float?  // Made optional
+      compareAtPrice Float?  // Original price for sale display
+      category       String
+      image          String?
+      images         String[] // Array of image URLs
+      stock          Int      @default(0)
+      sizes          Json?    // Custom sizes: [{name: "S", stock: 10}, {name: "M", stock: 15}]
+      rating         Float?   @default(0) // Average rating (0-5)
+      badge          String?  // Badge like "New", "Sale", "Hot"
+      isActive       Boolean  @default(true)
+      slug           String   @unique
+      createdAt      DateTime @default(now())
+      updatedAt      DateTime @updatedAt
 
-     @@map("products")
+      @@map("products")
 }

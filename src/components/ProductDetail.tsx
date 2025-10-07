@@ -46,7 +46,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const defaultSizes = sizes.length > 0 ? sizes : [{ name: "S", stock: 10 }, { name: "M", stock: 15 }, { name: "L", stock: 8 }];
 
   const discount =
-    product.compareAtPrice && product.compareAtPrice > product.price
+    product.compareAtPrice && product.price && product.compareAtPrice > product.price
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
       : 0;
  const handleBuyNow = () => {
@@ -129,9 +129,9 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
           {/* Price */}
           <div className="flex items-center gap-3">
             <span className="text-3xl font-bold text-gray-900">
-              ${product.price.toFixed(2)}
+              {product.price ? `$${product.price.toFixed(2)}` : product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : 'Price TBA'}
             </span>
-            {product.compareAtPrice && (
+            {product.compareAtPrice && product.price && (
               <span className="text-xl text-gray-500 line-through">
                 ${product.compareAtPrice.toFixed(2)}
               </span>
@@ -343,8 +343,10 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                 </div>
                 <h3 className="font-semibold mb-1">{relatedProduct.name}</h3>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold">${relatedProduct.price.toFixed(2)}</span>
-                  {relatedProduct.compareAtPrice && (
+                  <span className="font-bold">
+                    {relatedProduct.price ? `$${relatedProduct.price.toFixed(2)}` : 'Price TBA'}
+                  </span>
+                  {relatedProduct.compareAtPrice && relatedProduct.price && (
                     <span className="text-sm text-gray-500 line-through">
                       ${relatedProduct.compareAtPrice.toFixed(2)}
                     </span>
