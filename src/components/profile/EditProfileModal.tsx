@@ -1,26 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { MdOutlineCalendarToday } from "react-icons/md";
 import toast from "react-hot-toast";
 
 export type ProfileForm = {
-   name: string;
-   email: string;
-   phone: string;
-   birthday: Date | null;
-   bio: string;
-   avatar: string;
-   stylePreferences: string[];
-   defaultAddress: {
-     shipping: string;
-     billing: string;
-   };
+  name: string;
+  email: string;
+  phone: string;
+  birthday: Date | null;
+  bio: string;
+  avatar: string | null;
+  stylePreferences: string[];
+  defaultAddress: {
+    shipping: string;
+    billing: string;
+  };
 };
 
-const STYLE_OPTIONS = ["Neutral colors", "Relaxed fit", "Natural fabrics", "Capsule wardrobe", "Minimalist", "Vintage", "Bohemian", "Streetwear"];
+const STYLE_OPTIONS = [
+  "Neutral colors",
+  "Relaxed fit",
+  "Natural fabrics",
+  "Capsule wardrobe",
+  "Minimalist",
+  "Vintage",
+  "Bohemian",
+  "Streetwear",
+];
+
+/* Helper: return null if src is empty-like */
+function safeImageSrc(src?: string | null) {
+  if (!src) return null;
+  const s = String(src).trim();
+  if (s === "") return null;
+  return s;
+}
+
+function getInitials(name?: string | null) {
+  if (!name) return "A";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "A";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  const initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return initials;
+}
 
 export default function EditProfileModal({
   open,
@@ -33,30 +59,74 @@ export default function EditProfileModal({
   onClose: () => void;
   onSave: (val: ProfileForm) => void;
 }) {
-  const [form, setForm] = useState<ProfileForm>(initial);
+  // local form state
+  const [form, setForm] = useState<ProfileForm>(() => ({
+    name: "",
+    email: "",
+    phone: "",
+    birthday: null,
+    bio: "",
+    avatar: null,
+    stylePreferences: [],
+    defaultAddress: { shipping: "", billing: "" },
+  }));
   const [uploading, setUploading] = useState(false);
 
+  // Sync initial -> form whenever modal opens or initial changes
+  useEffect(() => {
+    if (open && initial) {
+      // clone initial safely (avoid linking references)
+      setForm({
+        name: initial.name ?? "",
+        email: initial.email ?? "",
+        phone: initial.phone ?? "",
+        birthday: initial.birthday ? new Date(initial.birthday) : null,
+        bio: initial.bio ?? "",
+        avatar: initial.avatar ?? null,
+        stylePreferences: Array.isArray(initial.stylePreferences) ? [...initial.stylePreferences] : [],
+        defaultAddress: {
+          shipping: initial.defaultAddress?.shipping ?? "",
+          billing: initial.defaultAddress?.billing ?? "",
+        },
+      });
+
+      // reset any native file inputs if present
+      const mainImageInput = document.querySelector<HTMLInputElement>("#edit-avatar-input");
+      if (mainImageInput) mainImageInput.value = "";
+    }
+  }, [open, initial]);
+
+  // Lock background scroll while modal open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  // Controlled input handlers
   const handleChange =
     (k: keyof ProfileForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm((s) => ({ ...s, [k]: e.target.value }));
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setForm((s) => ({ ...s, [k]: (e.target as HTMLInputElement).value }));
+
+  // For nested defaultAddress
+  const handleAddressChange = (type: "shipping" | "billing") => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((s) => ({ ...s, defaultAddress: { ...s.defaultAddress, [type]: e.target.value } }));
+  };
 
   const handleStyleToggle = (style: string) => {
     setForm((s) => ({
       ...s,
       stylePreferences: s.stylePreferences.includes(style)
         ? s.stylePreferences.filter((p) => p !== style)
-        : [...s.stylePreferences, style]
+        : [...s.stylePreferences, style],
     }));
   };
 
-  const handleAddressChange = (type: 'shipping' | 'billing') => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((s) => ({
-      ...s,
-      defaultAddress: { ...s.defaultAddress, [type]: e.target.value }
-    }));
-  };
-
+  // Handle avatar upload (Cloudinary)
   const handleFile = async (file?: File) => {
     if (!file) return;
     setUploading(true);
@@ -71,123 +141,179 @@ export default function EditProfileModal({
     }
   };
 
+  // Remove avatar locally
+  const handleRemoveAvatar = () => {
+    setForm((s) => ({ ...s, avatar: null }));
+  };
+
+  // Save
+  const handleSave = () => {
+    if (uploading) {
+      toast.error("Please wait for upload to finish");
+      return;
+    }
+    // small validation (you can expand)
+    if (!form.name.trim()) {
+      toast.error("Full name required");
+      return;
+    }
+    onSave(form);
+  };
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl border border-brand-accent">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold">Edit profile</h3>
-          <button onClick={onClose} className="text-brand-secondary hover:text-brand-primary">
-            Close
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-[128px,1fr] gap-4">
-          {/* Avatar */}
-          <div>
-            <div className="relative h-32 w-32 rounded-2xl overflow-hidden border border-brand-accent">
-              <img src={form.avatar} alt="avatar" className="object-cover w-full h-full" />
-            </div>
-            <label className="mt-2 inline-flex items-center gap-2 rounded-xl border border-brand-accent px-3 py-1.5 text-sm cursor-pointer hover:bg-brand-light/60">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleFile(e.target.files?.[0] ?? undefined)}
-              />
-              {uploading ? "Uploading…" : "Change avatar"}
-            </label>
+    // overlay: allow overlay/page scroll if modal taller than viewport
+    <div
+      className="fixed inset-0 z-[60] bg-black/40 p-4 overflow-auto flex items-start justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-profile-title"
+    >
+      {/* spacer to center with top padding */}
+      <div className="min-h-[100vh] w-full flex items-start justify-center py-8">
+        {/* modal box */}
+        <div className="relative w-full max-w-3xl bg-white rounded-2xl border border-brand-accent shadow-xl overflow-hidden max-h-[calc(100vh-4rem)]">
+          {/* header (outside scroll area) */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 id="edit-profile-title" className="text-base font-semibold">
+              Edit profile
+            </h3>
           </div>
 
-          {/* Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <L label="Full name">
-              <I defaultValue={form.name} onChange={handleChange("name")} />
-            </L>
-            <L label="Email">
-              <I defaultValue={form.email} onChange={handleChange("email")} />
-            </L>
-            <L label="Phone">
-              <I defaultValue={form.phone} onChange={handleChange("phone")} />
-            </L>
-            <L label="Birthday">
-              <div className="relative">
-                <DatePicker
-                  selected={form.birthday}
-                  onChange={(date) => setForm((s) => ({ ...s, birthday: date }))}
-                  dateFormat="yyyy-MM-dd"
-                  placeholderText="Select your birthday"
-                  className="w-full rounded-xl border border-brand-accent bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/40"
-                  showMonthDropdown
-                  showYearDropdown
-                  dropdownMode="select"
-                  yearDropdownItemNumber={50}
-                  scrollableYearDropdown
-                  maxDate={new Date()}
-                />
-                <MdOutlineCalendarToday className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-secondary w-5 h-5 pointer-events-none" />
+          {/* body (scrollable) */}
+          <div className="p-5 overflow-y-auto max-h-[calc(100vh-7rem)]">
+            <div className="grid grid-cols-1 md:grid-cols-[128px,1fr] gap-4">
+              {/* Avatar */}
+              <div>
+                <div className="relative h-32 w-32 rounded-2xl overflow-hidden border border-brand-accent bg-brand-secondary/10">
+                  {safeImageSrc(form.avatar) ? (
+                    <img src={safeImageSrc(form.avatar) as string} alt="avatar" className="object-cover w-full h-full" />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center text-white font-semibold text-xl bg-brand-secondary/30">
+                      {getInitials(form.name)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-2 flex flex-col gap-2">
+                  <label className="inline-flex items-center gap-2 rounded-xl border border-brand-accent px-3 py-1.5 text-sm cursor-pointer hover:bg-brand-light/60 w-fit">
+                    <input
+                      id="edit-avatar-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFile(e.target.files?.[0] ?? undefined)}
+                    />
+                    {uploading ? "Uploading…" : "Change avatar"}
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="inline-flex items-center gap-2 rounded-xl border border-brand-accent px-3 py-1.5 text-sm hover:bg-brand-light/60 w-fit"
+                  >
+                    Remove avatar
+                  </button>
+                </div>
               </div>
-            </L>
-            <L label="Bio" className="md:col-span-2">
-              <textarea
-                className="w-full rounded-xl border border-brand-accent bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/40"
-                rows={3}
-                defaultValue={form.bio}
-                onChange={handleChange("bio")}
-              />
-            </L>
-          </div>
 
-          {/* Style preferences */}
-          <div className="mt-4">
-            <span className="mb-2 block text-xs text-brand-secondary">Style preferences</span>
-            <div className="flex flex-wrap gap-2">
-              {STYLE_OPTIONS.map((style) => (
-                <button
-                  key={style}
-                  type="button"
-                  onClick={() => handleStyleToggle(style)}
-                  className={`rounded-xl border px-3 py-1.5 text-sm transition-colors ${
-                    form.stylePreferences.includes(style)
-                      ? 'border-brand-primary bg-brand-primary text-white'
-                      : 'border-brand-accent bg-white text-brand-dark hover:bg-brand-light/60'
-                  }`}
-                >
-                  {style}
-                </button>
-              ))}
+              {/* Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <L label="Full name">
+                  <I value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
+                </L>
+
+                <L label="Email">
+                  <I value={form.email} onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} />
+                </L>
+
+                <L label="Phone">
+                  <I value={form.phone} onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))} />
+                </L>
+
+                <L label="Birthday">
+                  <div className="relative">
+                    <DatePicker
+                      selected={form.birthday}
+                      onChange={(date) => setForm((s) => ({ ...s, birthday: date }))}
+                      dateFormat="yyyy-MM-dd"
+                      placeholderText="Select your birthday"
+                      className="w-full rounded-xl border border-brand-accent bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/40"
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      yearDropdownItemNumber={50}
+                      scrollableYearDropdown
+                      maxDate={new Date()}
+                    />
+                    <MdOutlineCalendarToday className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-secondary w-5 h-5 pointer-events-none" />
+                  </div>
+                </L>
+
+                <L label="Bio" className="md:col-span-2">
+                  <textarea
+                    className="w-full rounded-xl border border-brand-accent bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/40"
+                    rows={3}
+                    value={form.bio}
+                    onChange={(e) => setForm((s) => ({ ...s, bio: e.target.value }))}
+                  />
+                </L>
+              </div>
+
+              {/* Style preferences */}
+              <div className="mt-4 md:col-span-2">
+                <span className="mb-2 block text-xs text-brand-secondary">Style preferences</span>
+                <div className="flex flex-wrap gap-2">
+                  {STYLE_OPTIONS.map((style) => (
+                    <button
+                      key={style}
+                      type="button"
+                      onClick={() => handleStyleToggle(style)}
+                      className={`rounded-xl border px-3 py-1.5 text-sm transition-colors ${
+                        form.stylePreferences.includes(style)
+                          ? "border-brand-primary bg-brand-primary text-white"
+                          : "border-brand-accent bg-white text-brand-dark hover:bg-brand-light/60"
+                      }`}
+                    >
+                      {style}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Addresses */}
+              <div className="mt-4 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <L label="Shipping address">
+                  <I value={form.defaultAddress.shipping} onChange={handleAddressChange("shipping")} />
+                </L>
+                <L label="Billing address">
+                  <I value={form.defaultAddress.billing} onChange={handleAddressChange("billing")} />
+                </L>
+              </div>
             </div>
           </div>
 
-          {/* Default address */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <L label="Shipping address">
-              <I defaultValue={form.defaultAddress.shipping} onChange={handleAddressChange('shipping')} />
-            </L>
-            <L label="Billing address">
-              <I defaultValue={form.defaultAddress.billing} onChange={handleAddressChange('billing')} />
-            </L>
+          {/* footer (kept outside scroll area) */}
+          <div className="p-4 border-t flex items-center justify-end gap-2">
+            <button onClick={onClose} className="rounded-xl border border-brand-accent px-3 py-1.5 text-sm hover:bg-brand-light/60">
+              Close
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={uploading}
+              className="rounded-xl bg-brand-primary text-white px-3 py-1.5 text-sm hover:opacity-90 disabled:opacity-60"
+            >
+              {uploading ? "Please wait..." : "Save changes"}
+            </button>
           </div>
-        </div>
-
-        <div className="mt-4 flex items-center justify-end gap-2">
-          <button onClick={onClose} className="rounded-xl border border-brand-accent px-3 py-1.5 text-sm hover:bg-brand-light/60">
-            Cancel
-          </button>
-          <button
-            onClick={() => onSave(form)}
-            className="rounded-xl bg-brand-primary text-white px-3 py-1.5 text-sm hover:opacity-90"
-          >
-            Save
-          </button>
         </div>
       </div>
     </div>
   );
 }
 
+/* Small UI helpers */
 function L({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <label className={`block ${className}`}>
@@ -205,6 +331,7 @@ function I(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
+/* Cloudinary upload util (kept same) */
 async function uploadToCloudinary(file: File): Promise<string> {
   const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME as string;
   const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET as string; // unsigned preset
