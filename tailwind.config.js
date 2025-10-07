@@ -14,7 +14,11 @@ module.exports = {
           secondary: "#8794C0",
           light: "#E7E9EE",
           accent: "#D8CDB0",
+          soft: "#F9FAFB", // thêm nền nhạt
         },
+      },
+      fontFamily: {
+    sans: ["Inter", "ui-sans-serif", "system-ui"],
       },
       boxShadow: {
         smooth: "0 10px 30px rgba(28,33,53,0.10)",
