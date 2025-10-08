@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MdCloudUpload, MdAdd, MdImage, MdArrowBack } from "react-icons/md";
+import { MdCloudUpload, MdAdd, MdImage } from "react-icons/md";
 import Header from "@/components/Header";
 import toast from "react-hot-toast";
 
@@ -269,12 +269,6 @@ export default function AddProductPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link
-            href="/admin"
-            className="flex items-center gap-2 text-brand-dark hover:text-brand-primary"
-          >
-            <MdArrowBack className="w-8 h-8" />
-          </Link>
           <div>
             <h1 className="text-xl font-bold text-brand-dark">Add New Product</h1>
             <p className="text-brand-secondary">Create a new product for your store</p>
