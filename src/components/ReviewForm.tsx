@@ -35,21 +35,21 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     const newErrors: Record<string, string> = {};
 
     if (rating < 1 || rating > 5) {
-      newErrors.rating = "Vui lòng chọn số sao từ 1-5";
+      newErrors.rating = "Please select a rating from 1-5 stars";
     }
 
     if (!comment.trim()) {
-      newErrors.comment = "Vui lòng nhập nội dung đánh giá";
+      newErrors.comment = "Please enter your review content";
     } else if (comment.length > 500) {
-      newErrors.comment = "Nội dung đánh giá không được quá 500 ký tự";
+      newErrors.comment = "Review content must not exceed 500 characters";
     }
 
     if (images.length > 5) {
-      newErrors.images = "Tối đa 5 ảnh";
+      newErrors.images = "Maximum 5 photos allowed";
     }
 
     if (videos.length > 2) {
-      newErrors.videos = "Tối đa 2 video";
+      newErrors.videos = "Maximum 2 videos allowed";
     }
 
     setErrors(newErrors);
@@ -90,13 +90,13 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     // Validate file types
     const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
     if (invalidFiles.length > 0) {
-      setErrors({ ...errors, images: "Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)" });
+      setErrors({ ...errors, images: "Only image files are allowed (JPEG, PNG, GIF, WebP)" });
       return;
     }
 
     // Check total images limit
     if (images.length + files.length > 5) {
-      setErrors({ ...errors, images: "Tối đa 5 ảnh cho mỗi đánh giá" });
+      setErrors({ ...errors, images: "Maximum 5 photos per review" });
       return;
     }
 
@@ -104,7 +104,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     const maxSize = 10 * 1024 * 1024; // 10MB
     const oversizedFiles = files.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
-      setErrors({ ...errors, images: `Ảnh không được vượt quá 10MB. Vui lòng chọn file nhỏ hơn.` });
+      setErrors({ ...errors, images: `Images must not exceed 10MB. Please select smaller files.` });
       return;
     }
 
@@ -112,7 +112,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
       // Get auth token
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setErrors({ ...errors, images: "Bạn cần đăng nhập để tải ảnh" });
+        setErrors({ ...errors, images: "You need to login to upload photos" });
         return;
       }
 
@@ -133,15 +133,15 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
 
       if (!result.success) {
         // Provide user-friendly error messages
-        let errorMessage = 'Không thể tải video lên. Vui lòng thử lại.';
+        let errorMessage = 'Failed to upload images. Please try again.';
         if (result.error?.includes('File size must be less than')) {
-          errorMessage = 'File video quá lớn. Vui lòng chọn file nhỏ hơn 10MB.';
+          errorMessage = 'Image file too large. Please select files smaller than 5MB.';
         } else if (result.error?.includes('Only image and video files are allowed')) {
-          errorMessage = 'Chỉ chấp nhận file video hợp lệ.';
+          errorMessage = 'Only valid image files are allowed.';
         } else if (result.error?.includes('Invalid Supabase token')) {
-          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+          errorMessage = 'Session expired. Please log in again.';
         }
-        setErrors({ ...errors, videos: errorMessage });
+        setErrors({ ...errors, images: errorMessage });
         return;
       }
 
@@ -150,7 +150,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
       setErrors({ ...errors, images: "" });
     } catch (error) {
       console.error('Image upload error:', error);
-      setErrors({ ...errors, images: "Có lỗi xảy ra khi tải ảnh. Vui lòng kiểm tra kết nối và thử lại." });
+      setErrors({ ...errors, images: "An error occurred while uploading photos. Please check your connection and try again." });
     }
 
     // Reset input
@@ -166,13 +166,13 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     // Validate file types
     const invalidFiles = files.filter(file => !file.type.startsWith('video/'));
     if (invalidFiles.length > 0) {
-      setErrors({ ...errors, videos: "Chỉ chấp nhận file video (MP4, MOV, AVI, WebM)" });
+      setErrors({ ...errors, videos: "Only video files are allowed (MP4, MOV, AVI, WebM)" });
       return;
     }
 
     // Check total videos limit
     if (videos.length + files.length > 2) {
-      setErrors({ ...errors, videos: "Tối đa 2 video cho mỗi đánh giá" });
+      setErrors({ ...errors, videos: "Maximum 2 videos per review" });
       return;
     }
 
@@ -180,7 +180,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     const maxSize = 50 * 1024 * 1024; // 50MB
     const oversizedFiles = files.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
-      setErrors({ ...errors, videos: `Video không được vượt quá 50MB. Vui lòng chọn file nhỏ hơn.` });
+      setErrors({ ...errors, videos: `Videos must not exceed 50MB. Please select smaller files.` });
       return;
     }
 
@@ -188,7 +188,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
       // Get auth token
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setErrors({ ...errors, videos: "Bạn cần đăng nhập để tải video" });
+        setErrors({ ...errors, videos: "You need to login to upload videos" });
         return;
       }
 
@@ -209,15 +209,15 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
 
       if (!result.success) {
         // Provide user-friendly error messages
-        let errorMessage = 'Không thể tải ảnh lên. Vui lòng thử lại.';
+        let errorMessage = 'Failed to upload videos. Please try again.';
         if (result.error?.includes('File size must be less than')) {
-          errorMessage = 'File ảnh quá lớn. Vui lòng chọn file nhỏ hơn 5MB.';
+          errorMessage = 'Video file too large. Please select files smaller than 10MB.';
         } else if (result.error?.includes('Only image and video files are allowed')) {
-          errorMessage = 'Chỉ chấp nhận file ảnh hợp lệ.';
+          errorMessage = 'Only valid video files are allowed.';
         } else if (result.error?.includes('Invalid Supabase token')) {
-          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+          errorMessage = 'Session expired. Please log in again.';
         }
-        setErrors({ ...errors, images: errorMessage });
+        setErrors({ ...errors, videos: errorMessage });
         return;
       }
 
@@ -226,7 +226,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
       setErrors({ ...errors, videos: "" });
     } catch (error) {
       console.error('Video upload error:', error);
-      setErrors({ ...errors, videos: "Có lỗi xảy ra khi tải video. Vui lòng kiểm tra kết nối và thử lại." });
+      setErrors({ ...errors, videos: "An error occurred while uploading videos. Please check your connection and try again." });
     }
 
     // Reset input
@@ -247,7 +247,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     <div className="bg-white border border-gray-200 rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold">
-          {initialReview ? "Chỉnh sửa đánh giá" : "Viết đánh giá"}
+          {initialReview ? "Edit Review" : "Write Review"}
         </h3>
         {onCancel && (
           <button
@@ -263,7 +263,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
         {/* Star Rating */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Đánh giá sao
+            Star Rating
           </label>
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -285,7 +285,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
               </button>
             ))}
             <span className="ml-2 text-sm text-gray-600">
-              {rating > 0 && `${rating}/5 sao`}
+              {rating > 0 && `${rating}/5 stars`}
             </span>
           </div>
           {errors.rating && <p className="text-red-500 text-sm mt-1">{errors.rating}</p>}
@@ -294,12 +294,12 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
         {/* Comment */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Nội dung đánh giá
+            Review Content
           </label>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Hãy chia sẻ trải nghiệm của bạn với sản phẩm này..."
+            placeholder="Share your experience with this product..."
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             maxLength={500}
@@ -313,7 +313,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
         {/* Media Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Ảnh và video (tùy chọn)
+            Photos and Videos (optional)
           </label>
 
           {/* Upload Buttons */}
@@ -325,7 +325,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <MdPhoto className="w-4 h-4" />
-              Thêm ảnh ({images.length}/5)
+              Add Photos ({images.length}/5)
             </button>
             <button
               type="button"
@@ -334,7 +334,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <MdVideocam className="w-4 h-4" />
-              Thêm video ({videos.length}/2)
+              Add Videos ({videos.length}/2)
             </button>
           </div>
 
@@ -411,7 +411,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
               onClick={onCancel}
               className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
             >
-              Hủy
+              Cancel
             </button>
           )}
           <button
@@ -419,7 +419,7 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
             disabled={isLoading}
             className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Đang xử lý..." : initialReview ? "Cập nhật" : "Gửi đánh giá"}
+            {isLoading ? "Processing..." : initialReview ? "Update" : "Submit Review"}
           </button>
         </div>
       </form>

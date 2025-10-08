@@ -197,30 +197,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already reviewed this product
-    const existingReview: ReviewBasic | null = await (prisma as any).review?.findUnique({
+    // Check if user already has a review for this product
+    const existingReview: ReviewBasic | null = await (prisma as any).review?.findFirst({
       where: {
-        productId_userId: {
-          productId,
-          userId
-        }
+        productId,
+        userId
       },
       select: {
         id: true,
         userId: true,
-        productId: true,
-        isActive: true
+        productId: true
       }
-    }) || null
+    })
 
-    if (existingReview && existingReview.isActive) {
+    if (existingReview) {
       return NextResponse.json(
         { success: false, error: 'You have already reviewed this product' },
         { status: 409 }
       )
     }
 
-    // Create review
+    // Create new review
     const review = await (prisma as any).review.create({
       data: {
         productId,
@@ -428,10 +425,9 @@ export async function DELETE(request: NextRequest) {
 
     const productId = existingReview.productId
 
-    // Soft delete review
-    await (prisma as any).review.update({
-      where: { id: reviewId },
-      data: { isActive: false }
+    // Hard delete review
+    await (prisma as any).review.delete({
+      where: { id: reviewId }
     })
 
     // Update product rating
