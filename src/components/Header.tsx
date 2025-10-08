@@ -226,10 +226,14 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center text-white font-bold text-lg">
-            A
+          <div className="flex items-center justify-center h-10 w-10 overflow-hidden">
+            <img
+              src="/AIFShop.svg"
+              alt="AIFShop Logo"
+              className="h-18 w-18 object-contain align-middle"
+            />
           </div>
-          <span className="font-bold text-lg text-brand-dark">AIFShop</span>
+          <span className="font-bold text-xl text-brand-dark leading-none">AIFShop</span>
         </Link>
 
         {/* Menu */}
