@@ -34,11 +34,35 @@ async function getProduct(slug: string) {
       description: p.description || "Beautiful piece of jewelry crafted with attention to detail.",
       features: ["High-quality materials", "Quality control"],
       sizes: p.sizes || [],
-      reviews: [] // TODO: Add reviews system later
+      reviews: [] // Will be fetched separately
     };
   } catch (error) {
     console.error('Failed to fetch product:', error);
     return null;
+  }
+}
+
+// Fetch reviews for a product
+async function getProductReviews(productId: string) {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/reviews?productId=${productId}`, {
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const result = await response.json();
+
+    if (!result.success || !result.data) {
+      return [];
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('Failed to fetch product reviews:', error);
+    return [];
   }
 }
 
@@ -94,8 +118,17 @@ export default async function ProductPage({ params }: PageProps) {
     notFound();
   }
 
+  // Get reviews for the product
+  const reviews = await getProductReviews(product.id);
+
   // Get related products (excluding current product)
   const relatedProducts = await getRelatedProducts(product.id);
 
-  return <ProductDetail product={product} relatedProducts={relatedProducts} />;
+  // Include reviews in product data
+  const productWithReviews = {
+    ...product,
+    reviews
+  };
+
+  return <ProductDetail product={productWithReviews} relatedProducts={relatedProducts} />;
 }

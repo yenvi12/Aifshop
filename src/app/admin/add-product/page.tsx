@@ -20,7 +20,6 @@ interface ProductFormData {
   category: string;
   stock: string;
   sizes: SizeOption[];
-  rating: string;
   badge: string;
   image: File | null;
   images: File[];
@@ -38,7 +37,6 @@ export default function AddProductPage() {
     category: "",
     stock: "",
     sizes: [],
-    rating: "0",
     badge: "",
     image: null,
     images: []
@@ -142,13 +140,6 @@ export default function AddProductPage() {
       }
     }
 
-    // Rating validation
-    if (formData.rating.trim()) {
-      const ratingValue = parseFloat(formData.rating);
-      if (isNaN(ratingValue) || ratingValue < 0 || ratingValue > 5) {
-        newErrors.rating = "Rating must be a number between 0 and 5";
-      }
-    }
 
     // Size validation
     let totalSizeStock = 0;
@@ -213,9 +204,6 @@ export default function AddProductPage() {
       submitData.append('stock', formData.stock);
       if (formData.sizes.length > 0) {
         submitData.append('sizes', JSON.stringify(formData.sizes));
-      }
-      if (formData.rating) {
-        submitData.append('rating', formData.rating);
       }
       if (formData.badge) {
         submitData.append('badge', formData.badge);
@@ -388,40 +376,23 @@ export default function AddProductPage() {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Stock Quantity *</label>
-                  <input
-                    type="number"
-                    name="stock"
-                    value={formData.stock}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
-                      errors.stock ? 'border-red-500' : 'border-brand-light'
-                    }`}
-                    placeholder="0"
-                  />
-                  {errors.stock && (
-                    <p className="text-red-500 text-xs mt-1">{errors.stock}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating (0-5)</label>
-                  <input
-                    type="number"
-                    name="rating"
-                    value={formData.rating}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="5"
-                    step="0.1"
-                    className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
-                    placeholder="0"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Stock Quantity *</label>
+                <input
+                  type="number"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
+                    errors.stock ? 'border-red-500' : 'border-brand-light'
+                  }`}
+                  placeholder="0"
+                />
+                {errors.stock && (
+                  <p className="text-red-500 text-xs mt-1">{errors.stock}</p>
+                )}
               </div>
 
               <div>

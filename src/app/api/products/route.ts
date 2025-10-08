@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       data.category = formData.get('category') as string
       data.stock = parseInt(formData.get('stock') as string) || 0
       data.sizes = formData.get('sizes') ? JSON.parse(formData.get('sizes') as string) : []
-      data.rating = formData.get('rating') ? parseFloat(formData.get('rating') as string) : 0
+      // Rating is now calculated from reviews, not set manually
       data.badge = (formData.get('badge') as string) || null
       data.isActive = formData.get('isActive') === 'true'
 
@@ -266,7 +266,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, description, price, compareAtPrice, category, image, images, stock, sizes, rating, badge, isActive } = validationResult.data
+    const { name, description, price, compareAtPrice, category, image, images, stock, sizes, badge, isActive } = validationResult.data
 
     // Additional validations
     if (price !== null && price !== undefined && compareAtPrice < price) {
@@ -322,7 +322,7 @@ export async function POST(request: NextRequest) {
         images,
         stock,
         sizes,
-        rating,
+        rating: 0, // Default to 0, will be calculated from reviews
         badge,
         isActive,
         slug,
@@ -438,10 +438,7 @@ export async function PUT(request: NextRequest) {
         }
       }
 
-      const ratingStr = formData.get('rating') as string
-      if (ratingStr && !isNaN(parseFloat(ratingStr))) {
-        data.rating = parseFloat(ratingStr)
-      }
+      // Rating is now calculated from reviews, not set manually
 
       const badge = formData.get('badge') as string
       if (badge) data.badge = badge

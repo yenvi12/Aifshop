@@ -33,6 +33,7 @@ model User {
       createdAt         DateTime @default(now())
       updatedAt         DateTime @updatedAt
 
+      reviews           Review[] // Add relation to reviews
       // Relations
       carts Cart[]
 
@@ -65,19 +66,37 @@ model Product {
        images         String[] // Array of image URLs
        stock          Int      @default(0)
        sizes          Json?    // Custom sizes: [{name: "S", stock: 10}, {name: "M", stock: 15}]
-       rating         Float?   @default(0) // Average rating (0-5)
+       rating         Float?   @default(0) // Average rating (0-5), calculated from reviews
        badge          String?  // Badge like "New", "Sale", "Hot"
        isActive       Boolean  @default(true)
        slug           String   @unique
        createdAt      DateTime @default(now())
        updatedAt      DateTime @updatedAt
 
+       reviews        Review[] // Add relation to reviews
        // Relations
        carts Cart[]
 
        @@map("products")
 }
 
+model Review {
+       id        String   @id @default(cuid())
+       productId String
+       userId    String
+       rating    Int      // 1-5 stars
+       comment   String
+       images    String[] // Array of image URLs (Cloudinary)
+       videos    String[] // Array of video URLs (Cloudinary)
+       isActive  Boolean  @default(true)
+       createdAt DateTime @default(now())
+       updatedAt DateTime @updatedAt
+
+       product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+       user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+       @@unique([productId, userId]) // One review per user per product
+       @@map("reviews")
 model Cart {
       id        String   @id @default(cuid())
       userId    String
