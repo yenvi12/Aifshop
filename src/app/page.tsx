@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { MdStar, MdLocalShipping, MdStraighten } from "react-icons/md";
+import toast from "react-hot-toast";
 import ProductCard, { type Product } from "@/components/ProductCard";
 import Header from "@/components/Header";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -12,6 +13,8 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -45,8 +48,68 @@ export default function HomePage() {
         setLoading(false);
       }
     };
+
+    // Check authentication state
+    const checkAuth = () => {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          setUser({ id: payload.userId, email: payload.email });
+          setAccessToken(token);
+        } catch (error) {
+          console.error("Invalid token:", error);
+          setUser(null);
+          setAccessToken(null);
+        }
+      } else {
+        setUser(null);
+        setAccessToken(null);
+      }
+    };
+
     fetchProducts();
+    checkAuth();
   }, []);
+
+  // Function to handle adding product to cart
+  const handleAddToCart = async (product: Product) => {
+    if (!user || !accessToken) {
+      toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          quantity: 1,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Product added to cart successfully!");
+      } else {
+        if (response.status === 401) {
+          toast.error("Session expired. Please log in again.");
+          setUser(null);
+          setAccessToken(null);
+        } else {
+          toast.error(result.error || "Unable to add product to cart");
+        }
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error("An error occurred while adding the product to the cart");
+    }
+  };
 
   if (loading) {
     return (
@@ -116,13 +179,13 @@ export default function HomePage() {
 
         <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.slice(0, 3).map((p) => (
-            <ProductCard key={p.id} p={p} />
+            <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
           ))}
         </div>
 
         <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.slice(3, 6).map((p) => (
-            <ProductCard key={p.id} p={p} />
+            <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
           ))}
         </div>
       </section>
