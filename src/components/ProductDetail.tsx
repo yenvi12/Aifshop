@@ -2,14 +2,32 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MdStar, MdFavoriteBorder, MdFavorite, MdShoppingBag, MdAdd, MdRemove } from "react-icons/md";
 import { type Product } from "./ProductCard";
 import Header from "./Header";
+import ReviewList from "./ReviewList";
+import ReviewForm from "./ReviewForm";
+
+const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789';
 
 type SizeOption = {
   name: string;
   stock: number;
+};
+
+type Review = {
+  id: string;
+  rating: number;
+  comment: string;
+  images: string[];
+  videos: string[];
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
 };
 
 type Props = {
@@ -21,38 +39,102 @@ type Props = {
     compareAtPrice?: number;
     rating?: number;
     badge?: string;
-    reviews?: Array<{
-      id: string;
-      name: string;
-      rating: number;
-      comment: string;
-      date: string;
-    }>;
+    reviews?: Review[];
   };
   relatedProducts?: Product[];
 };
 
 export default function ProductDetail({ product, relatedProducts = [] }: Props) {
-  const router = useRouter();
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [activeTab, setActiveTab] = useState("description");
-  const [quantity, setQuantity] = useState(1);
-  const [wished, setWished] = useState(false);
-  const [selectedSize, setSelectedSize] = useState<SizeOption | null>(null);
+   const router = useRouter();
+   const [selectedImage, setSelectedImage] = useState(0);
+   const [activeTab, setActiveTab] = useState("description");
+   const [quantity, setQuantity] = useState(1);
+   const [wished, setWished] = useState(false);
+   const [selectedSize, setSelectedSize] = useState<SizeOption | null>(null);
+   const [reviews, setReviews] = useState<Review[]>(product.reviews || []);
+   const [showReviewForm, setShowReviewForm] = useState(false);
+   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const images = [product.image, ...(product.images || [])].filter((img): img is string => Boolean(img && img.trim()));
+   // Get current user ID from JWT token
+   useEffect(() => {
+     const token = localStorage.getItem('accessToken');
+     if (token) {
+       try {
+         const payload = JSON.parse(atob(token.split('.')[1]));
+         setCurrentUserId(payload.userId);
+       } catch (error) {
+         setCurrentUserId(null);
+       }
+     } else {
+       setCurrentUserId(null);
+     }
+   }, []);
+
+   const images = [product.image, ...(product.images || [])].filter((img): img is string => Boolean(img && img.trim()));
 
   const sizes = product.sizes || [];
   const defaultSizes = sizes.length > 0 ? sizes : [{ name: "S", stock: 10 }, { name: "M", stock: 15 }, { name: "L", stock: 8 }];
 
   const discount =
-    product.compareAtPrice && product.price && product.compareAtPrice > product.price
-      ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
-      : 0;
+     product.compareAtPrice && product.price && product.compareAtPrice > product.price
+       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
+       : 0;
+
+  // Check if current user has already reviewed this product
+  const hasUserReviewed = currentUserId && reviews.some(review => review.user.id === currentUserId);
  const handleBuyNow = () => {
-    // Nếu muốn truyền dữ liệu product, có thể lưu tạm vào localStorage / context
-    router.push("/payment");
-  };
+   // Nếu muốn truyền dữ liệu product, có thể lưu tạm vào localStorage / context
+   router.push("/payment");
+ };
+
+ // Review management functions
+ const handleSubmitReview = async (reviewData: any) => {
+   setIsSubmittingReview(true);
+   try {
+     const url = "/api/reviews";
+     const method = "POST";
+
+     const body = { ...reviewData, productId: product.id };
+
+     // Get auth token from localStorage
+     const token = localStorage.getItem('accessToken');
+     if (!token) {
+       throw new Error('Bạn cần đăng nhập để thực hiện thao tác này');
+     }
+
+     const headers: Record<string, string> = {
+       "Content-Type": "application/json",
+     };
+
+     if (token) {
+       headers.Authorization = `Bearer ${token}`;
+     }
+
+     const response = await fetch(url, {
+       method,
+       headers,
+       body: JSON.stringify(body),
+     });
+
+     const result = await response.json();
+
+     if (!result.success) {
+       console.error('Review submission failed:', result.details)
+       throw new Error(result.error || "Failed to submit review");
+     }
+
+     // Update local reviews state
+     setReviews([result.data, ...reviews]);
+
+     setShowReviewForm(false);
+   } catch (error) {
+     console.error("Error submitting review:", error);
+     alert("Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại.");
+   } finally {
+     setIsSubmittingReview(false);
+   }
+ };
 
   return (
     <>
@@ -261,28 +343,40 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
           {activeTab === "reviews" && (
             <div className="space-y-6">
-              {product.reviews?.map((review) => (
-                <div key={review.id} className="border-b border-gray-200 pb-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-                    <div>
-                      <p className="font-semibold">{review.name}</p>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <MdStar
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < review.rating ? "text-yellow-400 fill-current" : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                        <span className="text-sm text-gray-500 ml-2">{review.date}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600">{review.comment}</p>
-                </div>
-              ))}
+              {/* Add Review Button */}
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Đánh giá sản phẩm</h3>
+                {!showReviewForm && !hasUserReviewed && currentUserId && (
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Viết đánh giá
+                  </button>
+                )}
+                {hasUserReviewed && (
+                  <span className="text-sm text-gray-500 px-3 py-2 bg-gray-100 rounded-lg">
+                    Bạn đã đánh giá sản phẩm này
+                  </span>
+                )}
+              </div>
+
+              {/* Review Form */}
+              {showReviewForm && (
+                <ReviewForm
+                  productId={product.id}
+                  onSubmit={handleSubmitReview}
+                  onCancel={() => {
+                    setShowReviewForm(false);
+                  }}
+                  isLoading={isSubmittingReview}
+                />
+              )}
+
+              {/* Reviews List */}
+              <ReviewList
+                reviews={reviews}
+              />
             </div>
           )}
 
