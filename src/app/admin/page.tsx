@@ -87,7 +87,7 @@ export default function AdminPage() {
       tint: "bg-emerald-500/10",
     },
     {
-      title: "User Management",
+      title: "Manage Users",
       description: "View and manage user accounts",
       icon: MdPeople,
       href: "/admin/users",

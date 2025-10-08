@@ -90,8 +90,14 @@ export const updateProductSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
+export const updateUserSchema = z.object({
+  isVerified: z.boolean().optional(),
+  role: z.enum(['USER', 'ADMIN']).optional(),
+})
+
 export type CreateProductInput = z.infer<typeof createProductSchema>
 export type UpdateProductInput = z.infer<typeof updateProductSchema>
+export type UpdateUserInput = z.infer<typeof updateUserSchema>
 
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>

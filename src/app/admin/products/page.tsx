@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MdAdd, MdEdit, MdDelete, MdInventory, MdImage, MdStar, MdViewList, MdViewModule, MdSearch, MdFilterList, MdCheckBox, MdCheckBoxOutlineBlank, MdDeleteSweep } from "react-icons/md";
-import Header from "@/components/Header";
 import EditProductModal from "@/components/admin/EditProductModal";
 import toast from "react-hot-toast";
 
@@ -248,7 +247,6 @@ export default function ManageProductsPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-brand-light/30">
-        <Header />
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
         </div>
