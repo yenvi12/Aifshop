@@ -264,7 +264,7 @@ export default function AddProductPage() {
 
   return (
     <main className="min-h-screen bg-brand-light/30">
-      <Header />
+      
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
@@ -273,11 +273,10 @@ export default function AddProductPage() {
             href="/admin"
             className="flex items-center gap-2 text-brand-dark hover:text-brand-primary"
           >
-            <MdArrowBack className="w-5 h-5" />
-            Back to Admin
+            <MdArrowBack className="w-8 h-8" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-brand-dark">Add New Product</h1>
+            <h1 className="text-xl font-bold text-brand-dark">Add New Product</h1>
             <p className="text-brand-secondary">Create a new product for your store</p>
           </div>
         </div>
@@ -455,7 +454,7 @@ export default function AddProductPage() {
                 <button
                   type="button"
                   onClick={addSize}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-primary text-white hover:opacity-90 text-sm"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-accent text-white hover:opacity-90 text-sm"
                 >
                   <MdAdd className="w-4 h-4" />
                   Add Size
@@ -546,11 +545,11 @@ export default function AddProductPage() {
                       id="main-image"
                     />
                     <label htmlFor="main-image" className="cursor-pointer">
-                      <MdCloudUpload className="w-12 h-12 text-brand-secondary mx-auto mb-4" />
-                      <p className="text-brand-secondary mb-2">
+                      <MdCloudUpload className="w-12 h-12 text-brand-accent mx-auto mb-4" />
+                      <p className="text-brand-accent mb-2">
                         Click to upload main image
                       </p>
-                      <p className="text-xs text-brand-secondary">PNG, JPG, GIF up to 10MB</p>
+                      <p className="text-xs text-brand-accent">PNG, JPG, GIF up to 10MB</p>
                     </label>
                   </div>
                 )}
@@ -597,14 +596,14 @@ export default function AddProductPage() {
                       id="additional-images"
                     />
                     <label htmlFor="additional-images" className="cursor-pointer">
-                      <MdImage className="w-12 h-12 text-brand-secondary mx-auto mb-4" />
-                      <p className="text-brand-secondary mb-2">
+                      <MdImage className="w-12 h-12 text-brand-accent mx-auto mb-4" />
+                      <p className="text-brand-accent mb-2">
                         {formData.images.length > 0
                           ? `Add more images (${formData.images.length}/5)`
                           : 'Click to upload additional images'
                         }
                       </p>
-                      <p className="text-xs text-brand-secondary">PNG, JPG, GIF up to 10MB each</p>
+                      <p className="text-xs text-brand-accent">PNG, JPG, GIF up to 10MB each</p>
                     </label>
                   </div>
                 )}
@@ -626,7 +625,7 @@ export default function AddProductPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-brand-primary text-white hover:opacity-90 disabled:opacity-60"
+                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-brand-accent text-white hover:opacity-90 disabled:opacity-60"
               >
                 <MdAdd className="w-4 h-4" />
                 {loading ? 'Adding Product...' : 'Add Product'}

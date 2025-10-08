@@ -64,7 +64,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen" suppressHydrationWarning={true}>
-      <Header></Header>
+     
       {/* ===== HERO ===== */}
       <section className="bg-brand-accent/20">
         <div className="max-w-6xl mx-auto px-4 py-8 md:py-10 grid md:grid-cols-[1fr_480px] gap-6 items-center">

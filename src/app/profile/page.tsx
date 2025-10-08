@@ -124,7 +124,7 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-white text-brand-dark">
       <div className="h-4" />
-      <Header />
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="sr-only">Profile</h1>

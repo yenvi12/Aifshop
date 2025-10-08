@@ -14,7 +14,7 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-brand-light">
-      <Header />
+      
 
       <main className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-[2fr_1fr] gap-10">
         {/* LEFT SECTION */}

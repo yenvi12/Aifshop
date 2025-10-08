@@ -56,7 +56,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
   return (
     <>
-      <Header />
+     
       <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="grid lg:grid-cols-2 gap-12">
         {/* Image Gallery */}
