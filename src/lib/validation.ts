@@ -67,7 +67,6 @@ export const createProductSchema = z.object({
     name: z.string().min(1, 'Tên size không được rỗng'),
     stock: z.number().int().min(0, 'Số lượng size phải lớn hơn hoặc bằng 0')
   })).optional(),
-  rating: z.number().min(0, 'Rating phải từ 0-5').max(5, 'Rating phải từ 0-5').default(0),
   badge: z.string().optional(),
   isActive: z.boolean().default(true),
 })
@@ -90,8 +89,32 @@ export const updateProductSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
+export const updateUserSchema = z.object({
+  isVerified: z.boolean().optional(),
+  role: z.enum(['USER', 'ADMIN']).optional(),
+})
+
+export const createReviewSchema = z.object({
+  productId: z.string().min(1, 'Product ID không hợp lệ'),
+  userId: z.string().min(1, 'User ID không hợp lệ'),
+  rating: z.number().int().min(1, 'Rating phải từ 1-5').max(5, 'Rating phải từ 1-5'),
+  comment: z.string().min(1, 'Bình luận không được rỗng').max(500, 'Bình luận quá dài'),
+  images: z.array(z.string().min(1, 'Ảnh không được rỗng')).max(5, 'Tối đa 5 ảnh').default([]),
+  videos: z.array(z.string().min(1, 'Video không được rỗng')).max(2, 'Tối đa 2 video').default([]),
+})
+
+export const updateReviewSchema = z.object({
+  rating: z.number().int().min(1, 'Rating phải từ 1-5').max(5, 'Rating phải từ 1-5').optional(),
+  comment: z.string().min(1, 'Bình luận không được rỗng').max(500, 'Bình luận quá dài').optional(),
+  images: z.array(z.string().min(1, 'Ảnh không được rỗng')).max(5, 'Tối đa 5 ảnh').optional(),
+  videos: z.array(z.string().min(1, 'Video không được rỗng')).max(2, 'Tối đa 2 video').optional(),
+})
+
 export type CreateProductInput = z.infer<typeof createProductSchema>
 export type UpdateProductInput = z.infer<typeof updateProductSchema>
+export type UpdateUserInput = z.infer<typeof updateUserSchema>
+export type CreateReviewInput = z.infer<typeof createReviewSchema>
+export type UpdateReviewInput = z.infer<typeof updateReviewSchema>
 
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>

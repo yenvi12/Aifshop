@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MdAdd, MdEdit, MdDelete, MdInventory, MdArrowBack, MdImage, MdStar, MdViewList, MdViewModule, MdSearch, MdFilterList, MdCheckBox, MdCheckBoxOutlineBlank, MdDeleteSweep } from "react-icons/md";
-import Header from "@/components/Header";
+import { MdAdd, MdEdit, MdDelete, MdInventory, MdImage, MdStar, MdViewList, MdViewModule, MdSearch, MdFilterList, MdCheckBox, MdCheckBoxOutlineBlank, MdDeleteSweep } from "react-icons/md";
 import EditProductModal from "@/components/admin/EditProductModal";
 import toast from "react-hot-toast";
 
@@ -248,7 +247,6 @@ export default function ManageProductsPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-brand-light/30">
-        <Header />
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
         </div>
@@ -258,19 +256,12 @@ export default function ManageProductsPage() {
 
   return (
     <main className="min-h-screen bg-brand-light/30">
-      <Header />
+     
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="flex items-center gap-2 text-brand-dark hover:text-brand-primary"
-            >
-              <MdArrowBack className="w-5 h-5" />
-              Back to Admin
-            </Link>
             <div>
               <h1 className="text-2xl font-bold text-brand-dark">Manage Products</h1>
               <p className="text-brand-secondary">Edit and delete your products</p>

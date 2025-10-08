@@ -14,7 +14,7 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-brand-light">
-      <Header />
+      
 
       <main className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-[2fr_1fr] gap-10">
         {/* LEFT SECTION */}
@@ -34,9 +34,9 @@ export default function PaymentPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm" >
               <input type="text" placeholder="First name"  className="border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary" />
-              <input type="text" placeholder="Last name"  className="border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary" />
-              <input type="text" placeholder="Address"  className="border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary" />
-              <input type="text" placeholder="City"  className="border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary" />
+              <input type="text" placeholder="Last name"  className="input" />
+              <input type="text" placeholder="Address"  className="input" />
+              <input type="text" placeholder="City"  className="input" />
               <input type="text" placeholder="Postal code"  className="input" />
             </div>
           </section>
@@ -46,7 +46,7 @@ export default function PaymentPage() {
             <h2 className="text-lg font-semibold mb-4">Payment method</h2>
             <div className="space-y-3">
               {[
-                { id: "stripe", label: "Stripe", type: "Card" },
+                { id: "cod", label: "Cash on delivery", type: "Cash" },
                 { id: "vnpay", label: "VNPay", type: "Wallet" },
                 { id: "momo", label: "MoMo", type: "App" },
                 { id: "qr", label: "QR Pay", type: "Scan" },

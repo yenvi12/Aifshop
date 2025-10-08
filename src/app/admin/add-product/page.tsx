@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MdCloudUpload, MdAdd, MdImage, MdArrowBack } from "react-icons/md";
+import { MdCloudUpload, MdAdd, MdImage } from "react-icons/md";
 import Header from "@/components/Header";
 import toast from "react-hot-toast";
 
@@ -20,7 +20,6 @@ interface ProductFormData {
   category: string;
   stock: string;
   sizes: SizeOption[];
-  rating: string;
   badge: string;
   image: File | null;
   images: File[];
@@ -38,7 +37,6 @@ export default function AddProductPage() {
     category: "",
     stock: "",
     sizes: [],
-    rating: "0",
     badge: "",
     image: null,
     images: []
@@ -142,13 +140,6 @@ export default function AddProductPage() {
       }
     }
 
-    // Rating validation
-    if (formData.rating.trim()) {
-      const ratingValue = parseFloat(formData.rating);
-      if (isNaN(ratingValue) || ratingValue < 0 || ratingValue > 5) {
-        newErrors.rating = "Rating must be a number between 0 and 5";
-      }
-    }
 
     // Size validation
     let totalSizeStock = 0;
@@ -214,9 +205,6 @@ export default function AddProductPage() {
       if (formData.sizes.length > 0) {
         submitData.append('sizes', JSON.stringify(formData.sizes));
       }
-      if (formData.rating) {
-        submitData.append('rating', formData.rating);
-      }
       if (formData.badge) {
         submitData.append('badge', formData.badge);
       }
@@ -264,20 +252,13 @@ export default function AddProductPage() {
 
   return (
     <main className="min-h-screen bg-brand-light/30">
-      <Header />
+      
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link
-            href="/admin"
-            className="flex items-center gap-2 text-brand-dark hover:text-brand-primary"
-          >
-            <MdArrowBack className="w-5 h-5" />
-            Back to Admin
-          </Link>
           <div>
-            <h1 className="text-2xl font-bold text-brand-dark">Add New Product</h1>
+            <h1 className="text-xl font-bold text-brand-dark">Add New Product</h1>
             <p className="text-brand-secondary">Create a new product for your store</p>
           </div>
         </div>
@@ -395,40 +376,23 @@ export default function AddProductPage() {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Stock Quantity *</label>
-                  <input
-                    type="number"
-                    name="stock"
-                    value={formData.stock}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
-                      errors.stock ? 'border-red-500' : 'border-brand-light'
-                    }`}
-                    placeholder="0"
-                  />
-                  {errors.stock && (
-                    <p className="text-red-500 text-xs mt-1">{errors.stock}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating (0-5)</label>
-                  <input
-                    type="number"
-                    name="rating"
-                    value={formData.rating}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="5"
-                    step="0.1"
-                    className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
-                    placeholder="0"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Stock Quantity *</label>
+                <input
+                  type="number"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
+                    errors.stock ? 'border-red-500' : 'border-brand-light'
+                  }`}
+                  placeholder="0"
+                />
+                {errors.stock && (
+                  <p className="text-red-500 text-xs mt-1">{errors.stock}</p>
+                )}
               </div>
 
               <div>
@@ -455,7 +419,7 @@ export default function AddProductPage() {
                 <button
                   type="button"
                   onClick={addSize}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-primary text-white hover:opacity-90 text-sm"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-accent text-white hover:opacity-90 text-sm"
                 >
                   <MdAdd className="w-4 h-4" />
                   Add Size
@@ -546,11 +510,11 @@ export default function AddProductPage() {
                       id="main-image"
                     />
                     <label htmlFor="main-image" className="cursor-pointer">
-                      <MdCloudUpload className="w-12 h-12 text-brand-secondary mx-auto mb-4" />
-                      <p className="text-brand-secondary mb-2">
+                      <MdCloudUpload className="w-12 h-12 text-brand-accent mx-auto mb-4" />
+                      <p className="text-brand-accent mb-2">
                         Click to upload main image
                       </p>
-                      <p className="text-xs text-brand-secondary">PNG, JPG, GIF up to 10MB</p>
+                      <p className="text-xs text-brand-accent">PNG, JPG, GIF up to 10MB</p>
                     </label>
                   </div>
                 )}
@@ -597,14 +561,14 @@ export default function AddProductPage() {
                       id="additional-images"
                     />
                     <label htmlFor="additional-images" className="cursor-pointer">
-                      <MdImage className="w-12 h-12 text-brand-secondary mx-auto mb-4" />
-                      <p className="text-brand-secondary mb-2">
+                      <MdImage className="w-12 h-12 text-brand-accent mx-auto mb-4" />
+                      <p className="text-brand-accent mb-2">
                         {formData.images.length > 0
                           ? `Add more images (${formData.images.length}/5)`
                           : 'Click to upload additional images'
                         }
                       </p>
-                      <p className="text-xs text-brand-secondary">PNG, JPG, GIF up to 10MB each</p>
+                      <p className="text-xs text-brand-accent">PNG, JPG, GIF up to 10MB each</p>
                     </label>
                   </div>
                 )}
@@ -626,7 +590,7 @@ export default function AddProductPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-brand-primary text-white hover:opacity-90 disabled:opacity-60"
+                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-brand-accent text-white hover:opacity-90 disabled:opacity-60"
               >
                 <MdAdd className="w-4 h-4" />
                 {loading ? 'Adding Product...' : 'Add Product'}

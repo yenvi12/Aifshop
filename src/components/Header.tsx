@@ -18,8 +18,9 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
 
-    // Check JWT token from localStorage
-    const checkAuthToken = () => {
+    // Check authentication from both localStorage and Supabase session
+    const checkAuth = async () => {
+      // First, check JWT token from localStorage
       const token = localStorage.getItem("accessToken");
       if (token) {
         try {
@@ -45,12 +46,47 @@ export default function Header() {
           localStorage.removeItem("refreshToken");
         }
       } else {
-        setUser(null);
-        setUserRole(null);
+        // If no localStorage token, check Supabase session (for Google OAuth)
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            // Create session tokens for Google OAuth users
+            try {
+              const response = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`
+                }
+              });
+
+              const sessionData = await response.json();
+              if (sessionData.success) {
+                localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+                localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+                setUser(session.user);
+                setUserRole(sessionData.tokens.role || 'USER');
+              } else {
+                setUser(session.user);
+                setUserRole('USER');
+              }
+            } catch (error) {
+              // If session creation fails, still use Supabase user
+              setUser(session.user);
+              setUserRole('USER');
+            }
+          } else {
+            setUser(null);
+            setUserRole(null);
+          }
+        } catch (error) {
+          setUser(null);
+          setUserRole(null);
+        }
       }
     };
 
-    checkAuthToken();
+    checkAuth();
 
     // Close dropdown on outside click
     const handleClickOutside = (event: MouseEvent) => {
@@ -67,9 +103,49 @@ export default function Header() {
     };
   }, []);
 
+  // Listen for auth state changes from Supabase
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Handle Google OAuth sign in
+        try {
+          const response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
+
+          const sessionData = await response.json();
+          if (sessionData.success) {
+            localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+            localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+            setUser(session.user);
+            setUserRole(sessionData.tokens.role || 'USER');
+          } else {
+            setUser(session.user);
+            setUserRole('USER');
+          }
+        } catch (error) {
+          setUser(session.user);
+          setUserRole('USER');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setUserRole(null);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Refresh auth on route change
   useEffect(() => {
-    const checkAuthToken = () => {
+    const checkAuth = async () => {
+      // First, check JWT token from localStorage
       const token = localStorage.getItem("accessToken");
       if (token) {
         try {
@@ -92,12 +168,47 @@ export default function Header() {
           localStorage.removeItem("refreshToken");
         }
       } else {
-        setUser(null);
-        setUserRole(null);
+        // If no localStorage token, check Supabase session (for Google OAuth)
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            // Create session tokens for Google OAuth users
+            try {
+              const response = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`
+                }
+              });
+
+              const sessionData = await response.json();
+              if (sessionData.success) {
+                localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+                localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+                setUser(session.user);
+                setUserRole(sessionData.tokens.role || 'USER');
+              } else {
+                setUser(session.user);
+                setUserRole('USER');
+              }
+            } catch (error) {
+              // If session creation fails, still use Supabase user
+              setUser(session.user);
+              setUserRole('USER');
+            }
+          } else {
+            setUser(null);
+            setUserRole(null);
+          }
+        } catch (error) {
+          setUser(null);
+          setUserRole(null);
+        }
       }
     };
 
-    checkAuthToken();
+    checkAuth();
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -115,10 +226,14 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-primary to-brand-secondary flex items-center justify-center text-white font-bold text-lg">
-            A
+          <div className="flex items-center justify-center h-10 w-10 overflow-hidden">
+            <img
+              src="/AIFShop.svg"
+              alt="AIFShop Logo"
+              className="h-18 w-18 object-contain align-middle"
+            />
           </div>
-          <span className="font-bold text-lg text-brand-dark">AIFShop</span>
+          <span className="font-bold text-xl text-brand-dark leading-none">AIFShop</span>
         </Link>
 
         {/* Menu */}

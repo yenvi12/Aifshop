@@ -4,40 +4,41 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { MdStar, MdLocalShipping, MdStraighten } from "react-icons/md";
+import toast from "react-hot-toast";
 import ProductCard, { type Product } from "@/components/ProductCard";
 import Header from "@/components/Header";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function HomePage() {
-  const [q, setQ] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/products');
+        const response = await fetch("/api/products");
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
-            // Transform API data to match ProductCard interface
-            const transformedProducts = result.data.map((p: any) => ({
+            const transformed: Product[] = result.data.map((p: any) => ({
               id: p.id,
               slug: p.slug,
               name: p.name,
               price: p.price,
               compareAtPrice: p.compareAtPrice || undefined,
-              image: p.image || undefined, // Don't use fallback for main page, let component handle it
+              image: p.image || undefined,
               images: p.images || [],
               badge: p.badge || undefined,
-              rating: p.rating || undefined
+              rating: p.rating || undefined,
             }));
-            setProducts(transformedProducts);
+            setProducts(transformed);
           }
         }
-      } catch (error) {
-        console.error('Failed to fetch products:', error);
-        // Fallback to mock data if API fails
+      } catch (e) {
+        console.error("Failed to fetch products:", e);
         setProducts([
           { id: "1", slug: "desert-pearl-drops", name: "Desert Pearl Drops", price: 129, compareAtPrice: 159, image: "/demo/dc10.jpg", badge: "New", rating: 4.8 },
           { id: "2", slug: "scarfy-necklace", name: "Scarfy Necklace", price: 149, image: "/demo/dc3.jpg", rating: 4.5 },
@@ -48,12 +49,71 @@ export default function HomePage() {
       }
     };
 
+    // Check authentication state
+    const checkAuth = () => {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          setUser({ id: payload.userId, email: payload.email });
+          setAccessToken(token);
+        } catch (error) {
+          console.error("Invalid token:", error);
+          setUser(null);
+          setAccessToken(null);
+        }
+      } else {
+        setUser(null);
+        setAccessToken(null);
+      }
+    };
+
     fetchProducts();
+    checkAuth();
   }, []);
+
+  // Function to handle adding product to cart
+  const handleAddToCart = async (product: Product) => {
+    if (!user || !accessToken) {
+      toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          quantity: 1,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Product added to cart successfully!");
+      } else {
+        if (response.status === 401) {
+          toast.error("Session expired. Please log in again.");
+          setUser(null);
+          setAccessToken(null);
+        } else {
+          toast.error(result.error || "Unable to add product to cart");
+        }
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error("An error occurred while adding the product to the cart");
+    }
+  };
 
   if (loading) {
     return (
-      <main className="min-h-screen" suppressHydrationWarning={true}>
+      <main className="min-h-screen" suppressHydrationWarning>
         <Header />
         <div className="flex items-center justify-center min-h-[50vh]">
           <LoadingSpinner />
@@ -62,13 +122,21 @@ export default function HomePage() {
     );
   }
 
+  // mock reviews (có thể thay bằng dữ liệu thật từ API)
+  const reviews = [
+    { r: 5, t: "Love the quality. Will buy more!" },
+    { r: 4, t: "Easy to style. Fits most occasions." },
+    { r: 5, t: "Fast shipping and great price!" },
+    { r: 4, t: "Nice packaging, item as described." },
+    { r: 5, t: "Top-notch customer support." },
+  ];
+
   return (
     <main className="min-h-screen" suppressHydrationWarning={true}>
-      <Header></Header>
+
       {/* ===== HERO ===== */}
       <section className="bg-brand-accent/20">
         <div className="max-w-6xl mx-auto px-4 py-8 md:py-10 grid md:grid-cols-[1fr_480px] gap-6 items-center">
-          {/* left copy */}
           <div className="space-y-4">
             <div className="inline-block text-xs px-2 py-1 rounded-full bg-brand-light text-brand-primary">
               Fresh & curated
@@ -80,29 +148,18 @@ export default function HomePage() {
               Browse our collection of unique styles and find what suits you best.
             </p>
             <div className="flex gap-3">
-              <Link
-                href="/shop"
-                className="rounded-xl px-4 py-2.5 bg-brand-primary text-white hover:opacity-90"
-              >
+              <Link href="/shop" className="rounded-xl px-4 py-2.5 bg-brand-primary text-white hover:opacity-90">
                 Shop Now
-              </Link>
-              <Link
-                href="/about"
-                className="rounded-xl px-4 py-2.5 bg-white border border-brand-light text-brand-dark hover:bg-brand-light/50"
-              >
-                Learn more
               </Link>
             </div>
           </div>
 
-          {/* right image */}
           <div className="rounded-2xl overflow-hidden shadow-smooth border border-brand-light bg-white">
             <Image
               src="/demo/hero-jewelry.jpg"
               alt="Hero jewelry"
               width={900}
               height={700}
-              
               className="w-full h-[260px] md:h-[300px] object-cover"
               priority
             />
@@ -122,14 +179,13 @@ export default function HomePage() {
 
         <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.slice(0, 3).map((p) => (
-            <ProductCard key={p.id} p={p} />
+            <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
           ))}
         </div>
 
-        {/* row 2 (nếu muốn nhiều hơn) */}
         <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.slice(3, 6).map((p) => (
-            <ProductCard key={p.id} p={p} />
+            <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
           ))}
         </div>
       </section>
@@ -137,17 +193,21 @@ export default function HomePage() {
       {/* ===== REVIEWS ===== */}
       <section className="max-w-6xl mx-auto px-4 pb-8">
         <div className="rounded-2xl border border-brand-light bg-white shadow-sm">
-          <div className="p-4 border-b border-brand-light">
-            <h3 className="font-semibold text-brand-dark">Customer Reviews</h3>
-            <p className="text-sm text-brand-secondary">See what our customers are saying</p>
+          <div className="flex items-center justify-between p-4 border-b border-brand-light">
+            <div>
+              <h3 className="font-semibold text-brand-dark">Customer Reviews</h3>
+              <p className="text-sm text-brand-secondary">See what our customers are saying</p>
+            </div>
+            <button
+              onClick={() => setShowAllReviews(true)}
+              className="text-sm font-medium text-brand-primary hover:underline"
+            >
+              See all
+            </button>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-4 p-4">
-            {[
-              { t: "Love the quality. Will buy more!", r: 5 },
-              { t: "Easy to style. Fits most occasions.", r: 4 },
-              { t: "Fast shipping and great price!", r: 5 },
-            ].map((rv, i) => (
+            {reviews.slice(0, 3).map((rv, i) => (
               <div key={i} className="rounded-xl border border-brand-light p-3">
                 <div className="flex items-center gap-1 text-amber-400">
                   {Array.from({ length: 5 }).map((_, j) => (
@@ -226,7 +286,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== FOOTER BAR ===== */}
+      {/* ===== FOOTER ===== */}
       <footer className="bg-brand-light border-t border-brand-accent">
         <div className="max-w-6xl mx-auto px-4 py-6 text-xs text-brand-secondary flex flex-col md:flex-row items-center justify-between gap-2">
           <p>© 2025 AIFShop. All rights reserved.</p>
@@ -236,6 +296,40 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* ===== SEE ALL REVIEWS MODAL ===== */}
+      {showAllReviews && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowAllReviews(false)} />
+          <div className="relative z-10 w-full max-w-2xl rounded-2xl bg-white shadow-xl border border-brand-light p-4">
+            <div className="flex items-center justify-between border-b border-brand-light pb-3">
+              <h3 className="font-semibold text-brand-dark">All Customer Reviews</h3>
+              <button
+                onClick={() => setShowAllReviews(false)}
+                className="text-sm px-2 py-1 rounded-md border border-brand-light hover:bg-brand-light/60"
+              >
+                Close
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto divide-y divide-brand-light">
+              {reviews.map((rv, idx) => (
+                <div key={idx} className="py-3">
+                  <div className="flex items-center gap-1 text-amber-400">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <MdStar key={j} className={`w-4 h-4 ${j < rv.r ? "" : "text-brand-light"}`} />
+                    ))}
+                  </div>
+                  <p className="mt-2 text-sm text-brand-dark">{rv.t}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
