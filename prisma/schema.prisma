@@ -97,6 +97,7 @@ model Review {
 
        @@unique([productId, userId]) // One review per user per product
        @@map("reviews")
+}
 model Cart {
       id        String   @id @default(cuid())
       userId    String

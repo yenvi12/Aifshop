@@ -137,15 +137,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Calculate new quantity (existing + requested)
-    const newQuantity = existingCartItem ? existingCartItem.quantity + quantity : quantity
+    // Use the exact quantity from frontend (replace current quantity)
+    const newQuantity = quantity
 
-    // Check stock availability
+    // Check stock availability for the requested quantity
     if (product.stock < newQuantity) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Quantity exceeds available stock, please adjust.'
+          error: `Insufficient stock. Available: ${product.stock}, Requested: ${newQuantity}`
         },
         { status: 400 }
       )
@@ -192,18 +192,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Check stock for updated total quantity (already calculated above)
-      if (product.stock < newQuantity) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Insufficient stock for total quantity. Available: ${product.stock}, Requested: ${newQuantity}`
-          },
-          { status: 400 }
-        )
-      }
-
-      // Update quantity if item exists (add to existing quantity)
+      // Update quantity if item exists (replace current quantity)
       cartItem = await prisma.cart.update({
         where: { id: existingCartItem.id },
         data: { quantity: newQuantity },
@@ -255,8 +244,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: existingCartItem
-        ? `Đã cập nhật số lượng sản phẩm trong giỏ hàng (+${quantity})`
-        : `Đã thêm sản phẩm vào giỏ hàng (${quantity})`,
+        ? `The quantity of products in the cart has been updated. (+${quantity})`
+        : `The product has been added to the cart. (${quantity})`,
       data: cartItem
     })
 

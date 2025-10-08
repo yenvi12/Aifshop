@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiHeart, FiX, FiMinus, FiPlus } from 'react-icons/fi';
-import Header from '@/components/Header';
+import toast from 'react-hot-toast';
 
 // Interface for cart item from API
 interface CartItem {
@@ -105,12 +105,24 @@ const CartPage = () => {
       if (data.success) {
         // Refresh cart items
         await fetchCartItems();
+        // Show success toast for quantity update
+        toast.success('Product quantity updated');
       } else {
-        setError(data.error || 'Unable to update quantity');
+        // Show specific error message for stock issues
+        if (data.error && data.error.includes('stock')) {
+          toast.error('Insufficient stock available');
+        } else {
+          toast.error(data.error || 'Unable to update quantity');
+        }
+        // Don't clear error state for stock errors, but clear for other errors
+        if (!data.error || !data.error.includes('stock')) {
+          setError(null);
+        }
       }
     } catch (err) {
       console.error('Error updating quantity:', err);
-      setError('Unable to connect to server');
+      toast.error('Unable to connect to server');
+      setError(null); // Clear error for connection issues
     }
   };
 
@@ -119,7 +131,7 @@ const CartPage = () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setError('Please login');
+        toast.error('Please login to continue');
         return;
       }
 
@@ -139,12 +151,13 @@ const CartPage = () => {
       if (data.success) {
         // Refresh cart items
         await fetchCartItems();
+        toast.success('Product removed from cart');
       } else {
-        setError(data.error || 'Unable to delete product');
+        toast.error(data.error || 'Unable to remove product');
       }
     } catch (err) {
       console.error('Error removing item:', err);
-      setError('Unable to connect to server');
+      toast.error('Unable to connect to server');
     }
   };
 
@@ -189,7 +202,10 @@ const CartPage = () => {
     router.push('/shop');
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = item.product.price || item.product.compareAtPrice || 0;
+    return sum + (price * item.quantity);
+  }, 0);
   const total = subtotal;
 
   return (
@@ -268,14 +284,29 @@ const CartPage = () => {
                           <div className="flex items-center bg-gray-50 rounded-lg p-1">
                             <button
                               onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
-                              className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-white hover:shadow-sm transition-all duration-200"
+                              disabled={item.quantity <= 1}
+                              className={`w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center transition-all duration-200 ${
+                                item.quantity <= 1
+                                  ? 'opacity-50 cursor-not-allowed'
+                                  : 'hover:bg-white hover:shadow-sm'
+                              }`}
                             >
                               <FiMinus className="w-4 h-4" />
                             </button>
                             <span className="w-12 text-center font-semibold text-base">{item.quantity}</span>
                             <button
                               onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
-                              className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-white hover:shadow-sm transition-all duration-200"
+                              disabled={item.quantity >= item.product.stock}
+                              className={`w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center transition-all duration-200 ${
+                                item.quantity >= item.product.stock
+                                  ? 'opacity-50 cursor-not-allowed'
+                                  : 'hover:bg-white hover:shadow-sm'
+                              }`}
+                              title={
+                                item.quantity >= item.product.stock
+                                  ? `Only left ${item.product.stock} items in stock`
+                                  : 'Add item'
+                              }
                             >
                               <FiPlus className="w-4 h-4" />
                             </button>
@@ -299,9 +330,14 @@ const CartPage = () => {
                     {/* Price */}
                     <div className="text-right flex-shrink-0 space-y-1">
                       <div className="text-lg font-bold text-gray-900">
-                        {item.product.price ? `$${item.product.price.toFixed(2)}` : '$0.00'}
+                        {item.product.price
+                          ? `$${item.product.price.toFixed(2)}`
+                          : item.product.compareAtPrice
+                            ? `$${item.product.compareAtPrice.toFixed(2)}`
+                            : '$0.00'
+                        }
                       </div>
-                      {item.product.compareAtPrice && item.product.compareAtPrice > item.product.price && (
+                      {item.product.compareAtPrice && item.product.compareAtPrice > (item.product.price || item.product.compareAtPrice) && (
                         <div className="text-sm text-gray-500 line-through">
                           ${item.product.compareAtPrice.toFixed(2)}
                         </div>
@@ -403,7 +439,7 @@ const CartPage = () => {
                         }
                       </p>
                       <div className="text-lg font-bold text-gray-900">
-                        ${product.price ? product.price.toFixed(2) : '0.00'}
+                        ${product.price || product.compareAtPrice ? (product.price || product.compareAtPrice).toFixed(2) : '0.00'}
                       </div>
                     </div>
                   </div>
