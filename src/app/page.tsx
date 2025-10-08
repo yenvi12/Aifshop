@@ -69,8 +69,7 @@ export default function HomePage() {
   ];
 
   return (
-    <main className="min-h-screen" suppressHydrationWarning>
-      <Header />
+    <main className="min-h-screen" suppressHydrationWarning={true}>
 
       {/* ===== HERO ===== */}
       <section className="bg-brand-accent/20">

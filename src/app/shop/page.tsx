@@ -176,7 +176,7 @@ export default function ProductListPage() {
 
   return (
     <main className="min-h-screen bg-brand-light/40 text-brand-dark">
-      <Header />
+      
 
       {/* Top actions on mobile */}
       <div className="md:hidden max-w-7xl mx-auto px-4 pt-4">

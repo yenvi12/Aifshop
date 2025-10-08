@@ -258,7 +258,7 @@ export default function ManageProductsPage() {
 
   return (
     <main className="min-h-screen bg-brand-light/30">
-      <Header />
+     
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
@@ -269,7 +269,6 @@ export default function ManageProductsPage() {
               className="flex items-center gap-2 text-brand-dark hover:text-brand-primary"
             >
               <MdArrowBack className="w-5 h-5" />
-              Back to Admin
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-brand-dark">Manage Products</h1>
