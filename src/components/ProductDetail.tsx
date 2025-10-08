@@ -28,6 +28,15 @@ type Review = {
   };
 };
 
+type Product = {
+  id: string;
+  name: string;
+  image?: string;
+  price?: number;
+  compareAtPrice?: number;
+  slug?: string;
+};
+
 type Props = {
   product: Product & {
     description?: string;
@@ -53,6 +62,10 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, reviewId: string | null}>({show: false, reviewId: null});
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   // Get current user ID from JWT token
   useEffect(() => {
@@ -87,19 +100,69 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     router.push("/payment");
   };
 
+  // Edit review handler
+  const handleEditReview = (review: Review) => {
+    setEditingReview(review);
+    setEditingReviewId(review.id);
+    setShowReviewForm(true);
+  };
+
+  // Delete review handler
+  const handleDeleteReview = async (reviewId: string) => {
+    setDeleteConfirm({show: true, reviewId});
+  };
+
+  // Confirm delete review
+  const confirmDeleteReview = async () => {
+    if (!deleteConfirm.reviewId) return;
+
+    setDeletingReviewId(deleteConfirm.reviewId);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Bạn cần đăng nhập để thực hiện thao tác này');
+      }
+
+      const response = await fetch(`/api/reviews?id=${deleteConfirm.reviewId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Không thể xóa đánh giá');
+      }
+
+      // Update local reviews state
+      setReviews(reviews.filter(r => r.id !== deleteConfirm.reviewId));
+      toast.success('Review deleted successfully');
+
+    } catch (error) {
+      console.error('Delete review error:', error);
+      toast.error('Failed to delete review. Please try again.');
+    } finally {
+      setDeletingReviewId(null);
+      setDeleteConfirm({show: false, reviewId: null});
+    }
+  };
+
   // Review management functions
   const handleSubmitReview = async (reviewData: any) => {
     setIsSubmittingReview(true);
     try {
-      const url = "/api/reviews";
-      const method = "POST";
+      const isEdit = !!reviewData.id;
+      const url = isEdit ? `/api/reviews?id=${reviewData.id}` : "/api/reviews";
+      const method = isEdit ? "PUT" : "POST";
 
-      const body = { ...reviewData, productId: product.id };
+      const body = isEdit ? reviewData : { ...reviewData, productId: product.id };
 
       // Get auth token from localStorage
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        throw new Error('Bạn cần đăng nhập để thực hiện thao tác này');
+        throw new Error('You need to login to perform this action');
       }
 
       const headers: Record<string, string> = {
@@ -123,13 +186,22 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
         throw new Error(result.error || "Failed to submit review");
       }
 
-      // Update local reviews state
-      setReviews([result.data, ...reviews]);
+      if (isEdit) {
+        // Update existing review in state
+        setReviews(reviews.map(r => r.id === reviewData.id ? result.data : r));
+        toast.success('Review updated successfully');
+      } else {
+        // Add new review
+        setReviews([result.data, ...reviews]);
+        toast.success('Review submitted successfully');
+      }
 
       setShowReviewForm(false);
+      setEditingReview(null);
+      setEditingReviewId(null);
     } catch (error) {
       console.error("Error submitting review:", error);
-      alert("Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setIsSubmittingReview(false);
     }
@@ -397,21 +469,17 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
             {activeTab === "reviews" && (
               <div className="space-y-6">
-                {/* Add Review Button */}
+                {/* Reviews Header */}
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Đánh giá sản phẩm</h3>
+                  <h3 className="text-lg font-semibold">Product Reviews</h3>
                   {!showReviewForm && !hasUserReviewed && currentUserId && (
                     <button
                       onClick={() => setShowReviewForm(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                      disabled={editingReviewId !== null}
                     >
-                      Viết đánh giá
+                      {editingReviewId ? 'Loading...' : 'Write Review'}
                     </button>
-                  )}
-                  {hasUserReviewed && (
-                    <span className="text-sm text-gray-500 px-3 py-2 bg-gray-100 rounded-lg">
-                      Bạn đã đánh giá sản phẩm này
-                    </span>
                   )}
                 </div>
 
@@ -419,9 +487,12 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                 {showReviewForm && (
                   <ReviewForm
                     productId={product.id}
+                    initialReview={editingReview || undefined}
                     onSubmit={handleSubmitReview}
                     onCancel={() => {
                       setShowReviewForm(false);
+                      setEditingReview(null);
+                      setEditingReviewId(null);
                     }}
                     isLoading={isSubmittingReview}
                   />
@@ -430,6 +501,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                 {/* Reviews List */}
                 <ReviewList
                   reviews={reviews}
+                  currentUserId={currentUserId}
+                  onEditReview={handleEditReview}
+                  onDeleteReview={handleDeleteReview}
+                  editingReviewId={editingReviewId}
+                  deletingReviewId={deletingReviewId}
                 />
               </div>
             )}
@@ -497,6 +573,32 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm.show && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-3">Delete Review</h3>
+              <p className="text-gray-600 mb-6">Are you sure you want to delete this review? This action cannot be undone.</p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteConfirm({show: false, reviewId: null})}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                  disabled={deletingReviewId !== null}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteReview}
+                  disabled={deletingReviewId !== null}
+                  className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 rounded-lg transition-colors duration-200"
+                >
+                  {deletingReviewId ? 'Deleting...' : 'Delete Review'}
+                </button>
+              </div>
             </div>
           </div>
         )}
