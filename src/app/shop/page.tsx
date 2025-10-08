@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { MdFilterList, MdSort, MdClose, MdRefresh } from "react-icons/md";
 import { FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import ProductCard, { type Product } from "@/components/ProductCard";
@@ -105,6 +107,7 @@ function FilterContent() {
 }
 
 export default function ProductListPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -162,6 +165,47 @@ export default function ProductListPage() {
     };
     fetchProducts();
   }, []);
+
+  const handleAddToCart = async (product: Product) => {
+    try {
+      // Kiểm tra authentication
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Please login to add products to cart");
+        router.push("/login");
+        return;
+      }
+
+      // Gọi API thêm vào giỏ hàng
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          quantity: 1
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(data.message || "Product added to cart successfully!");
+      } else {
+        if (response.status === 401) {
+          toast.error("Session expired. Please log in again.");
+          router.push("/login");
+        } else {
+          toast.error(data.error || "Unable to add product to cart");
+        }
+      }
+    } catch (error) {
+      console.error('Add to cart error:', error);
+      toast.error("An error occurred while adding the product to the cart");
+    }
+  };
 
   if (loading) {
     return (
@@ -239,7 +283,7 @@ export default function ProductListPage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((p) => (
                 <div key={p.id} className="relative z-0">
-                  <ProductCard p={p} />
+                  <ProductCard p={p} onAdd={handleAddToCart} />
                 </div>
               ))}
             </div>
