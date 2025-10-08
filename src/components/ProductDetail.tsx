@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { MdStar, MdFavoriteBorder, MdFavorite, MdShoppingBag, MdAdd, MdRemove } from "react-icons/md";
 import { type Product } from "./ProductCard";
 import Header from "./Header";
@@ -50,9 +51,61 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
       : 0;
  const handleBuyNow = () => {
-    // Nếu muốn truyền dữ liệu product, có thể lưu tạm vào localStorage / context
-    router.push("/payment");
-  };
+   // Nếu muốn truyền dữ liệu product, có thể lưu tạm vào localStorage / context
+   router.push("/payment");
+ };
+
+ const handleAddToCart = async () => {
+   try {
+     // Kiểm tra authentication
+     const token = localStorage.getItem("accessToken");
+     if (!token) {
+       toast.error("Please login to add products to cart");
+       return;
+     }
+
+     // Validate size selection if product has sizes
+     if (sizes.length > 0 && !selectedSize) {
+       toast.error("Please select a product size");
+       return;
+     }
+
+     // Gọi API thêm vào giỏ hàng
+     const response = await fetch('/api/cart', {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'Authorization': `Bearer ${token}`
+       },
+       body: JSON.stringify({
+         productId: product.id,
+         quantity: quantity,
+         size: selectedSize?.name || null
+       })
+     });
+
+     const data = await response.json();
+
+     if (data.success) {
+       toast.success(data.message || "Product added to cart successfully!");
+     } else {
+       if (response.status === 401) {
+         toast.error("Session expired. Please log in again.");
+         localStorage.removeItem("accessToken");
+         localStorage.removeItem("refreshToken");
+       } else if (response.status === 400) {
+         toast.error(data.error || "Invalid product information");
+       } else if (response.status === 404) {
+         toast.error("Product not found");
+       } else {
+         toast.error(data.error || "Unable to add product to cart");
+       }
+     }
+   } catch (error) {
+     console.error('Add to cart error:', error);
+     toast.error("An error occurred while adding the product to the cart");
+   }
+ };
 
   return (
     <>
@@ -187,7 +240,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               {/* Add to Cart Button */}
-              <button className="flex-1 rounded-xl py-2.5 px-6  bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-light/90 disabled:opacity-60 transition">
+              <button
+                onClick={handleAddToCart}
+                disabled={!selectedSize && sizes.length > 0}
+                className="flex-1 rounded-xl py-2.5 px-6 bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-light/90 disabled:opacity-60 transition"
+              >
                 Add to cart
               </button>
 

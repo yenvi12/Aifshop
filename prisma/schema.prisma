@@ -16,24 +16,27 @@ enum Role {
 }
 
 model User {
-     id                String   @id @default(cuid())
-     supabaseUserId    String?  @unique
-     email             String   @unique
-     firstName         String
-     lastName          String
-     phoneNumber       String?
-     dateOfBirth       DateTime
-     bio               String?
-     avatar            String?
-     stylePreferences  String[] // Array of preference strings
-     defaultAddress    Json?    // JSON object for shipping and billing
-     password          String
-     isVerified        Boolean  @default(false)
-     role              Role     @default(USER)
-     createdAt         DateTime @default(now())
-     updatedAt         DateTime @updatedAt
+      id                String   @id @default(cuid())
+      supabaseUserId    String?  @unique
+      email             String   @unique
+      firstName         String
+      lastName          String
+      phoneNumber       String?
+      dateOfBirth       DateTime
+      bio               String?
+      avatar            String?
+      stylePreferences  String[] // Array of preference strings
+      defaultAddress    Json?    // JSON object for shipping and billing
+      password          String
+      isVerified        Boolean  @default(false)
+      role              Role     @default(USER)
+      createdAt         DateTime @default(now())
+      updatedAt         DateTime @updatedAt
 
-     @@map("users")
+      // Relations
+      carts Cart[]
+
+      @@map("users")
 }
 
 model TempRegistration {
@@ -52,22 +55,43 @@ model TempRegistration {
 }
 
 model Product {
-      id             String   @id @default(cuid())
-      name           String
-      description    String?
-      price          Float?  // Made optional
-      compareAtPrice Float?  // Original price for sale display
-      category       String
-      image          String?
-      images         String[] // Array of image URLs
-      stock          Int      @default(0)
-      sizes          Json?    // Custom sizes: [{name: "S", stock: 10}, {name: "M", stock: 15}]
-      rating         Float?   @default(0) // Average rating (0-5)
-      badge          String?  // Badge like "New", "Sale", "Hot"
-      isActive       Boolean  @default(true)
-      slug           String   @unique
-      createdAt      DateTime @default(now())
-      updatedAt      DateTime @updatedAt
+       id             String   @id @default(cuid())
+       name           String
+       description    String?
+       price          Float?  // Made optional
+       compareAtPrice Float?  // Original price for sale display
+       category       String
+       image          String?
+       images         String[] // Array of image URLs
+       stock          Int      @default(0)
+       sizes          Json?    // Custom sizes: [{name: "S", stock: 10}, {name: "M", stock: 15}]
+       rating         Float?   @default(0) // Average rating (0-5)
+       badge          String?  // Badge like "New", "Sale", "Hot"
+       isActive       Boolean  @default(true)
+       slug           String   @unique
+       createdAt      DateTime @default(now())
+       updatedAt      DateTime @updatedAt
 
-      @@map("products")
+       // Relations
+       carts Cart[]
+
+       @@map("products")
+}
+
+model Cart {
+      id        String   @id @default(cuid())
+      userId    String
+      productId String
+      quantity  Int      @default(1)
+      size      String?  // Size selected by user (e.g., "S", "M", "L")
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+
+      // Relations
+      user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+      product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+      // Ensure one cart item per user per product per size
+      @@unique([userId, productId])
+      @@map("carts")
 }
