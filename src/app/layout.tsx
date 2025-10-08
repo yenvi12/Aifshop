@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ClientWrapper from "@/components/ClientWrapper";
-import Header from "@/components/Header";
+import HeaderWrapper from "@/components/HeaderWrapper";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 export const metadata: Metadata = {
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ClientWrapper>
           <div className="min-h-screen bg-gradient-to-b from-brand-light/60 to-white">
             {/* Header cố định toàn site */}
-            <Header />
+            <HeaderWrapper />
 
             {/* Content container + Breadcrumb dùng chung */}
             <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
