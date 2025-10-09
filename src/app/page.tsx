@@ -286,16 +286,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== FOOTER ===== */}
-      <footer className="bg-brand-light border-t border-brand-accent">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-xs text-brand-secondary flex flex-col md:flex-row items-center justify-between gap-2">
-          <p>© 2025 AIFShop. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <Link href="#" className="hover:text-brand-primary">Privacy Policy</Link>
-            <Link href="#" className="hover:text-brand-primary">Terms of Service</Link>
-          </div>
-        </div>
-      </footer>
 
       {/* ===== SEE ALL REVIEWS MODAL ===== */}
       {showAllReviews && (

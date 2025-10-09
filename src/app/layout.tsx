@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ClientWrapper from "@/components/ClientWrapper";
 import HeaderWrapper from "@/components/HeaderWrapper";
+import Footer from "@/components/Footer";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 export const metadata: Metadata = {
@@ -44,6 +45,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               />
               {children}
             </div>
+            
+            {/* Footer */}
+            <Footer />
           </div>
         </ClientWrapper>
       </body>
