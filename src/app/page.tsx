@@ -44,7 +44,7 @@ export default function HomePage() {
         setProducts([
           { id: "1", slug: "desert-pearl-drops", name: "Desert Pearl Drops", price: 129, compareAtPrice: 159, image: "/demo/dc10.jpg", badge: "New", rating: 4.8 },
           { id: "2", slug: "scarfy-necklace", name: "Scarfy Necklace", price: 149, image: "/demo/dc3.jpg", rating: 4.5 },
-          { id: "3", slug: "classic-leather-jacket-ear", name: "Classic Leather Jacket (Ear)", price: 99, compareAtPrice: 119, image: "/demo/ring1.jpg", badge: "Sale", rating: 4.7 },
+          { id: "3", slug: "classic-leather-jacket-ear", name: "Classic Diamond Ring", price: 99, compareAtPrice: 119, image: "/demo/ring1.jpg", badge: "Sale", rating: 4.7 },
         ]);
       } finally {
         setLoading(false);
@@ -215,15 +215,11 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {products.slice(0, 3).map((p) => (
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-col-3 lg:grid-cols-4 gap-4 items-stretch">
+          {products.slice(0, 8).map((p) => (
+            <div key={p.id} className="h-full">
             <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
-          ))}
-        </div>
-
-        <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {products.slice(3, 6).map((p) => (
-            <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
+            </div>
           ))}
         </div>
       </section>
