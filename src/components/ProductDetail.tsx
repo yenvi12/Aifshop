@@ -87,6 +87,12 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const sizes = product.sizes || [];
   const defaultSizes = sizes.length > 0 ? sizes : [{ name: "S", stock: 10 }, { name: "M", stock: 15 }, { name: "L", stock: 8 }];
 
+  // Debug logging
+  console.log("Product sizes:", sizes);
+  console.log("Product sizes length:", sizes.length);
+  console.log("Selected size:", selectedSize);
+  console.log("Button disabled condition:", !selectedSize && sizes.length > 0);
+
   const discount =
     product.compareAtPrice && product.price && product.compareAtPrice > product.price
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
@@ -208,11 +214,18 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   };
 
   const handleAddToCart = async () => {
+    console.log("Add to cart clicked!");
+    console.log("Product:", product.name);
+    console.log("Available sizes:", sizes);
+    console.log("Selected size:", selectedSize);
+    console.log("Token exists:", !!localStorage.getItem("accessToken"));
+
     try {
       // Kiểm tra authentication
       const token = localStorage.getItem("accessToken");
       if (!token) {
         toast.error("Please login to add products to cart");
+        router.push("/login");
         return;
       }
 
@@ -222,7 +235,32 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
         return;
       }
 
-      // Gọi API thêm vào giỏ hàng
+      // Lấy thông tin giỏ hàng hiện tại để kiểm tra sản phẩm đã tồn tại chưa
+      const cartResponse = await fetch('/api/cart', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const cartData = await cartResponse.json();
+
+      if (!cartData.success) {
+        toast.error("Unable to retrieve cart information");
+        return;
+      }
+
+      // Tìm sản phẩm trong giỏ hàng với cùng size (nếu có)
+      const existingItem = cartData.data?.find((item: any) =>
+        item.product.id === product.id && item.size === (selectedSize?.name || null)
+      );
+
+      // Nếu sản phẩm đã tồn tại với cùng size, tăng số lượng hiện tại lên số lượng được chọn
+      // Nếu chưa tồn tại, thêm mới với số lượng được chọn
+      const newQuantity = existingItem ? existingItem.quantity + quantity : quantity;
+
+      // Gọi API cập nhật giỏ hàng
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
@@ -231,7 +269,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: quantity,
+          quantity: newQuantity,
           size: selectedSize?.name || null
         })
       });
@@ -239,12 +277,16 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(data.message || "Product added to cart successfully!");
+        toast.success(data.message || "Sản phẩm đã được thêm vào giỏ hàng!");
+
+        // Send event to update cart count in Header and other components
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
       } else {
         if (response.status === 401) {
           toast.error("Session expired. Please log in again.");
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
+          router.push("/login");
         } else if (response.status === 400) {
           toast.error(data.error || "Invalid product information");
         } else if (response.status === 404) {
@@ -357,7 +399,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             {/* Size Selection - Only show if product has custom sizes */}
             {sizes.length > 0 && (
               <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Size</h3>
+                <h3 className="font-semibold text-gray-900">Size {!selectedSize && sizes.length > 0 && <span className="text-red-500">*</span>}</h3>
                 <div className="flex gap-3">
                   {sizes.map((size) => (
                     <button
@@ -394,6 +436,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                 <button
                   onClick={handleAddToCart}
                   disabled={!selectedSize && sizes.length > 0}
+                  title={!selectedSize && sizes.length > 0 ? "Please select a size first" : "Add to cart"}
                   className="flex-1 rounded-xl py-2.5 px-6 bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-light/90 disabled:opacity-60 transition"
                 >
                   Add to cart

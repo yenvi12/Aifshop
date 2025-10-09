@@ -104,7 +104,7 @@ model Cart {
   userId    String
   productId String
   quantity  Int      @default(1)
-  size      String? // Size selected by user (e.g., "S", "M", "L")
+  size      String?  // Size selected by user (e.g., "S", "M", "L")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -113,6 +113,7 @@ model Cart {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   // Ensure one cart item per user per product per size
-  @@unique([userId, productId])
+  @@unique([userId, productId, size], name: "userId_productId_size")
+
   @@map("carts")
 }

@@ -14,6 +14,7 @@ export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [cartItemCount, setCartItemCount] = useState<number>(0);
 
   useEffect(() => {
     setMounted(true);
@@ -142,6 +143,58 @@ export default function Header() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Function to fetch cart item count
+  const fetchCartItemCount = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || !user) {
+      setCartItemCount(0);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        // Calculate total quantity of all items in cart
+        const totalCount = data.data.reduce((total: number, item: any) => total + item.quantity, 0);
+        setCartItemCount(totalCount);
+      } else {
+        setCartItemCount(0);
+      }
+    } catch (error) {
+      console.error('Error fetching cart count:', error);
+      setCartItemCount(0);
+    }
+  };
+
+  // Listen for cart updates
+  useEffect(() => {
+    if (user) {
+      fetchCartItemCount();
+
+      // Listen for cart update events
+      const handleCartUpdate = () => {
+        fetchCartItemCount();
+      };
+
+      window.addEventListener('cartUpdated', handleCartUpdate);
+
+      return () => {
+        window.removeEventListener('cartUpdated', handleCartUpdate);
+      };
+    } else {
+      setCartItemCount(0);
+    }
+  }, [user]);
+
   // Refresh auth on route change
   useEffect(() => {
     const checkAuth = async () => {
@@ -252,10 +305,15 @@ export default function Header() {
           </Link>
           <Link
             href="/cart"
-            className="hover:text-brand-primary flex items-center gap-1"
+            className="hover:text-brand-primary flex items-center gap-1 relative"
           >
             <MdShoppingCart className="w-4 h-4" />
             Cart
+            {cartItemCount > 0 && (
+              <span className="absolute -top-2 -right-5 bg-brand-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {cartItemCount > 99 ? '99+' : cartItemCount}
+              </span>
+            )}
           </Link>
         </nav>
 
