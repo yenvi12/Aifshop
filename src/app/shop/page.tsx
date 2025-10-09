@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { MdFilterList, MdSort, MdClose, MdRefresh } from "react-icons/md";
 import { FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import ProductCard, { type Product } from "@/components/ProductCard";
-import Header from "@/components/Header";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 /** Reusable filter content so we can show it in both sidebar & mobile drawer */
@@ -145,11 +144,13 @@ export default function ProductListPage() {
               images: p.images || [],
               badge: p.badge || undefined,
               rating: p.rating || undefined,
+              sizes: p.sizes || undefined,
             }));
             setProducts(transformed);
           }
         }
-      } catch {
+      } catch (error) {
+        console.error('Fetch products error:', error);
         // fallback demo
         setProducts([
           { id: "1", slug: "navy-wool-blazer", name: "Silver Necklace", price: 180, image: "/demo/dc3.jpg", badge: "In stock" },
@@ -167,6 +168,16 @@ export default function ProductListPage() {
   }, []);
 
   const handleAddToCart = async (product: Product) => {
+    // Nếu sản phẩm có sizes, redirect đến trang chi tiết để chọn size
+    if (product.sizes && product.sizes.length > 0) {
+      if (product.slug) {
+        router.push(`/products/${product.slug}`);
+      } else {
+        toast.error("Unable to view product details");
+      }
+      return;
+    }
+
     try {
       // Kiểm tra authentication
       const token = localStorage.getItem("accessToken");
@@ -176,7 +187,30 @@ export default function ProductListPage() {
         return;
       }
 
-      // Gọi API thêm vào giỏ hàng
+      // Lấy thông tin giỏ hàng hiện tại để kiểm tra sản phẩm đã tồn tại chưa
+      const cartResponse = await fetch('/api/cart', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const cartData = await cartResponse.json();
+
+      if (!cartData.success) {
+        toast.error("Unable to retrieve cart information");
+        return;
+      }
+
+      // Tìm sản phẩm trong giỏ hàng
+      const existingItem = cartData.data?.find((item: any) => item.product.id === product.id);
+
+      // Nếu sản phẩm đã tồn tại, tăng số lượng hiện tại lên 1
+      // Nếu chưa tồn tại, thêm mới với số lượng 1
+      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+
+      // Gọi API cập nhật giỏ hàng
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
@@ -185,14 +219,17 @@ export default function ProductListPage() {
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: 1
+          quantity: newQuantity
         })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(data.message || "Product added to cart successfully!");
+        toast.success(data.message || "Sản phẩm đã được thêm vào giỏ hàng!");
+
+        // Send event to update cart count in Header and other components
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
       } else {
         if (response.status === 401) {
           toast.error("Session expired. Please log in again.");

@@ -3,18 +3,19 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { MdStar, MdLocalShipping, MdStraighten } from "react-icons/md";
 import toast from "react-hot-toast";
 import ProductCard, { type Product } from "@/components/ProductCard";
-import Header from "@/components/Header";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function HomePage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAllReviews, setShowAllReviews] = useState(false);
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+   const router = useRouter();
+   const [products, setProducts] = useState<Product[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [showAllReviews, setShowAllReviews] = useState(false);
+   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -33,6 +34,7 @@ export default function HomePage() {
               images: p.images || [],
               badge: p.badge || undefined,
               rating: p.rating || undefined,
+              sizes: p.sizes || undefined,
             }));
             setProducts(transformed);
           }
@@ -74,12 +76,46 @@ export default function HomePage() {
 
   // Function to handle adding product to cart
   const handleAddToCart = async (product: Product) => {
+    // Nếu sản phẩm có sizes, redirect đến trang chi tiết để chọn size
+    if (product.sizes && product.sizes.length > 0) {
+      if (product.slug) {
+        router.push(`/products/${product.slug}`);
+      } else {
+        toast.error("Unable to view product details");
+      }
+      return;
+    }
+
     if (!user || !accessToken) {
-      toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      toast.error("Please login to add products to cart");
       return;
     }
 
     try {
+      // Lấy thông tin giỏ hàng hiện tại để kiểm tra sản phẩm đã tồn tại chưa
+      const cartResponse = await fetch('/api/cart', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const cartData = await cartResponse.json();
+
+      if (!cartData.success) {
+        toast.error("Unable to retrieve cart information");
+        return;
+      }
+
+      // Tìm sản phẩm trong giỏ hàng
+      const existingItem = cartData.data?.find((item: any) => item.product.id === product.id);
+
+      // Nếu sản phẩm đã tồn tại, tăng số lượng hiện tại lên 1
+      // Nếu chưa tồn tại, thêm mới với số lượng 1
+      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+
+      // Gọi API cập nhật giỏ hàng
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
@@ -88,14 +124,17 @@ export default function HomePage() {
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: 1,
+          quantity: newQuantity,
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        toast.success("Product added to cart successfully!");
+        toast.success(result.message || "Sản phẩm đã được thêm vào giỏ hàng!");
+
+        // Send event to update cart count in Header and other components
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
       } else {
         if (response.status === 401) {
           toast.error("Session expired. Please log in again.");
@@ -114,7 +153,6 @@ export default function HomePage() {
   if (loading) {
     return (
       <main className="min-h-screen" suppressHydrationWarning>
-        <Header />
         <div className="flex items-center justify-center min-h-[50vh]">
           <LoadingSpinner />
         </div>

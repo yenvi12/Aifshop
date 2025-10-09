@@ -5,16 +5,12 @@ import LoadingSpinner from "./LoadingSpinner";
 import { Toaster } from "react-hot-toast";
 
 export default function ClientWrapper({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
+    // Remove artificial loading delay - let pages handle their own loading states
+    setIsLoading(false);
   }, []);
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
 
   return (
     <>

@@ -77,7 +77,7 @@ const CartPage = () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setError('Please login');
+        toast.error('Please login to continue');
         return;
       }
 
@@ -86,6 +86,15 @@ const CartPage = () => {
         await removeItem(productId, size);
         return;
       }
+
+      // Optimistically update UI first
+      setCartItems(prevItems =>
+        prevItems.map(item =>
+          item.product.id === productId && item.size === size
+            ? { ...item, quantity: newQuantity }
+            : item
+        )
+      );
 
       const response = await fetch('/api/cart', {
         method: 'POST',
@@ -103,26 +112,29 @@ const CartPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Refresh cart items
+        // Refresh cart items to get latest data
         await fetchCartItems();
         // Show success toast for quantity update
-        toast.success('Product quantity updated');
+        toast.success(data.message || 'Product quantity updated');
+
+        // Send event to update cart count in Header and other components
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
       } else {
+        // Revert optimistic update on error
+        await fetchCartItems();
+
         // Show specific error message for stock issues
         if (data.error && data.error.includes('stock')) {
           toast.error('Insufficient stock available');
         } else {
           toast.error(data.error || 'Unable to update quantity');
         }
-        // Don't clear error state for stock errors, but clear for other errors
-        if (!data.error || !data.error.includes('stock')) {
-          setError(null);
-        }
       }
     } catch (err) {
       console.error('Error updating quantity:', err);
-      toast.error('Unable to connect to server');
-      setError(null); // Clear error for connection issues
+      // Revert optimistic update on error
+       await fetchCartItems();
+       toast.error('Unable to connect to server');
     }
   };
 
@@ -134,6 +146,13 @@ const CartPage = () => {
         toast.error('Please login to continue');
         return;
       }
+
+      // Optimistically remove item from UI
+      setCartItems(prevItems =>
+        prevItems.filter(item =>
+          !(item.product.id === productId && item.size === size)
+        )
+      );
 
       const params = new URLSearchParams({ productId });
       if (size) params.append('size', size);
@@ -149,15 +168,22 @@ const CartPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Refresh cart items
-        await fetchCartItems();
-        toast.success('Product removed from cart');
+        // Refresh cart items to ensure consistency
+          await fetchCartItems();
+          toast.success(data.message || 'Product removed from cart');
+
+          // Send event to update cart count in Header and other components
+          window.dispatchEvent(new CustomEvent('cartUpdated'));
       } else {
-        toast.error(data.error || 'Unable to remove product');
+        // Revert optimistic update on error
+         await fetchCartItems();
+         toast.error(data.error || 'Unable to remove product');
       }
     } catch (err) {
       console.error('Error removing item:', err);
-      toast.error('Unable to connect to server');
+      // Revert optimistic update on error
+       await fetchCartItems();
+       toast.error('Unable to connect to server');
     }
   };
 
@@ -189,6 +215,17 @@ const CartPage = () => {
 
   // Handle quantity update from UI
   const handleUpdateQuantity = (item: CartItem, newQuantity: number) => {
+    // Validate quantity client-side before sending request
+    if (newQuantity > item.product.stock) {
+      toast.error(`Chỉ còn ${item.product.stock} sản phẩm trong kho`);
+      return;
+    }
+
+    if (newQuantity < 1) {
+      toast.error('Số lượng phải lớn hơn 0');
+      return;
+    }
+
     updateQuantity(item.product.id, newQuantity, item.size);
   };
 
