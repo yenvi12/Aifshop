@@ -210,7 +210,6 @@ export default function ProductListPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-white">
-        <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <LoadingSpinner />
         </div>
