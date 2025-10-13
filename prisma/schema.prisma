@@ -15,6 +15,15 @@ enum Role {
   ADMIN
 }
 
+enum OrderStatus {
+  ORDERED
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
 model User {
   id               String   @id @default(cuid())
   supabaseUserId   String?  @unique
@@ -36,6 +45,8 @@ model User {
   reviews Review[] // Add relation to reviews
   // Relations
   carts   Cart[]
+  payment payment[]
+  Order   Order[]
 
   @@map("users")
 }
@@ -73,30 +84,33 @@ model Product {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  reviews Review[] // Add relation to reviews
+  reviews    Review[] // Add relation to reviews
   // Relations
-  carts   Cart[]
+  carts      Cart[]
+  payments   payment[]
+  orders     Order[]
+  orderItems OrderItem[]
 
   @@map("products")
 }
 
 model Review {
-       id        String   @id @default(cuid())
-       productId String
-       userId    String
-       rating    Int      // 1-5 stars
-       comment   String
-       images    String[] // Array of image URLs (Cloudinary)
-       videos    String[] // Array of video URLs (Cloudinary)
-       isActive  Boolean  @default(true)
-       createdAt DateTime @default(now())
-       updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  rating    Int // 1-5 stars
+  comment   String
+  images    String[] // Array of image URLs (Cloudinary)
+  videos    String[] // Array of video URLs (Cloudinary)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-       product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-       user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-       @@unique([productId, userId]) // One review per user per product
-       @@map("reviews")
+  @@unique([productId, userId]) // One review per user per product
+  @@map("reviews")
 }
 
 model Cart {
@@ -104,7 +118,7 @@ model Cart {
   userId    String
   productId String
   quantity  Int      @default(1)
-  size      String?  // Size selected by user (e.g., "S", "M", "L")
+  size      String? // Size selected by user (e.g., "S", "M", "L")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -114,7 +128,6 @@ model Cart {
 
   // Ensure one cart item per user per product per size
   @@unique([userId, productId, size], name: "userId_productId_size")
-
   @@map("carts")
 }
 
@@ -125,4 +138,51 @@ model payment {
   status    String
   userId    String
   createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders    Order[] // One payment can have multiple orders (if split payments)
+  Product   Product? @relation(fields: [productId], references: [id])
+  productId String?
+
+  @@map("payments")
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  userId            String
+  paymentId         Int // Reference to payment table
+  orderNumber       String      @unique // Display order number (ORD-001, ORD-002, etc.)
+  status            OrderStatus @default(ORDERED)
+  totalAmount       Float
+  // shippingAddress removed - will be pulled from user profile
+  trackingNumber    String? // For shipping tracking
+  estimatedDelivery DateTime? // Estimated delivery date
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment    payment     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  Product    Product?    @relation(fields: [productId], references: [id])
+  productId  String?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int      @default(1)
+  size        String? // Selected size
+  priceAtTime Float // Product price at time of order
+  createdAt   DateTime @default(now())
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
 }
