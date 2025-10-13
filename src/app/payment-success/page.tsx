@@ -78,7 +78,7 @@ export default function PaymentSuccessPage() {
         {/* Actions */}
         <div className="space-y-4">
           <button
-            onClick={() => window.location.href = '/profile?tab=orders'}
+            onClick={() => window.location.href = '/orders'}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
             View Order Details

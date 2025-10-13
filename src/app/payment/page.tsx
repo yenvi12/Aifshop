@@ -72,7 +72,7 @@ export default function PaymentPage() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
-  // Shipping address form state
+  // Shipping address form state (keep for display only)
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '',
     lastName: '',

@@ -4,6 +4,13 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Generate unique order number
+const generateOrderNumber = () => {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000);
+  return `ORD-${timestamp}${random}`;
+};
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -18,7 +25,8 @@ export async function POST(req: Request) {
 
       // Tìm thanh toán theo orderCode
       const payment = await prisma.payment.findUnique({
-        where: { orderCode }
+        where: { orderCode },
+        include: { user: true }
       });
 
       if (payment) {
@@ -31,6 +39,24 @@ export async function POST(req: Request) {
         });
 
         console.log(`Payment ${orderCode} marked as paid`);
+
+        // Update Order status to CONFIRMED when payment is successful
+        try {
+          // Update existing orders to CONFIRMED status
+          await prisma.order.updateMany({
+            where: {
+              paymentId: payment.id,
+              status: 'ORDERED'
+            },
+            data: {
+              status: 'CONFIRMED'
+            }
+          });
+
+          console.log(`Orders confirmed for payment ${orderCode}`);
+          } catch (error) {
+            console.error('Error confirming orders:', error);
+          }
       } else {
         console.error(`Payment with orderCode ${orderCode} not found`);
       }

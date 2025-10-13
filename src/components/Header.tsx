@@ -351,6 +351,14 @@ export default function Header() {
                         <MdPerson className="w-4 h-4" />
                         Profile
                       </Link>
+                      <Link
+                        href="/orders"
+                        className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-brand-dark hover:bg-brand-light/50"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <MdShoppingCart className="w-4 h-4" />
+                        Orders
+                      </Link>
                       {userRole === "ADMIN" && (
                         <Link
                           href="/admin"
