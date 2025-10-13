@@ -1,6 +1,28 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
+interface PaymentInfo {
+  orderCode: string;
+  amount: number;
+  paymentMethod: string;
+}
+
 export default function PaymentSuccessPage() {
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+
+  useEffect(() => {
+    // Get payment info from sessionStorage
+    const storedPaymentInfo = sessionStorage.getItem('paymentInfo');
+    if (storedPaymentInfo) {
+      try {
+        const parsed = JSON.parse(storedPaymentInfo);
+        setPaymentInfo(parsed);
+      } catch (error) {
+        console.error('Error parsing payment info:', error);
+      }
+    }
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center transform transition-all duration-300 hover:scale-105">
@@ -38,15 +60,17 @@ export default function PaymentSuccessPage() {
           <div className="space-y-1 text-sm text-gray-600">
             <div className="flex justify-between">
               <span>Order Number:</span>
-              <span className="font-mono">#12345</span>
+              <span className="font-mono">#{paymentInfo?.orderCode || 'N/A'}</span>
             </div>
             <div className="flex justify-between">
               <span>Amount Paid:</span>
-              <span className="font-semibold text-green-600">$99.99</span>
+              <span className="font-semibold text-green-600">
+                {paymentInfo?.amount ? `${paymentInfo.amount.toLocaleString('vi-VN')}₫` : 'N/A'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Payment Method:</span>
-              <span>Credit Card</span>
+              <span>{paymentInfo?.paymentMethod || 'N/A'}</span>
             </div>
           </div>
         </div>
