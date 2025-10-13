@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { MdStar, MdFavoriteBorder, MdFavorite } from "react-icons/md";
-import Header from "./Header";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
 
@@ -437,17 +436,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   onClick={handleAddToCart}
                   disabled={!selectedSize && sizes.length > 0}
                   title={!selectedSize && sizes.length > 0 ? "Please select a size first" : "Add to cart"}
-                  className="flex-1 rounded-xl py-2.5 px-6 bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-light/90 disabled:opacity-60 transition"
+                  className="w-auto inline-block rounded-xl py-2.5 px-6 bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-light/90 disabled:opacity-60 transition"
                 >
                   Add to cart
                 </button>
 
-                {/* Buy Now Button */}
-                <button 
-                  onClick={handleBuyNow}
-                  className="flex-1 rounded-xl py-2.5 px-6 bg-brand-dark text-brand-light font-semibold border border-brand-light hover:bg-brand-primary/90 disabled:opacity-60 transition">
-                  Buy Now
-                </button>
 
                 {/* Wishlist Button */}
                 <button
@@ -649,3 +642,5 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     </>
   );
 }
+
+

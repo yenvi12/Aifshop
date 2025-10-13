@@ -1,13 +1,328 @@
 "use client";
 
-import { useState } from "react";
-import Header from "@/components/Header";
-import Image from "next/image";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import toast from "react-hot-toast";
+
+// Interface for cart item from API
+interface CartItem {
+  id: string;
+  quantity: number;
+  size: string | null;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    compareAtPrice: number | null;
+    image: string | null;
+    images: any;
+    stock: number;
+    sizes: any;
+    badge: string | null;
+    slug: string;
+  };
+}
+
+interface ApiResponse {
+  success: boolean;
+  data?: CartItem[];
+  error?: string;
+}
+
+interface ProfileData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  birthday: string;
+  bio: string;
+  avatar: string;
+  stylePreferences: string[];
+  defaultAddress: {
+    shipping: string;
+    billing: string;
+  };
+}
+
+interface ProfileResponse {
+  success?: boolean;
+  id?: string;
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  birthday?: string;
+  bio?: string;
+  avatar?: string;
+  stylePreferences?: string[];
+  defaultAddress?: {
+    shipping: string;
+    billing: string;
+  };
+  error?: string;
+}
 
 export default function PaymentPage() {
-  const [selectedPayment, setSelectedPayment] = useState("stripe");
+  const router = useRouter();
+  const [selectedPayment, setSelectedPayment] = useState("payos");
   const [selectedShipping, setSelectedShipping] = useState("express");
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  // Shipping address form state
+  const [shippingAddress, setShippingAddress] = useState({
+    firstName: '',
+    lastName: '',
+    address: '',
+    city: '',
+    postalCode: ''
+  });
+
+  // Exchange rate: 1 USD = 25,000 VND (you can make this dynamic)
+  const USD_TO_VND_RATE = 25000;
+
+  // Helper function to create short description for PayOS (max 25 characters)
+  const createPaymentDescription = (itemCount: number, amount: number) => {
+    const formattedAmount = amount.toLocaleString();
+    const baseDesc = `DH${itemCount}SP-${formattedAmount}`;
+
+    // Ensure description doesn't exceed 25 characters
+    if (baseDesc.length > 25) {
+      // Fallback to even shorter format if needed
+      return `DH${itemCount}-${Math.floor(amount/1000)}K`;
+    }
+
+    return baseDesc;
+  };
+
+  // Fetch cart items from API
+  const fetchCartItems = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        toast.error('Vui lòng đăng nhập để thanh toán');
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch('/api/cart', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data: ApiResponse = await response.json();
+
+      if (data.success && data.data) {
+        setCartItems(data.data);
+      } else {
+        toast.error(data.error || 'Không thể tải giỏ hàng');
+        router.push('/cart');
+      }
+    } catch (err) {
+      toast.error('Không thể kết nối đến máy chủ');
+      router.push('/cart');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch user profile from API
+  const fetchProfile = async () => {
+    try {
+      setLoadingProfile(true);
+
+      // Lấy Supabase token thay vì JWT token
+      let supabaseToken: string | null = null;
+
+      try {
+        // Thử lấy từ Supabase client trước (cách đáng tin cậy nhất)
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        supabaseToken = session?.access_token || null;
+      } catch (error) {
+        console.error('Error getting Supabase session:', error);
+
+        // Nếu không được, thử lấy từ localStorage (fallback)
+        try {
+          const storedAuth = localStorage.getItem('supabase.auth.token');
+          if (storedAuth) {
+            const authData = JSON.parse(storedAuth);
+            supabaseToken = authData.access_token || null;
+          }
+        } catch (parseError) {
+          console.error('Error parsing stored auth:', parseError);
+        }
+      }
+
+
+      if (!supabaseToken) {
+        setLoadingProfile(false);
+        return;
+      }
+
+      const response = await fetch('/api/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${supabaseToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data: ProfileResponse = await response.json();
+
+      if (data && !data.error) {
+        const profile = {
+          id: data.id || '',
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || null,
+          birthday: data.birthday || '',
+          bio: data.bio || '',
+          avatar: data.avatar || '',
+          stylePreferences: data.stylePreferences || [],
+          defaultAddress: data.defaultAddress || { shipping: '', billing: '' }
+        };
+
+        setProfileData(profile);
+
+        // Auto-fill shipping address from profile
+        const nameParts = profile.name.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        setShippingAddress({
+          firstName,
+          lastName,
+          address: profile.defaultAddress?.shipping || '',
+          city: '', // Will need to parse from address or add city field to profile
+          postalCode: '' // Will need to parse from address or add postal code field to profile
+        });
+      } else {
+        console.error('Profile API error:', data?.error);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  // Calculate totals
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = item.product.price || item.product.compareAtPrice || 0;
+    return sum + (price * item.quantity);
+  }, 0);
+
+  const shippingCost = selectedShipping === "express" ? 2 : selectedShipping === "standard" ? 1 : 0;
+  const totalUSD = subtotal + shippingCost;
+  const totalVND = Math.round(totalUSD * USD_TO_VND_RATE);
+
+  // Handle payment processing
+  const handlePayment = async () => {
+    if (cartItems.length === 0) {
+      toast.error('Giỏ hàng trống');
+      return;
+    }
+
+    try {
+      setProcessingPayment(true);
+
+      // Get Supabase token similar to fetchProfile function
+      let supabaseToken: string | null = null;
+
+      try {
+        // Try to get from Supabase client first (most reliable method)
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        supabaseToken = session?.access_token || null;
+      } catch (error) {
+
+        // If not available, try to get from localStorage (fallback)
+        try {
+          const storedAuth = localStorage.getItem('supabase.auth.token');
+          if (storedAuth) {
+            const authData = JSON.parse(storedAuth);
+            supabaseToken = authData.access_token || null;
+          }
+        } catch (parseError) {
+        }
+      }
+
+      if (!supabaseToken) {
+        toast.error('Vui lòng đăng nhập để thanh toán');
+        router.push('/login');
+        return;
+      }
+
+      // Create payment request
+      const response = await fetch('/api/payment/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: totalVND, // Send VND amount to PayOS
+          description: createPaymentDescription(cartItems.length, totalVND),
+          cartItems, // Send cart items for order details
+          shippingAddress, // Send shipping address for order details
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.checkoutUrl) {
+        // Generate order code for this payment
+        const orderCode = Math.floor(Math.random() * 1000000000);
+
+        // Save payment info to sessionStorage for payment success page
+        const paymentInfo = {
+          orderCode: orderCode.toString(),
+          amount: totalVND,
+          paymentMethod: 'PayOS'
+        };
+        sessionStorage.setItem('paymentInfo', JSON.stringify(paymentInfo));
+
+        // Redirect to PayOS
+        window.location.href = data.checkoutUrl;
+      } else {
+        console.error('❌ Lỗi tạo thanh toán:', data.error);
+        toast.error(data.error || 'Không thể tạo thanh toán');
+      }
+    } catch (err) {
+      console.error('❌ Lỗi xử lý thanh toán:');
+      console.error('- Chi tiết lỗi:', err);
+      console.error('- Loại lỗi:', typeof err);
+      if (err instanceof Error) {
+        console.error('- Thông báo lỗi:', err.message);
+        console.error('- Stack trace:', err.stack);
+      }
+      toast.error('Không thể xử lý thanh toán');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
+  // Load cart items and profile on component mount
+  useEffect(() => {
+    fetchCartItems();
+    fetchProfile();
+  }, []);
   
   //const inputClass = "border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary";
   //const labelClass = "text-sm font-medium text-gray-700";
@@ -21,54 +336,97 @@ export default function PaymentPage() {
         <div className="space-y-8">
           {/* Shipping Address */}
           <section className="bg-white shadow-md rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Shipping address</h2>
-            <div className="bg-brand-primary/20 text-sm p-4 rounded-lg mb-4">
-              <div className="flex justify-between">
-                <div>
-                  <p className="font-medium">Alex Johnson</p>
-                  <p>123 Tran Hung Dao St, Quy Nhon, Binh Dinh, Vietnam</p>
-                  <p>+84 912 345 678 • alex@example.com</p>
-                </div>
-                <span className="text-xs font-semibold px-2 py-1 bg-brand-primary text-white rounded-md">Default</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-sm" >
-              <input type="text" placeholder="First name"  className="border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary" />
-              <input type="text" placeholder="Last name"  className="input" />
-              <input type="text" placeholder="Address"  className="input" />
-              <input type="text" placeholder="City"  className="input" />
-              <input type="text" placeholder="Postal code"  className="input" />
-            </div>
-          </section>
+            <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
+              <svg className="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Shipping address
+            </h2>
 
-          {/* Payment Method */}
-          <section className="bg-white shadow-md rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Payment method</h2>
-            <div className="space-y-3">
-              {[
-                { id: "cod", label: "Cash on delivery", type: "Cash" },
-                { id: "vnpay", label: "VNPay", type: "Wallet" },
-                { id: "momo", label: "MoMo", type: "App" },
-                { id: "qr", label: "QR Pay", type: "Scan" },
-              ].map((method) => (
-                <button
-                  key={method.id}
-                  onClick={() => setSelectedPayment(method.id)}
-                  className={`w-full p-2.5 rounded-xl  flex justify-between items-center border ${
-                    selectedPayment === method.id ? "bg-brand-primary text-white border-brand-light" : "bg-brand-primary/20 border-transparent"
-                  }`}
-                >
-                  {method.label} <span className="text-xs">{method.type}</span>
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-              <input type="text" placeholder="Name on card / wallet" className="input col-span-2" />
-              <input type="text" placeholder="Card / Wallet ID" className="input" />
-              <input type="text" placeholder="Expiry (MM/YY)" className="input" />
-              <input type="text" placeholder="CVC / Security code" className="input" />
-            </div>
-            <p className="text-xs text-gray-500 mt-2">Payments are encrypted. We support 3D Secure and tokenized storage for reorders.</p>
+            {loadingProfile ? (
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 text-sm p-6 rounded-xl mb-4 border border-gray-200">
+                <div className="flex justify-center items-center py-6">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-primary border-t-transparent mr-3"></div>
+                  <span className="text-gray-600 font-medium">Loading address information...</span>
+                </div>
+              </div>
+            ) : profileData ? (
+              <div className="bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 border-2 border-brand-primary/20 text-sm p-6 rounded-xl mb-4 relative overflow-hidden">
+                {/* Decorative elements */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-brand-primary/5 rounded-full -translate-y-10 translate-x-10"></div>
+                <div className="absolute bottom-0 left-0 w-16 h-16 bg-brand-primary/5 rounded-full translate-y-8 -translate-x-8"></div>
+
+                <div className="relative z-10">
+                  {/* Header with badge */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span className="font-semibold text-gray-900">Recipient information</span>
+                    </div>
+                    <span className="text-xs font-bold px-3 py-1 bg-brand-primary text-white rounded-full shadow-sm">Default</span>
+                  </div>
+
+                  {/* Customer info */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-white/60 rounded-lg border border-white/40">
+                      <svg className="w-4 h-4 text-brand-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-medium text-gray-900">{profileData.name || 'Name not updated'}</span>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 bg-white/60 rounded-lg border border-white/40">
+                      <svg className="w-4 h-4 text-brand-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-gray-700 leading-relaxed">{profileData.defaultAddress?.shipping || 'Shipping address not updated'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-white/60 rounded-lg border border-white/40">
+                      <svg className="w-4 h-4 text-brand-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-gray-700">{profileData.email}</span>
+                    </div>
+
+                    {profileData.phone && (
+                      <div className="flex items-center gap-3 p-3 bg-white/60 rounded-lg border border-white/40">
+                        <svg className="w-4 h-4 text-brand-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <span className="text-gray-700">{profileData.phone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Edit button */}
+                  <div className="mt-4 pt-4 border-t border-brand-primary/20">
+                    <button className="w-full flex items-center justify-center gap-2 p-2 bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-medium rounded-lg transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit address
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 text-sm p-6 rounded-xl mb-4 relative">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div>
+                    <p className="font-medium text-yellow-800">Unable to load address information</p>
+                    <p className="text-yellow-700 mt-1">Please update your personal information to continue with your order.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Shipping Method */}
@@ -76,8 +434,8 @@ export default function PaymentPage() {
             <h2 className="text-lg font-semibold mb-4">Shipping method</h2>
             <div className="space-y-3">
               {[
-                { id: "express", label: "Express (1–2 days)", price: "$18" },
-                { id: "standard", label: "Standard (3–5 days)", price: "$8" },
+                { id: "express", label: "Express (1–2 days)", price: "$2" },
+                { id: "standard", label: "Standard (3–5 days)", price: "$1" },
                 { id: "preorder", label: "Preorder slot", price: "Ships in 2 weeks" },
               ].map((method) => (
                 <button
@@ -98,55 +456,99 @@ export default function PaymentPage() {
         {/* RIGHT SECTION: Order Summary */}
         <aside className="bg-white shadow-md rounded-xl p-6 h-fit sticky top-24">
           <h2 className="text-lg font-semibold mb-4">Order summary</h2>
-          <div className="space-y-4">
-            {/* Items */}
-            <div className="flex items-center gap-4">
-              <Image src="/demo/ring1.jpg" alt="Ring1" width={60} height={60} className="rounded-lg" />
-              <div className="text-sm">
-                <p className="font-medium">Silver leaf Ring</p>
-                <p className="text-gray-500">Silver • Size 6</p>
-              </div>
-              <p className="ml-auto font-medium">$129</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Image src="/demo/dc11.jpg" alt="Necklaces" width={60} height={60} className="rounded-lg" />
-              <div className="text-sm">
-                <p className="font-medium">White Gold Daisy Necklace</p>
-                <p className="text-gray-500">42 EU</p>
-              </div>
-              <p className="ml-auto font-medium">$98</p>
-            </div>
-            <input type="text" placeholder="Promo / Gift code" className="input w-full" />
 
-            {/* Totals */}
-            <div className="border-t pt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>$227</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>$8</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>$12.45</span>
-              </div>
-              <div className="flex justify-between font-semibold border-t pt-2">
-                <span>Total</span>
-                <span>$247.45</span>
-              </div>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <p className="text-gray-500 text-sm mt-2">Loading cart...</p>
             </div>
+          ) : cartItems.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 text-sm">Cart is empty</p>
+              <Link href="/cart" className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+                Back to cart
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {/* Items */}
+                {cartItems.map((item) => (
+                  <div key={`${item.product.id}-${item.size || 'no-size'}`} className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                      <img
+                        src={item.product.image || '/demo/placeholder.jpg'}
+                        alt={item.product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 text-sm">
+                      <p className="font-medium text-gray-900">{item.product.name}</p>
+                      <p className="text-gray-500">
+                        {item.quantity} × ${((item.product.price || item.product.compareAtPrice) || 0).toFixed(2)}
+                        {item.size && ` • Size: ${item.size}`}
+                      </p>
+                    </div>
+                    <p className="font-medium text-gray-900">
+                      ${(((item.product.price || item.product.compareAtPrice) || 0) * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
-            <button className="w-full rounded-xl py-2.5 bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-accent/90 disabled:opacity-60 transition">
-              Pay now
+              <input type="text" placeholder="Promo / Gift code" className="input w-full mt-4" />
+
+              {/* Totals */}
+              <div className="border-t pt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Subtotal (USD)</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span>${shippingCost.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-semibold border-t pt-2">
+                  <span>Total (USD)</span>
+                  <span>${totalUSD.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold text-green-600 border-t pt-2">
+                  <span>Total (VND)</span>
+                  <span>{totalVND.toLocaleString('vi-VN')}₫</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="space-y-3">
+            <button
+              onClick={handlePayment}
+              disabled={loading || cartItems.length === 0 || processingPayment}
+              className="w-full rounded-xl py-3 bg-green-600 hover:bg-green-700 text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            >
+              {processingPayment ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </div>
+              ) : (
+                `Thanh toán ${totalVND.toLocaleString('vi-VN')}₫ với PayOS`
+              )}
             </button>
-            <button className="w-full rounded-xl py-2.5 bg-brand-light text-brand-dark font-semibold border border-brand-light hover:bg-brand-accent/90 disabled:opacity-60 transition">Review order</button>
-            <Link href="/cart" className="block w-full text-center text-sm text-brand-dark hover:underline">
-              ← Back to cart
+
+            <button
+              disabled={loading || cartItems.length === 0}
+              className="w-full rounded-xl py-2.5 bg-gray-100 text-gray-700 font-semibold disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            >
+              Xem lại đơn hàng
+            </button>
+
+            <Link href="/cart" className="block w-full text-center text-sm text-blue-600 hover:underline">
+              ← Quay lại giỏ hàng
             </Link>
+
             <p className="text-xs text-gray-500 text-center">
-              By paying, you agree to our <Link href="#" className="underline">Terms</Link> and <Link href="#" className="underline">Refund Policy</Link>.
+              Bằng việc thanh toán, bạn đồng ý với <Link href="#" className="underline">Điều khoản</Link> và <Link href="#" className="underline">Chính sách hoàn tiền</Link> của chúng tôi.
             </p>
           </div>
         </aside>
@@ -158,3 +560,4 @@ export default function PaymentPage() {
     </div>
   );
 }
+

@@ -6,7 +6,9 @@ import { supabaseAdmin } from "@/lib/supabase-server";
 const prisma = new PrismaClient();
 
 // Generate a unique order code for each request
-const orderCode = Math.floor(Math.random() * 1000000000);
+const timestamp = Date.now();
+const randomSuffix = Math.floor(Math.random() * 1000);
+const orderCode = parseInt(`${timestamp}${randomSuffix}`);
 
 export async function POST(req: Request) {
   try {
