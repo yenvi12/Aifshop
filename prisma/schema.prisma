@@ -117,3 +117,12 @@ model Cart {
 
   @@map("carts")
 }
+
+model payment {
+  id        Int      @id @default(autoincrement())
+  orderCode String   @unique
+  amount    Float
+  status    String
+  userId    String
+  createdAt DateTime @default(now())
+}
