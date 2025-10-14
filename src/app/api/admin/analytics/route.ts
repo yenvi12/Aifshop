@@ -23,19 +23,6 @@ function verifyAdminToken(request: NextRequest) {
   }
 }
 
-// Helper function to get today's date range in UTC for UTC+7 timezone
-function getTodayRangeUTC() {
-  const now = new Date();
-  // Add 7 hours for UTC+7
-  const localNow = new Date(now.getTime() + 7 * 60 * 60000);
-  // Start of day in local time
-  const startLocal = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate());
-  // Convert back to UTC
-  const startUTC = new Date(startLocal.getTime() - 7 * 60 * 60000);
-  const endUTC = new Date(startUTC.getTime() + 24 * 60 * 60 * 1000);
-  return { startUTC, endUTC };
-}
-
 export async function GET(request: NextRequest) {
   try {
     // Verify admin token
@@ -109,12 +96,15 @@ export async function GET(request: NextRequest) {
 
       // Orders today
       (async () => {
-        const { startUTC, endUTC } = getTodayRangeUTC();
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
         return prisma.order.count({
           where: {
             createdAt: {
-              gte: startUTC,
-              lt: endUTC
+              gte: startOfDay,
+              lt: endOfDay
             }
           }
         });
@@ -231,20 +221,14 @@ export async function GET(request: NextRequest) {
       })()
     ]);
 
-    // Calculate trends
-    const revenueChange = previousPeriodRevenue > 0 ?
-      ((revenueInRange - previousPeriodRevenue) / previousPeriodRevenue) * 100 : 0;
-    const ordersChange = previousPeriodOrders > 0 ?
-      ((ordersInRange - previousPeriodOrders) / previousPeriodOrders) * 100 : 0;
-
-    // Mock user growth trend (simplified)
-    const userChange = 15.2; // This would need actual user registration data
-
     // Calculate conversion rate (simplified - orders per 100 users)
     const conversionRate = totalUsers > 0 ? (totalOrders / totalUsers) * 100 : 0;
 
-    // AOV trend (simplified)
-    const aovChange = 5;
+    // Mock trends for demonstration
+    const revenueChange = 12.5;
+    const ordersChange = 8.3;
+    const userChange = 15.2;
+    const aovChange = 3.8;
 
     return NextResponse.json({
       success: true,
@@ -268,11 +252,11 @@ export async function GET(request: NextRequest) {
         // Trends
         trends: {
           revenue: {
-            change: Math.round(revenueChange * 100) / 100,
+            change: revenueChange,
             direction: revenueChange > 0 ? 'up' : revenueChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
           },
           orders: {
-            change: Math.round(ordersChange * 100) / 100,
+            change: ordersChange,
             direction: ordersChange > 0 ? 'up' : ordersChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
           },
           users: {
@@ -287,7 +271,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('Error fetching admin stats:', error);
+    console.error('Error fetching analytics:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Internal server error' },
       { status: 500 }
