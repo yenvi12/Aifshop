@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { MdSearch, MdShoppingCart, MdPerson, MdLogout } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
+import { isTokenExpired } from "@/lib/tokenManager";
 
 export default function Header() {
   const router = useRouter();
@@ -40,11 +41,17 @@ export default function Header() {
           setUser(mockUser);
           setUserRole(payload.role);
         } catch (error) {
-          // Invalid token
+          // Invalid token - clear and redirect to login
           setUser(null);
           setUserRole(null);
+
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
+
+          // Only redirect if not already on login page
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
         }
       } else {
         // If no localStorage token, check Supabase session (for Google OAuth)
@@ -201,6 +208,19 @@ export default function Header() {
       // First, check JWT token from localStorage
       const token = localStorage.getItem("accessToken");
       if (token) {
+        // Check if token is expired and redirect if needed
+        if (isTokenExpired(token)) {
+          setUser(null);
+          setUserRole(null);
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+          return;
+        }
+
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
           const mockUser: User = {
@@ -225,40 +245,40 @@ export default function Header() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
-            // Create session tokens for Google OAuth users
-            try {
-              const response = await fetch('/api/auth/session', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`
-                }
-              });
+              // Create session tokens for Google OAuth users
+              try {
+                const response = await fetch('/api/auth/session', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                  }
+                });
 
-              const sessionData = await response.json();
-              if (sessionData.success) {
-                localStorage.setItem('accessToken', sessionData.tokens.accessToken);
-                localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
-                setUser(session.user);
-                setUserRole(sessionData.tokens.role || 'USER');
-              } else {
+                const sessionData = await response.json();
+                if (sessionData.success) {
+                  localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+                  localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+                  setUser(session.user);
+                  setUserRole(sessionData.tokens.role || 'USER');
+                } else {
+                  setUser(session.user);
+                  setUserRole('USER');
+                }
+              } catch (error) {
+                // If session creation fails, still use Supabase user
                 setUser(session.user);
                 setUserRole('USER');
               }
-            } catch (error) {
-              // If session creation fails, still use Supabase user
-              setUser(session.user);
-              setUserRole('USER');
+            } else {
+              setUser(null);
+              setUserRole(null);
             }
-          } else {
+          } catch (error) {
             setUser(null);
             setUserRole(null);
           }
-        } catch (error) {
-          setUser(null);
-          setUserRole(null);
         }
-      }
     };
 
     checkAuth();

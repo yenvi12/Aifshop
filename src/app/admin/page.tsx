@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { MdAdd, MdInventory, MdPeople, MdAnalytics } from "react-icons/md";
+import { MdAdd, MdInventory, MdPeople, MdAnalytics, MdLocalShipping } from "react-icons/md";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 interface User {
@@ -95,6 +95,14 @@ export default function AdminPage() {
       tint: "bg-violet-500/10",
     },
     {
+      title: "Manage Orders",
+      description: "View and manage customer orders",
+      icon: MdLocalShipping,
+      href: "/admin/orders",
+      color: "bg-orange-500",
+      tint: "bg-orange-500/10",
+    },
+    {
       title: "Analytics",
       description: "View store analytics and reports",
       icon: MdAnalytics,
@@ -171,6 +179,22 @@ export default function AdminPage() {
             ].map((s, i) => (
               <div
                 key={i}
+                className="rounded-xl border border-brand.light/70 bg-gradient-to-br from-white to-brand.light/40 p-5 text-center hover:shadow-smooth transition-shadow"
+              >
+                <div className="text-3xl font-bold tracking-tight text-brand.primary">
+                  --
+                </div>
+                <p className="mt-1 text-sm text-brand.secondary">{s.label}</p>
+              </div>
+            ))}
+            {/* Orders Stats */}
+            {[
+              { label: "Total Orders" },
+              { label: "Orders Today" },
+              { label: "Pending Orders" },
+            ].map((s, i) => (
+              <div
+                key={i + 3}
                 className="rounded-xl border border-brand.light/70 bg-gradient-to-br from-white to-brand.light/40 p-5 text-center hover:shadow-smooth transition-shadow"
               >
                 <div className="text-3xl font-bold tracking-tight text-brand.primary">
