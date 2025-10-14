@@ -8,6 +8,8 @@ import { MdStar, MdLocalShipping, MdStraighten } from "react-icons/md";
 import toast from "react-hot-toast";
 import ProductCard, { type Product } from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import HeroCarouselOverlay from "@/components/HeroCarouselOverlay";
+import Footer from "@/components/Footer";
 
 export default function HomePage() {
    const router = useRouter();
@@ -172,38 +174,15 @@ export default function HomePage() {
   return (
     <main className="min-h-screen" suppressHydrationWarning={true}>
 
-      {/* ===== HERO ===== */}
-      <section className="bg-brand-accent/20">
-        <div className="max-w-6xl mx-auto px-4 py-8 md:py-10 grid md:grid-cols-[1fr_480px] gap-6 items-center">
-          <div className="space-y-4">
-            <div className="inline-block text-xs px-2 py-1 rounded-full bg-brand-light text-brand-primary">
-              Fresh & curated
-            </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-brand-dark leading-snug">
-              Discover the Latest Fashion Trends
-            </h1>
-            <p className="text-brand-secondary">
-              Browse our collection of unique styles and find what suits you best.
-            </p>
-            <div className="flex gap-3">
-              <Link href="/shop" className="rounded-xl px-4 py-2.5 bg-brand-primary text-white hover:opacity-90">
-                Shop Now
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-2xl overflow-hidden shadow-smooth border border-brand-light bg-white">
-            <Image
-              src="/demo/hero-jewelry.jpg"
-              alt="Hero jewelry"
-              width={900}
-              height={700}
-              className="w-full h-[260px] md:h-[300px] object-cover"
-              priority
-            />
-          </div>
-        </div>
-      </section>
+      <HeroCarouselOverlay
+  className="py-6 md:py-8"
+  interval={3000}
+  slides={[
+    { title: "Discover the Latest Fashion Trends", caption: "Browse our collection of unique styles and find what suits you best.", cta: { label: "Shop Now", href: "/shop" }, src: "/demo/dan-tri-0603awo-pr07-1-crop-1709803508993.webp", position: "left" },
+    { title: "Minimal Jewelry, Maximum Impact", caption: "Handpicked pieces with timeless charm.", cta: { label: "Explore", href: "/shop" }, src: "/demo/trang-suc-bac.avif", position: "center" },
+    { title: "New Season Arrivals", caption: "Fresh colors and breathable fabrics.", cta: { label: "View Collection", href: "/shop" }, src: "/demo/20250925_QR7TJv03.jpg", position: "right" },
+  ]}
+/>
 
       {/* ===== FEATURED ===== */}
       <section className="max-w-6xl mx-auto px-4 py-10">
@@ -319,17 +298,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+  
 
-      {/* ===== FOOTER ===== */}
-      <footer className="bg-brand-light border-t border-brand-accent">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-xs text-brand-secondary flex flex-col md:flex-row items-center justify-between gap-2">
-          <p>© 2025 AIFShop. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <Link href="#" className="hover:text-brand-primary">Privacy Policy</Link>
-            <Link href="#" className="hover:text-brand-primary">Terms of Service</Link>
-          </div>
-        </div>
-      </footer>
 
       {/* ===== SEE ALL REVIEWS MODAL ===== */}
       {showAllReviews && (
