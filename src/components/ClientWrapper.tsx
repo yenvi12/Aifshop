@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { Toaster } from "react-hot-toast";
+import { startAutoRefresh, stopAutoRefresh } from "@/lib/tokenManager";
 
 export default function ClientWrapper({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,6 +11,14 @@ export default function ClientWrapper({ children }: { children: React.ReactNode 
   useEffect(() => {
     // Remove artificial loading delay - let pages handle their own loading states
     setIsLoading(false);
+
+    // Start auto refresh token when component mounts
+    startAutoRefresh();
+
+    // Cleanup on unmount
+    return () => {
+      stopAutoRefresh();
+    };
   }, []);
 
   return (

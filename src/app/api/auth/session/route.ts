@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { generateAccessToken, generateRefreshToken } from '@/lib/auth'
+import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +41,13 @@ export async function POST(request: NextRequest) {
     // Generate JWT tokens
     const accessToken = generateAccessToken(dbUser.id, dbUser.email, (dbUser as any).role)
     const refreshToken = generateRefreshToken(dbUser.id)
+
+    // Hash refresh token and save to database
+    const refreshTokenHash = hashRefreshToken(refreshToken)
+    await prisma.user.update({
+      where: { id: dbUser.id },
+      data: { refreshTokenHash } as any
+    })
 
     return NextResponse.json({
       success: true,

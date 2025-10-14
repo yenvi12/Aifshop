@@ -43,3 +43,21 @@ export function hashRefreshToken(token: string): string {
 export function generateTransactionId(): string {
   return crypto.randomUUID()
 }
+
+// Verify JWT token without throwing error
+export function verifyToken(token: string): any | null {
+  try {
+    return jwt.verify(token, JWT_SECRET)
+  } catch (error) {
+    return null
+  }
+}
+
+// Verify refresh token without throwing error
+export function verifyRefreshToken(token: string): any | null {
+  try {
+    return jwt.verify(token, JWT_REFRESH_SECRET)
+  } catch (error) {
+    return null
+  }
+}

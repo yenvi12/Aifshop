@@ -37,6 +37,7 @@ model User {
   stylePreferences String[] // Array of preference strings
   defaultAddress   Json? // JSON object for shipping and billing
   password         String
+  refreshTokenHash String? // Hash of the refresh token for security
   isVerified       Boolean  @default(false)
   role             Role     @default(USER)
   createdAt        DateTime @default(now())

@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         await prisma.payment.update({
           where: { orderCode },
           data: {
-            status: 'paid',
+            status: 'PAID',
           }
         });
 
