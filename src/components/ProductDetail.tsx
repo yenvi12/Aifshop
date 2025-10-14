@@ -81,6 +81,29 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     }
   }, []);
 
+  // Auto-open Reviews tab if ?review=1; only open form if user hasn't reviewed (enforce 1 review/product)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('review') !== '1') return;
+
+    // Always switch to Reviews tab
+    setActiveTab('reviews');
+
+    // Wait until we know currentUserId; then decide to open/close the form
+    if (!currentUserId) return;
+
+    const alreadyReviewed = reviews.some(r => r.user.id === currentUserId);
+    if (alreadyReviewed) {
+      // User already reviewed this product -> do NOT open the form
+      setShowReviewForm(false);
+      toast('You have already reviewed this product');
+    } else {
+      // User not yet reviewed -> open the form
+      setShowReviewForm(true);
+    }
+  }, [currentUserId, reviews]);
+
   const images = [product.image, ...(product.images || [])].filter((img): img is string => Boolean(img && img.trim()));
 
   const sizes = product.sizes || [];

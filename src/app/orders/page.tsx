@@ -295,7 +295,9 @@ function OrderProgressTimeline({ status, createdAt, estimatedDelivery }: {
 
 // Order Card Component
 function OrderCard({ order }: { order: Order }) {
+  const router = useRouter();
   const [showDetails, setShowDetails] = useState(order.payment.status === 'PENDING' || order.status === 'SHIPPED');
+  const [isReviewChooserOpen, setIsReviewChooserOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -342,6 +344,20 @@ function OrderCard({ order }: { order: Order }) {
       return { text: 'Delivered', color: 'bg-green-600 text-white shadow-green-200', icon: MdDone };
     }
     return null;
+  };
+
+  const handleWriteReviewClick = () => {
+    if (order.orderItems.length === 1) {
+      const onlyItem = order.orderItems[0];
+      router.push(`/products/${onlyItem.product.slug}?review=1&fromOrder=${order.id}`);
+    } else {
+      setIsReviewChooserOpen(true);
+    }
+  };
+
+  const goToReview = (item: OrderItem) => {
+    router.push(`/products/${item.product.slug}?review=1&fromOrder=${order.id}`);
+    setIsReviewChooserOpen(false);
   };
 
   const urgencyBadge = getOrderUrgencyBadge(order.status, order.payment.status);
@@ -416,20 +432,72 @@ function OrderCard({ order }: { order: Order }) {
 
       {/* Delivery Notice */}
       {order.status === 'DELIVERED' && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <MdDone className="w-6 h-6 text-green-600" />
-              <div>
-                <h4 className="font-semibold text-green-800">Order Delivered Successfully!</h4>
-                <p className="text-sm text-green-700">Your order has been delivered. Enjoy your purchase!</p>
+        <>
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <MdDone className="w-6 h-6 text-green-600" />
+                <div>
+                  <h4 className="font-semibold text-green-800">Order Delivered Successfully!</h4>
+                  <p className="text-sm text-green-700">Your order has been delivered. Enjoy your purchase!</p>
+                </div>
+              </div>
+              <button
+                onClick={handleWriteReviewClick}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                Write Review
+              </button>
+            </div>
+          </div>
+
+          {/* Product chooser modal for multi-item orders */}
+          {isReviewChooserOpen && order.orderItems.length > 1 && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+                <div className="px-5 py-4 border-b flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Chọn sản phẩm để đánh giá</h3>
+                  <button
+                    onClick={() => setIsReviewChooserOpen(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto p-4 space-y-3">
+                  {order.orderItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                      <img
+                        src={item.product.image || '/placeholder.jpg'}
+                        alt={item.product.name}
+                        className="w-12 h-12 rounded object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{item.product.name}</p>
+                        {item.size && <p className="text-xs text-gray-500">Size: {item.size}</p>}
+                      </div>
+                      <button
+                        onClick={() => goToReview(item)}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                      >
+                        Đánh giá
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-5 py-3 border-t text-right">
+                  <button
+                    onClick={() => setIsReviewChooserOpen(false)}
+                    className="px-4 py-2 rounded-lg border hover:bg-gray-50"
+                  >
+                    Đóng
+                  </button>
+                </div>
               </div>
             </div>
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium">
-              Write Review
-            </button>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
       {/* Estimated Delivery Notice */}
