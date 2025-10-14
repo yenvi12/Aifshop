@@ -3,6 +3,7 @@ import "./globals.css";
 import ClientWrapper from "@/components/ClientWrapper";
 import HeaderWrapper from "@/components/HeaderWrapper";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "AIFShop",
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               />
               {children}
             </div>
+            <Footer></Footer>
           </div>
         </ClientWrapper>
       </body>
