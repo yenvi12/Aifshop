@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { MdSearch, MdShoppingCart, MdPerson, MdLogout } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
@@ -16,16 +16,35 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [cartItemCount, setCartItemCount] = useState<number>(0);
+  const authRequestIdRef = useRef(0);
 
   useEffect(() => {
     setMounted(true);
 
     // Check authentication from both localStorage and Supabase session
     const checkAuth = async () => {
+      const requestId = ++authRequestIdRef.current;
+
       // First, check JWT token from localStorage
       const token = localStorage.getItem("accessToken");
       if (token) {
         try {
+          // Expiry check first for consistency
+          if (isTokenExpired(token)) {
+            if (authRequestIdRef.current !== requestId) return;
+            setUser(null);
+            setUserRole(null);
+
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+
+            // Only redirect if not already on login page
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
+            return;
+          }
+
           // Decode JWT payload (simple decode, not verify)
           const payload = JSON.parse(atob(token.split(".")[1]));
           // Create mock user object from payload
@@ -38,10 +57,13 @@ export default function Header() {
             created_at: "",
             updated_at: "",
           };
+
+          if (authRequestIdRef.current !== requestId) return;
           setUser(mockUser);
           setUserRole(payload.role);
         } catch (error) {
           // Invalid token - clear and redirect to login
+          if (authRequestIdRef.current !== requestId) return;
           setUser(null);
           setUserRole(null);
 
@@ -69,25 +91,31 @@ export default function Header() {
               });
 
               const sessionData = await response.json();
+              if (authRequestIdRef.current !== requestId) return;
               if (sessionData.success) {
                 localStorage.setItem('accessToken', sessionData.tokens.accessToken);
                 localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
                 setUser(session.user);
-                setUserRole(sessionData.tokens.role || 'USER');
+                // Use role from sessionData.user, not from tokens (tokens do not include role)
+                setUserRole(sessionData.user?.role || null);
               } else {
+                // Do not force USER on failure; keep role unchanged
                 setUser(session.user);
-                setUserRole('USER');
+                // Optionally: setUserRole(null);
               }
             } catch (error) {
-              // If session creation fails, still use Supabase user
+              // If session creation fails, still use Supabase user but don't override role
+              if (authRequestIdRef.current !== requestId) return;
               setUser(session.user);
-              setUserRole('USER');
+              // Optionally: setUserRole(null);
             }
           } else {
+            if (authRequestIdRef.current !== requestId) return;
             setUser(null);
             setUserRole(null);
           }
         } catch (error) {
+          if (authRequestIdRef.current !== requestId) return;
           setUser(null);
           setUserRole(null);
         }
@@ -114,6 +142,8 @@ export default function Header() {
   // Listen for auth state changes from Supabase
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const requestId = ++authRequestIdRef.current;
+
       if (event === 'SIGNED_IN' && session?.user) {
         // Handle Google OAuth sign in
         try {
@@ -126,20 +156,24 @@ export default function Header() {
           });
 
           const sessionData = await response.json();
+          if (authRequestIdRef.current !== requestId) return;
           if (sessionData.success) {
             localStorage.setItem('accessToken', sessionData.tokens.accessToken);
             localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
             setUser(session.user);
-            setUserRole(sessionData.tokens.role || 'USER');
+            // Use role from sessionData.user; do not default to USER on failure
+            setUserRole(sessionData.user?.role || null);
           } else {
             setUser(session.user);
-            setUserRole('USER');
+            // Do not override role to USER here
           }
         } catch (error) {
+          if (authRequestIdRef.current !== requestId) return;
           setUser(session.user);
-          setUserRole('USER');
+          // Do not override role to USER here
         }
       } else if (event === 'SIGNED_OUT') {
+        if (authRequestIdRef.current !== requestId) return;
         setUser(null);
         setUserRole(null);
         localStorage.removeItem("accessToken");
@@ -205,11 +239,14 @@ export default function Header() {
   // Refresh auth on route change
   useEffect(() => {
     const checkAuth = async () => {
+      const requestId = ++authRequestIdRef.current;
+
       // First, check JWT token from localStorage
       const token = localStorage.getItem("accessToken");
       if (token) {
         // Check if token is expired and redirect if needed
         if (isTokenExpired(token)) {
+          if (authRequestIdRef.current !== requestId) return;
           setUser(null);
           setUserRole(null);
           localStorage.removeItem("accessToken");
@@ -232,9 +269,11 @@ export default function Header() {
             created_at: "",
             updated_at: "",
           };
+          if (authRequestIdRef.current !== requestId) return;
           setUser(mockUser);
           setUserRole(payload.role);
         } catch (error) {
+          if (authRequestIdRef.current !== requestId) return;
           setUser(null);
           setUserRole(null);
           localStorage.removeItem("accessToken");
@@ -245,40 +284,43 @@ export default function Header() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
-              // Create session tokens for Google OAuth users
-              try {
-                const response = await fetch('/api/auth/session', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                  }
-                });
-
-                const sessionData = await response.json();
-                if (sessionData.success) {
-                  localStorage.setItem('accessToken', sessionData.tokens.accessToken);
-                  localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
-                  setUser(session.user);
-                  setUserRole(sessionData.tokens.role || 'USER');
-                } else {
-                  setUser(session.user);
-                  setUserRole('USER');
+            // Create session tokens for Google OAuth users
+            try {
+              const response = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`
                 }
-              } catch (error) {
-                // If session creation fails, still use Supabase user
+              });
+
+              const sessionData = await response.json();
+              if (authRequestIdRef.current !== requestId) return;
+              if (sessionData.success) {
+                localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+                localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
                 setUser(session.user);
-                setUserRole('USER');
+                setUserRole(sessionData.user?.role || null);
+              } else {
+                setUser(session.user);
+                // Do not override role to USER here
               }
-            } else {
-              setUser(null);
-              setUserRole(null);
+            } catch (error) {
+              if (authRequestIdRef.current !== requestId) return;
+              // If session creation fails, still use Supabase user but don't override role
+              setUser(session.user);
             }
-          } catch (error) {
+          } else {
+            if (authRequestIdRef.current !== requestId) return;
             setUser(null);
             setUserRole(null);
           }
+        } catch (error) {
+          if (authRequestIdRef.current !== requestId) return;
+          setUser(null);
+          setUserRole(null);
         }
+      }
     };
 
     checkAuth();
