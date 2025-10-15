@@ -139,10 +139,10 @@ export default function AnalyticsPage() {
 
     const csvData = [
       ['Metric', 'Value', 'Trend'],
-      ['Total Revenue', `$${data.totalRevenue.toFixed(2)}`, `${data.trends.revenue.change > 0 ? '+' : ''}${data.trends.revenue.change}%`],
+      ['Total Revenue', `${(data.totalRevenue).toLocaleString('vi-VN')}₫`, `${data.trends.revenue.change > 0 ? '+' : ''}${data.trends.revenue.change}%`],
       ['Total Orders', data.totalOrders, `${data.trends.orders.change > 0 ? '+' : ''}${data.trends.orders.change}%`],
       ['Total Users', data.totalUsers, `${data.trends.users.change > 0 ? '+' : ''}${data.trends.users.change}%`],
-      ['Average Order Value', `$${data.averageOrderValue.toFixed(2)}`, `${data.trends.aov.change > 0 ? '+' : ''}${data.trends.aov.change}%`],
+      ['Average Order Value', `${data.averageOrderValue.toLocaleString('vi-VN')}₫`, `${data.trends.aov.change > 0 ? '+' : ''}${data.trends.aov.change}%`],
       ['Conversion Rate', `${data.conversionRate.toFixed(1)}%`, ''],
     ];
 
@@ -156,7 +156,7 @@ export default function AnalyticsPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
+  const formatCurrency = (value: number) => `${value.toLocaleString('vi-VN')}₫`;
   const formatPercentage = (value: number) => `${value > 0 ? '+' : ''}${value}%`;
 
   const chartColors = {
@@ -355,7 +355,7 @@ export default function AnalyticsPage() {
                 <YAxis
                   stroke="#6b7280"
                   fontSize={12}
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => `${value.toLocaleString('vi-VN')}₫`}
                 />
                 <Tooltip
                   contentStyle={{
@@ -364,7 +364,7 @@ export default function AnalyticsPage() {
                     borderRadius: '8px',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
-                  formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+                  formatter={(value: number) => [`${value.toLocaleString('vi-VN')}₫`, 'Revenue']}
                   labelFormatter={(value) => format(new Date(value), 'MMM dd, yyyy')}
                 />
                 <Area

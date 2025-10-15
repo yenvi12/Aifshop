@@ -81,8 +81,6 @@ export default function PaymentPage() {
     postalCode: ''
   });
 
-  // Exchange rate: 1 USD = 25,000 VND (you can make this dynamic)
-  const USD_TO_VND_RATE = 25000;
 
   // Helper function to create short description for PayOS (max 25 characters)
   const createPaymentDescription = (itemCount: number, amount: number) => {
@@ -224,9 +222,8 @@ export default function PaymentPage() {
     return sum + (price * item.quantity);
   }, 0);
 
-  const shippingCost = selectedShipping === "express" ? 2 : selectedShipping === "standard" ? 1 : 0;
-  const totalUSD = subtotal + shippingCost;
-  const totalVND = Math.round(totalUSD * USD_TO_VND_RATE);
+  const shippingCost = selectedShipping === "express" ? 15000 : selectedShipping === "standard" ? 10000 : 0;
+  const total = subtotal + shippingCost;
 
   // Handle payment processing
   const handlePayment = async () => {
@@ -277,8 +274,8 @@ export default function PaymentPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: totalVND, // Send VND amount to PayOS
-          description: createPaymentDescription(cartItems.length, totalVND),
+          amount: total, // Send VND amount to PayOS
+          description: createPaymentDescription(cartItems.length, total),
           cartItems, // Send cart items for order details
           shippingAddress, // Send shipping address for order details
         }),
@@ -293,7 +290,7 @@ export default function PaymentPage() {
         // Save payment info to sessionStorage for payment success page
         const paymentInfo = {
           orderCode: orderCode.toString(),
-          amount: totalVND,
+          amount: total,
           paymentMethod: 'PayOS'
         };
         sessionStorage.setItem('paymentInfo', JSON.stringify(paymentInfo));
@@ -434,8 +431,8 @@ export default function PaymentPage() {
             <h2 className="text-lg font-semibold mb-4">Shipping method</h2>
             <div className="space-y-3">
               {[
-                { id: "express", label: "Express (1–2 days)", price: "$2" },
-                { id: "standard", label: "Standard (3–5 days)", price: "$1" },
+                { id: "express", label: "Express (1–2 days)", price: "15000" },
+                { id: "standard", label: "Standard (3–5 days)", price: "10000" },
                 { id: "preorder", label: "Preorder slot", price: "Ships in 2 weeks" },
               ].map((method) => (
                 <button
@@ -485,12 +482,12 @@ export default function PaymentPage() {
                     <div className="flex-1 text-sm">
                       <p className="font-medium text-gray-900">{item.product.name}</p>
                       <p className="text-gray-500">
-                        {item.quantity} × ${((item.product.price || item.product.compareAtPrice) || 0).toFixed(2)}
+                        {item.quantity} × {((item.product.price || item.product.compareAtPrice) || 0).toLocaleString('vi-VN')}₫
                         {item.size && ` • Size: ${item.size}`}
                       </p>
                     </div>
                     <p className="font-medium text-gray-900">
-                      ${(((item.product.price || item.product.compareAtPrice) || 0) * item.quantity).toFixed(2)}
+                      {(((item.product.price || item.product.compareAtPrice) || 0) * item.quantity).toLocaleString('vi-VN')}₫
                     </p>
                   </div>
                 ))}
@@ -501,20 +498,16 @@ export default function PaymentPage() {
               {/* Totals */}
               <div className="border-t pt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Subtotal (USD)</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>Subtotal</span>
+                  <span>{subtotal.toLocaleString('vi-VN')}₫</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>${shippingCost.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-semibold border-t pt-2">
-                  <span>Total (USD)</span>
-                  <span>${totalUSD.toFixed(2)}</span>
+                  <span>{shippingCost.toLocaleString('vi-VN')}₫</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold text-green-600 border-t pt-2">
-                  <span>Total (VND)</span>
-                  <span>{totalVND.toLocaleString('vi-VN')}₫</span>
+                  <span>Total</span>
+                  <span>{total.toLocaleString('vi-VN')}₫</span>
                 </div>
               </div>
             </>
@@ -532,7 +525,7 @@ export default function PaymentPage() {
                   Processing...
                 </div>
               ) : (
-                `Thanh toán ${totalVND.toLocaleString('vi-VN')}₫ với PayOS`
+                `Thanh toán ${total.toLocaleString('vi-VN')}₫ với PayOS`
               )}
             </button>
 

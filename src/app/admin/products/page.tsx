@@ -457,11 +457,11 @@ export default function ManageProductsPage() {
                   {/* Price */}
                   <div className="flex items-baseline gap-2 mb-3">
                     <span className="font-bold text-brand-dark">
-                      {product.price ? `$${product.price.toFixed(2)}` : product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : 'Price not set'}
+                      {product.price ? `${product.price.toLocaleString('vi-VN')}₫` : product.compareAtPrice ? `${product.compareAtPrice.toLocaleString('vi-VN')}₫` : 'Price not set'}
                     </span>
                     {product.compareAtPrice && product.price && (
                       <span className="text-sm text-brand-secondary line-through">
-                        ${product.compareAtPrice.toFixed(2)}
+                        ${(product.compareAtPrice.toLocaleString('vi-VN'))}₫
                       </span>
                     )}
                   </div>
@@ -564,11 +564,11 @@ export default function ManageProductsPage() {
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="font-medium text-brand-dark">
-                            {product.price ? `$${product.price.toFixed(2)}` : product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : 'Price not set'}
+                            {product.price ? `${product.price.toLocaleString('vi-VN')}₫` : product.compareAtPrice ? `${product.compareAtPrice.toLocaleString('vi-VN')}₫` : 'Price not set'}
                           </span>
                           {product.compareAtPrice && product.price && (
                             <span className="text-sm text-brand-secondary line-through">
-                              ${product.compareAtPrice.toFixed(2)}
+                              ${(product.compareAtPrice.toLocaleString('vi-VN'))}₫
                             </span>
                           )}
                         </div>
