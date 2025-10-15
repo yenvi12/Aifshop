@@ -7,81 +7,94 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 type Position = "left" | "center" | "right";
 type CTA = { label: string; href: string };
 
-// Cho phép dùng img hoặc src
 type SlideInput =
   | { title: string; caption?: string; cta?: CTA; position?: Position; img: string; src?: never }
   | { title: string; caption?: string; cta?: CTA; position?: Position; src: string; img?: never };
 
 type Props = {
   slides?: SlideInput[];
-  interval?: number;      // ms, mặc định 3000
-  className?: string;     // tiện padding/margin từ bên ngoài
+  interval?: number;      // ms
+  className?: string;
+  pauseOnHover?: boolean; // mặc định false => không pause
 };
 
-const DEFAULT_INTERVAL = 3000;
+const DEFAULT_INTERVAL = 2000;
 
-const defaultSlides: SlideInput[] = [
-  {
-    title: "Discover the Latest Fashion Trends",
-    caption: "Browse unique styles and find what suits you best.",
-    cta: { label: "Shop Now", href: "#" },
-    img: "https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?q=80&w=1600&auto=format&fit=crop",
-    position: "left",
-  },
-  {
-    title: "Minimal Jewelry, Maximum Impact",
-    caption: "Handpicked pieces with timeless charm.",
-    cta: { label: "Explore", href: "#" },
-    img: "https://images.unsplash.com/photo-1610420612786-0f6b5d9d1ab7?q=80&w=1600&auto=format&fit=crop",
-    position: "center",
-  },
-  {
-    title: "New Season Arrivals",
-    caption: "Fresh colors and breathable fabrics.",
-    cta: { label: "View Collection", href: "#" },
-    img: "https://images.unsplash.com/photo-1520975693412-634c4a60f6f5?q=80&w=1600&auto=format&fit=crop",
-    position: "right",
-  },
-];
+const defaultSlides: SlideInput[] = [/* giữ như bạn đang có */];
 
 export default function HeroCarouselOverlay({
   slides = defaultSlides,
   interval = DEFAULT_INTERVAL,
   className = "",
+  pauseOnHover = false,
 }: Props): JSX.Element {
   const [index, setIndex] = useState<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const pausedRef = useRef<boolean>(false);
 
-  const next = () => setIndex((i) => (i + 1) % slides.length);
-  const prev = () => setIndex((i) => (i - 1 + slides.length) % slides.length);
-  const goTo = (i: number) => setIndex(i);
+  // ---- helpers: start/stop/kick autoplay ----
+  const stop = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = undefined;
+  };
+  const start = () => {
+    stop();
+    pausedRef.current = false;
+    timerRef.current = setInterval(() => {
+      setIndex((i) => (i + 1) % slides.length);
+    }, interval);
+  };
+  const kick = () => {
+    // gọi sau mọi tương tác để đảm bảo tiếp tục chạy
+    start();
+  };
 
+  // mount + khi index/interval đổi -> giữ autoplay
   useEffect(() => {
-    if (pausedRef.current) return;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(next, interval);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [index, interval]);
+    if (!pausedRef.current) start();
+    return stop;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, interval, slides.length]);
 
-  const onPause = (v: boolean) => {
-    pausedRef.current = v;
-    if (timerRef.current) clearInterval(timerRef.current);
+  // điều hướng
+  const next = () => {
+    setIndex((i) => (i + 1) % slides.length);
+    kick();
+  };
+  const prev = () => {
+    setIndex((i) => (i - 1 + slides.length) % slides.length);
+    kick();
+  };
+  const goTo = (i: number) => {
+    setIndex(i);
+    kick();
+  };
+
+  // hover handlers (tùy chọn)
+  const onEnter = () => {
+    if (!pauseOnHover) return;
+    pausedRef.current = true;
+    stop();
+  };
+  const onLeave = () => {
+    if (!pauseOnHover) return;
+    kick();
   };
 
   return (
     <section className={`w-full select-none ${className}`}>
       <div
         className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
-        onMouseEnter={() => onPause(true)}
-        onMouseLeave={() => onPause(false)}
-        onFocusCapture={() => onPause(true)}
-        onBlurCapture={() => onPause(false)}
+        onMouseEnter={onEnter}
+        onMouseLeave={onLeave}
+        /* Bỏ focus-capture để không bị pause khi bấm nút */
       >
         {/* Slide track */}
-        <div className="relative h-[520px] md:h-[420px]">
+        <div
+          className="relative h-[520px] md:h-[420px]"
+          // click vào ảnh cũng "đá" lại autoplay
+          onClick={kick}
+        >
           {slides.map((s, i) => (
             <SlideItem key={i} slide={s} active={i === index} />
           ))}
@@ -150,21 +163,15 @@ function SlideItem({
         className="h-full w-full object-cover"
         draggable={false}
       />
-      {/* overlay giúp chữ dễ đọc */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-      <div
-        className={`absolute inset-0 flex ${align} justify-center p-6 md:p-12`}
-        aria-live="polite"
-      >
+      <div className={`absolute inset-0 flex ${align} justify-center p-6 md:p-12`} aria-live="polite">
         <div className="max-w-xl space-y-4 text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.35)]">
           <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-medium tracking-wide">
             Fresh & curated
           </span>
           <h1 className="text-3xl font-extrabold md:text-5xl">{slide.title}</h1>
           {"caption" in slide && slide.caption && (
-            <p className="text-base/relaxed md:text-lg/relaxed text-white/90">
-              {slide.caption}
-            </p>
+            <p className="text-base/relaxed md:text-lg/relaxed text-white/90">{slide.caption}</p>
           )}
           {"cta" in slide && slide.cta && (
             <a

@@ -10,16 +10,14 @@ export const metadata: Metadata = {
   description: "AI-Powered Jewelry Shopping",
 };
 
-const LABELS: Record<string, string> = {
-  // User side
+const LABELS = {
   "/shop": "Shop",
-  "products": "Products",
-  "product": "Product",
-  "cart": "Cart",
-  "checkout": "Checkout",
-  "account": "My Account",
-  "orders": "Orders",
-  // Admin side
+  products: { label: "Shop", href: "/shop" }, // <-- click vào "Shop" (segment products) sẽ đi tới /shop
+  product: "Product",
+  cart: "Cart",
+  checkout: "Checkout",
+  account: "My Account",
+  orders: "Orders",
   "/admin": "Admin",
   "/admin/add-product": "Add Product",
   "/admin/products": "Manage Products",

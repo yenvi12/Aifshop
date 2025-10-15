@@ -4,10 +4,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { MdStar, MdFavoriteBorder, MdFavorite } from "react-icons/md";
+import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage } from "react-icons/md";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
-import { MdMessage } from "react-icons/md";
 
 type SizeOption = {
   name: string;
@@ -63,16 +62,16 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, reviewId: string | null}>({show: false, reviewId: null});
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; reviewId: string | null }>({ show: false, reviewId: null });
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   // Get current user ID from JWT token
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem("accessToken");
     if (token) {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = JSON.parse(atob(token.split(".")[1]));
         setCurrentUserId(payload.userId);
       } catch (error) {
         setCurrentUserId(null);
@@ -84,21 +83,21 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
   // Auto-open Reviews tab if ?review=1; only open form if user hasn't reviewed (enforce 1 review/product)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('review') !== '1') return;
+    if (params.get("review") !== "1") return;
 
     // Always switch to Reviews tab
-    setActiveTab('reviews');
+    setActiveTab("reviews");
 
     // Wait until we know currentUserId; then decide to open/close the form
     if (!currentUserId) return;
 
-    const alreadyReviewed = reviews.some(r => r.user.id === currentUserId);
+    const alreadyReviewed = reviews.some((r) => r.user.id === currentUserId);
     if (alreadyReviewed) {
       // User already reviewed this product -> do NOT open the form
       setShowReviewForm(false);
-      toast('You have already reviewed this product');
+      toast("You have already reviewed this product");
     } else {
       // User not yet reviewed -> open the form
       setShowReviewForm(true);
@@ -106,15 +105,8 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   }, [currentUserId, reviews]);
 
   const images = [product.image, ...(product.images || [])].filter((img): img is string => Boolean(img && img.trim()));
-
   const sizes = product.sizes || [];
   const defaultSizes = sizes.length > 0 ? sizes : [{ name: "S", stock: 10 }, { name: "M", stock: 15 }, { name: "L", stock: 8 }];
-
-  // Debug logging
-  console.log("Product sizes:", sizes);
-  console.log("Product sizes length:", sizes.length);
-  console.log("Selected size:", selectedSize);
-  console.log("Button disabled condition:", !selectedSize && sizes.length > 0);
 
   const discount =
     product.compareAtPrice && product.price && product.compareAtPrice > product.price
@@ -122,28 +114,18 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
       : 0;
 
   // Check if current user has already reviewed this product
-  const hasUserReviewed = currentUserId && reviews.some(review => review.user.id === currentUserId);
-
-  const handleBuyNow = () => {
-    // Nếu muốn truyền dữ liệu product, có thể lưu tạm vào localStorage / context
-    router.push("/payment");
-  };
+  const hasUserReviewed = currentUserId && reviews.some((review) => review.user.id === currentUserId);
 
   const handleMessage = () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      // Redirect to login with return URL
       router.push(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-
-    // Get current user info to create conversation ID
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split(".")[1]));
       const userId = payload.userId;
       const conversationId = `${userId}-${product.id}`;
-
-      // Navigate to messenger with the conversation
       router.push(`/messenger/${conversationId}`);
     } catch (error) {
       console.error("Error parsing token:", error);
@@ -152,100 +134,70 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     }
   };
 
-  // Edit review handler
   const handleEditReview = (review: Review) => {
     setEditingReview(review);
     setEditingReviewId(review.id);
     setShowReviewForm(true);
   };
 
-  // Delete review handler
   const handleDeleteReview = async (reviewId: string) => {
-    setDeleteConfirm({show: true, reviewId});
+    setDeleteConfirm({ show: true, reviewId });
   };
 
-  // Confirm delete review
   const confirmDeleteReview = async () => {
     if (!deleteConfirm.reviewId) return;
 
     setDeletingReviewId(deleteConfirm.reviewId);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem("accessToken");
       if (!token) {
-        throw new Error('Bạn cần đăng nhập để thực hiện thao tác này');
+        throw new Error("Bạn cần đăng nhập để thực hiện thao tác này");
       }
 
       const response = await fetch(`/api/reviews?id=${deleteConfirm.reviewId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const result = await response.json();
-
       if (!result.success) {
-        throw new Error(result.error || 'Không thể xóa đánh giá');
+        throw new Error(result.error || "Không thể xóa đánh giá");
       }
 
-      // Update local reviews state
-      setReviews(reviews.filter(r => r.id !== deleteConfirm.reviewId));
-      toast.success('Review deleted successfully');
-
+      setReviews(reviews.filter((r) => r.id !== deleteConfirm.reviewId));
+      toast.success("Review deleted successfully");
     } catch (error) {
-      console.error('Delete review error:', error);
-      toast.error('Failed to delete review. Please try again.');
+      console.error("Delete review error:", error);
+      toast.error("Failed to delete review. Please try again.");
     } finally {
       setDeletingReviewId(null);
-      setDeleteConfirm({show: false, reviewId: null});
+      setDeleteConfirm({ show: false, reviewId: null });
     }
   };
 
-  // Review management functions
   const handleSubmitReview = async (reviewData: any) => {
     setIsSubmittingReview(true);
     try {
       const isEdit = !!reviewData.id;
       const url = isEdit ? `/api/reviews?id=${reviewData.id}` : "/api/reviews";
       const method = isEdit ? "PUT" : "POST";
-
       const body = isEdit ? reviewData : { ...reviewData, productId: product.id };
 
-      // Get auth token from localStorage
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        throw new Error('You need to login to perform this action');
-      }
+      const token = localStorage.getItem("accessToken");
+      if (!token) throw new Error("You need to login to perform this action");
 
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
+      const headers: Record<string, string> = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: JSON.stringify(body),
-      });
-
+      const response = await fetch(url, { method, headers, body: JSON.stringify(body) });
       const result = await response.json();
-
-      if (!result.success) {
-        console.error('Review submission failed:', result.details)
-        throw new Error(result.error || "Failed to submit review");
-      }
+      if (!result.success) throw new Error(result.error || "Failed to submit review");
 
       if (isEdit) {
-        // Update existing review in state
-        setReviews(reviews.map(r => r.id === reviewData.id ? result.data : r));
-        toast.success('Review updated successfully');
+        setReviews(reviews.map((r) => (r.id === reviewData.id ? result.data : r)));
+        toast.success("Review updated successfully");
       } else {
-        // Add new review
         setReviews([result.data, ...reviews]);
-        toast.success('Review submitted successfully');
+        toast.success("Review submitted successfully");
       }
 
       setShowReviewForm(false);
@@ -260,14 +212,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   };
 
   const handleAddToCart = async () => {
-    console.log("Add to cart clicked!");
-    console.log("Product:", product.name);
-    console.log("Available sizes:", sizes);
-    console.log("Selected size:", selectedSize);
-    console.log("Token exists:", !!localStorage.getItem("accessToken"));
-
     try {
-      // Kiểm tra authentication
       const token = localStorage.getItem("accessToken");
       if (!token) {
         toast.error("Please login to add products to cart");
@@ -275,58 +220,45 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
         return;
       }
 
-      // Validate size selection if product has sizes
       if (sizes.length > 0 && !selectedSize) {
         toast.error("Please select a product size");
         return;
       }
 
-      // Lấy thông tin giỏ hàng hiện tại để kiểm tra sản phẩm đã tồn tại chưa
-      const cartResponse = await fetch('/api/cart', {
-        method: 'GET',
+      const cartResponse = await fetch("/api/cart", {
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
       const cartData = await cartResponse.json();
-
       if (!cartData.success) {
         toast.error("Unable to retrieve cart information");
         return;
       }
 
-      // Tìm sản phẩm trong giỏ hàng với cùng size (nếu có)
-      const existingItem = cartData.data?.find((item: any) =>
-        item.product.id === product.id && item.size === (selectedSize?.name || null)
-      );
-
-      // Nếu sản phẩm đã tồn tại với cùng size, tăng số lượng hiện tại lên số lượng được chọn
-      // Nếu chưa tồn tại, thêm mới với số lượng được chọn
+      const existingItem = cartData.data?.find((item: any) => item.product.id === product.id && item.size === (selectedSize?.name || null));
       const newQuantity = existingItem ? existingItem.quantity + quantity : quantity;
 
-      // Gọi API cập nhật giỏ hàng
-      const response = await fetch('/api/cart', {
-        method: 'POST',
+      const response = await fetch("/api/cart", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           productId: product.id,
           quantity: newQuantity,
-          size: selectedSize?.name || null
-        })
+          size: selectedSize?.name || null,
+        }),
       });
 
       const data = await response.json();
-
       if (data.success) {
         toast.success(data.message || "Sản phẩm đã được thêm vào giỏ hàng!");
-
-        // Send event to update cart count in Header and other components
-        window.dispatchEvent(new CustomEvent('cartUpdated'));
+        window.dispatchEvent(new CustomEvent("cartUpdated"));
       } else {
         if (response.status === 401) {
           toast.error("Session expired. Please log in again.");
@@ -342,7 +274,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
         }
       }
     } catch (error) {
-      console.error('Add to cart error:', error);
+      console.error("Add to cart error:", error);
       toast.error("An error occurred while adding the product to the cart");
     }
   };
@@ -353,61 +285,52 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100">
+            {/* Main Image – hiệu ứng đẹp */}
+            <div className="group relative aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-md">
               <Image
+                key={images[selectedImage]}
                 src={images[selectedImage]}
                 alt={product.name}
-                width={600}
-                height={600}
-                className="w-full h-full object-cover"
+                width={1200}
+                height={1200}
+                className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.03] animate-fade-in"
                 priority
               />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-60 group-hover:opacity-70 transition-opacity duration-500" />
             </div>
 
-            {/* Thumbnail Images */}
+            {/* Thumbnail Images – ring + hover */}
             <div className="grid grid-cols-4 gap-4">
-              {images.map((img, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square rounded-lg overflow-hidden border-2 transition ${
-                    selectedImage === index ? "border-blue-500" : "border-gray-200"
-                  }`}
-                >
-                  <Image
-                    src={img}
-                    alt={`${product.name} ${index + 1}`}
-                    width={150}
-                    height={150}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
+              {images.map((img, index) => {
+                const active = selectedImage === index;
+                return (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`relative aspect-square rounded-xl overflow-hidden border transition-all duration-300 focus:outline-none ${
+                      active
+                        ? "border-brand-primary ring-2 ring-brand-primary/40 shadow-lg scale-[1.03]"
+                        : "border-gray-200 hover:-translate-y-[2px] hover:shadow-md"
+                    }`}
+                    aria-label={`Preview ${index + 1}`}
+                  >
+                    <Image src={img} alt={`${product.name} ${index + 1}`} width={200} height={200} className="w-full h-full object-cover" />
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {product.name}
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <MdStar
-                      key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.round(product.rating || 0)
-                          ? "text-yellow-400 fill-current"
-                          : "text-gray-300"
-                      }`}
-                    />
+                    <MdStar key={i} className={`w-5 h-5 ${i < Math.round(product.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
                   ))}
-                  <span className="text-sm text-gray-600 ml-2">
-                    ({product.rating?.toFixed(1) || "0.0"})
-                  </span>
+                  <span className="text-sm text-gray-600 ml-2">({product.rating?.toFixed(1) || "0.0"})</span>
                 </div>
                 <span className="text-sm text-green-600">✓ In Stock</span>
               </div>
@@ -416,17 +339,17 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             {/* Price */}
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold text-gray-900">
-                {product.price ? `${product.price.toLocaleString('vi-VN')}₫` : product.compareAtPrice ? `${product.compareAtPrice.toLocaleString('vi-VN')}₫` : 'Price TBA'}
+                {product.price
+                  ? `${product.price.toLocaleString("vi-VN")}₫`
+                  : product.compareAtPrice
+                  ? `${product.compareAtPrice.toLocaleString("vi-VN")}₫`
+                  : "Price TBA"}
               </span>
               {product.compareAtPrice && product.price && (
-                <span className="text-xl text-gray-500 line-through">
-                  ${product.compareAtPrice.toLocaleString('vi-VN')}₫
-                </span>
+                <span className="text-xl text-gray-500 line-through">{product.compareAtPrice.toLocaleString("vi-VN")}₫</span>
               )}
               {discount > 0 && (
-                <span className="text-sm px-2 py-1 bg-red-100 text-red-600 rounded">
-                  Save {discount}%
-                </span>
+                <span className="text-sm px-2 py-1 bg-red-100 text-red-600 rounded">Save {discount}%</span>
               )}
             </div>
 
@@ -445,7 +368,9 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             {/* Size Selection - Only show if product has custom sizes */}
             {sizes.length > 0 && (
               <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Size {!selectedSize && sizes.length > 0 && <span className="text-red-500">*</span>}</h3>
+                <h3 className="font-semibold text-gray-900">
+                  Size {!selectedSize && sizes.length > 0 && <span className="text-red-500">*</span>}
+                </h3>
                 <div className="flex gap-3">
                   {sizes.map((size) => (
                     <button
@@ -461,14 +386,8 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                       }`}
                     >
                       {size.name}
-                      {size.stock > 0 && (
-                        <span className="block text-xs opacity-75">
-                          ({size.stock} left)
-                        </span>
-                      )}
-                      {size.stock === 0 && (
-                        <span className="block text-xs">Out of stock</span>
-                      )}
+                      {size.stock > 0 && <span className="block text-xs opacity-75">({size.stock} left)</span>}
+                      {size.stock === 0 && <span className="block text-xs">Out of stock</span>}
                     </button>
                   ))}
                 </div>
@@ -495,23 +414,14 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   disabled={!currentUserId}
                   title={!currentUserId ? "Please login to message" : "Message seller"}
                 >
-                  <MdMessage className={`w-5 h-5 transition-transform duration-300 ${!currentUserId ? '' : 'group-hover:scale-110 group-hover:animate-pulse'}`} />
+                  <MdMessage className={`w-5 h-5 transition-transform duration-300 ${!currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"}`} />
                   <span>Message</span>
-                  {!currentUserId && (
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  )}
+                  {!currentUserId && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
                 </button>
 
                 {/* Wishlist Button */}
-                <button
-                  onClick={() => setWished(!wished)}
-                  className="p-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
-                >
-                  {wished ? (
-                    <MdFavorite className="w-5 h-5 text-red-500" />
-                  ) : (
-                    <MdFavoriteBorder className="w-5 h-5" />
-                  )}
+                <button onClick={() => setWished(!wished)} className="p-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition">
+                  {wished ? <MdFavorite className="w-5 h-5 text-red-500" /> : <MdFavoriteBorder className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -543,9 +453,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                    activeTab === tab
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
+                    activeTab === tab ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -558,7 +466,8 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             {activeTab === "description" && (
               <div className="space-y-4">
                 <p className="text-gray-600">
-                  {product.description || "This is a beautiful piece of jewelry crafted with attention to detail. Perfect for any occasion."}
+                  {product.description ||
+                    "This is a beautiful piece of jewelry crafted with attention to detail. Perfect for any occasion."}
                 </p>
               </div>
             )}
@@ -574,7 +483,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                       disabled={editingReviewId !== null}
                     >
-                      {editingReviewId ? 'Loading...' : 'Write Review'}
+                      {editingReviewId ? "Loading..." : "Write Review"}
                     </button>
                   )}
                 </div>
@@ -649,7 +558,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                 >
                   <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 mb-4">
                     <Image
-                      src={relatedProduct.image || '/demo/dc10.jpg'}
+                      src={relatedProduct.image || "/demo/dc10.jpg"}
                       alt={relatedProduct.name}
                       width={300}
                       height={300}
@@ -659,11 +568,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   <h3 className="font-semibold mb-1">{relatedProduct.name}</h3>
                   <div className="flex items-center gap-2">
                     <span className="font-bold">
-                      {relatedProduct.price ? `${relatedProduct.price.toLocaleString('vi-VN')}₫` : 'Price TBA'}
+                      {relatedProduct.price ? `${relatedProduct.price.toLocaleString("vi-VN")}₫` : "Price TBA"}
                     </span>
                     {relatedProduct.compareAtPrice && relatedProduct.price && (
                       <span className="text-sm text-gray-500 line-through">
-                        ${relatedProduct.compareAtPrice.toLocaleString('vi-VN')}₫
+                        {relatedProduct.compareAtPrice.toLocaleString("vi-VN")}₫
                       </span>
                     )}
                   </div>
@@ -681,7 +590,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
               <p className="text-gray-600 mb-6">Are you sure you want to delete this review? This action cannot be undone.</p>
               <div className="flex gap-3 justify-end">
                 <button
-                  onClick={() => setDeleteConfirm({show: false, reviewId: null})}
+                  onClick={() => setDeleteConfirm({ show: false, reviewId: null })}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
                   disabled={deletingReviewId !== null}
                 >
@@ -692,7 +601,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   disabled={deletingReviewId !== null}
                   className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 rounded-lg transition-colors duration-200"
                 >
-                  {deletingReviewId ? 'Deleting...' : 'Delete Review'}
+                  {deletingReviewId ? "Deleting..." : "Delete Review"}
                 </button>
               </div>
             </div>
@@ -702,5 +611,3 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     </>
   );
 }
-
-
