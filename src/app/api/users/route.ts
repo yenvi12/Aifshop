@@ -26,19 +26,175 @@ function verifyAdminToken(request: NextRequest) {
   }
 }
 
-// GET - List users with pagination, search, filters
+// Helper function to verify any authenticated user token
+function verifyUserToken(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { error: 'Authorization header missing', status: 401 }
+  }
+
+  const token = authHeader.substring(7)
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    return { userId: decoded.userId, email: decoded.email, role: decoded.role }
+  } catch (error) {
+    return { error: 'Invalid or expired token', status: 401 }
+  }
+}
+
+// GET - List users with pagination, search, filters OR get single user by ID
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin token
-    const authResult = verifyAdminToken(request)
-    if (authResult.error) {
-      return NextResponse.json(
-        { success: false, error: authResult.error },
-        { status: authResult.status }
-      )
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    const forMessaging = searchParams.get('forMessaging')
+
+    // If forMessaging=true, allow any authenticated user to find admins
+    if (forMessaging === 'true') {
+      const authResult = verifyUserToken(request)
+      if (authResult.error) {
+        return NextResponse.json(
+          { success: false, error: authResult.error },
+          { status: authResult.status }
+        )
+      }
+
+      const role = searchParams.get('role') || ''
+      const limit = parseInt(searchParams.get('limit') || '10')
+
+      if (role !== 'ADMIN') {
+        return NextResponse.json(
+          { success: false, error: 'Invalid role filter for messaging' },
+          { status: 400 }
+        )
+      }
+
+      // Fetch all database users with ADMIN role
+      const dbUsers = await prisma.user.findMany({
+        where: { role: 'ADMIN' },
+        select: {
+          id: true,
+          supabaseUserId: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          role: true
+        },
+        take: limit
+      })
+
+      // If no admin users in database, try to find from Supabase Auth
+      if (dbUsers.length === 0) {
+        const { data: supabaseUsers, error: supabaseError } = await supabaseAdmin.auth.admin.listUsers()
+
+        if (supabaseError) {
+          return NextResponse.json(
+            { success: false, error: 'Failed to fetch users' },
+            { status: 500 }
+          )
+        }
+
+        // Find users that might be admins (this is a fallback)
+        const potentialAdmins = supabaseUsers.users
+          .filter(user => user.email)
+          .slice(0, limit)
+          .map(user => ({
+            id: user.id,
+            email: user.email!,
+            firstName: '',
+            lastName: '',
+            avatar: null,
+            role: 'ADMIN' as const
+          }))
+
+        return NextResponse.json({
+          success: true,
+          data: potentialAdmins
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: dbUsers
+      })
     }
 
-    const { searchParams } = new URL(request.url)
+    // If ID is provided, get single user (allow any authenticated user)
+    if (id) {
+      const authResult = verifyUserToken(request)
+      if (authResult.error) {
+        return NextResponse.json(
+          { success: false, error: authResult.error },
+          { status: authResult.status }
+        )
+      }
+
+      // Check if user exists in Supabase Auth
+      const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.getUserById(id)
+
+      if (supabaseError || !supabaseUser.user) {
+        return NextResponse.json(
+          { success: false, error: 'User not found' },
+          { status: 404 }
+        )
+      }
+
+      // Get DB user data
+      const dbUser = await prisma.user.findUnique({
+        where: { supabaseUserId: id },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          dateOfBirth: true,
+          bio: true,
+          avatar: true,
+          stylePreferences: true,
+          defaultAddress: true,
+          isVerified: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      })
+
+      const userData = {
+        id: supabaseUser.user.id,
+        email: supabaseUser.user.email!,
+        firstName: dbUser?.firstName || null,
+        lastName: dbUser?.lastName || null,
+        phoneNumber: dbUser?.phoneNumber || null,
+        dateOfBirth: dbUser?.dateOfBirth || null,
+        bio: dbUser?.bio || null,
+        avatar: dbUser?.avatar || null,
+        stylePreferences: dbUser?.stylePreferences || [],
+        defaultAddress: dbUser?.defaultAddress || null,
+        isVerified: dbUser?.isVerified ?? false,
+        role: dbUser?.role ?? 'USER',
+        createdAt: new Date(supabaseUser.user.created_at),
+        updatedAt: dbUser?.updatedAt || new Date(supabaseUser.user.created_at),
+        emailConfirmedAt: supabaseUser.user.email_confirmed_at ? new Date(supabaseUser.user.email_confirmed_at) : null,
+        hasDatabaseRecord: !!dbUser
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: userData
+      })
+    }
+
+    // Otherwise, list users (admin only)
+    const listAuthResult = verifyAdminToken(request)
+    if (listAuthResult.error) {
+      return NextResponse.json(
+        { success: false, error: listAuthResult.error },
+        { status: listAuthResult.status }
+      )
+    }
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
