@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { MdStar, MdFavoriteBorder, MdFavorite } from "react-icons/md";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
+import { MdMessage } from "react-icons/md";
 
 type SizeOption = {
   name: string;
@@ -126,6 +127,29 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const handleBuyNow = () => {
     // Nếu muốn truyền dữ liệu product, có thể lưu tạm vào localStorage / context
     router.push("/payment");
+  };
+
+  const handleMessage = () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      // Redirect to login with return URL
+      router.push(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+
+    // Get current user info to create conversation ID
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = payload.userId;
+      const conversationId = `${userId}-${product.id}`;
+
+      // Navigate to messenger with the conversation
+      router.push(`/messenger/${conversationId}`);
+    } catch (error) {
+      console.error("Error parsing token:", error);
+      toast.error("Authentication error. Please log in again.");
+      router.push("/login");
+    }
   };
 
   // Edit review handler
@@ -392,11 +416,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             {/* Price */}
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold text-gray-900">
-                {product.price ? `$${product.price.toFixed(2)}` : product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : 'Price TBA'}
+                {product.price ? `${product.price.toLocaleString('vi-VN')}₫` : product.compareAtPrice ? `${product.compareAtPrice.toLocaleString('vi-VN')}₫` : 'Price TBA'}
               </span>
               {product.compareAtPrice && product.price && (
                 <span className="text-xl text-gray-500 line-through">
-                  ${product.compareAtPrice.toFixed(2)}
+                  ${product.compareAtPrice.toLocaleString('vi-VN')}₫
                 </span>
               )}
               {discount > 0 && (
@@ -464,6 +488,19 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   Add to cart
                 </button>
 
+                {/* Message Button - Primary CTA */}
+                <button
+                  onClick={handleMessage}
+                  className="group relative w-auto inline-flex items-center gap-3 rounded-xl py-2.5 px-6 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold border-2 border-[#0088cc] hover:border-[#0077b3] hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+                  disabled={!currentUserId}
+                  title={!currentUserId ? "Please login to message" : "Message seller"}
+                >
+                  <MdMessage className={`w-5 h-5 transition-transform duration-300 ${!currentUserId ? '' : 'group-hover:scale-110 group-hover:animate-pulse'}`} />
+                  <span>Message</span>
+                  {!currentUserId && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  )}
+                </button>
 
                 {/* Wishlist Button */}
                 <button
@@ -577,7 +614,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                       <span className="text-2xl">🚚</span>
                     </div>
                     <h3 className="font-semibold mb-2">Free Shipping</h3>
-                    <p className="text-sm text-gray-600">Free shipping on orders over $50</p>
+                    <p className="text-sm text-gray-600">Free shipping on orders over 1,150,000₫</p>
                   </div>
                   <div className="text-center">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -622,11 +659,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   <h3 className="font-semibold mb-1">{relatedProduct.name}</h3>
                   <div className="flex items-center gap-2">
                     <span className="font-bold">
-                      {relatedProduct.price ? `$${relatedProduct.price.toFixed(2)}` : 'Price TBA'}
+                      {relatedProduct.price ? `${relatedProduct.price.toLocaleString('vi-VN')}₫` : 'Price TBA'}
                     </span>
                     {relatedProduct.compareAtPrice && relatedProduct.price && (
                       <span className="text-sm text-gray-500 line-through">
-                        ${relatedProduct.compareAtPrice.toFixed(2)}
+                        ${relatedProduct.compareAtPrice.toLocaleString('vi-VN')}₫
                       </span>
                     )}
                   </div>

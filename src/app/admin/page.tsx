@@ -99,7 +99,6 @@ export default function AdminPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-brand.light/60 to-white">
-        <Header />
         <Breadcrumb />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">

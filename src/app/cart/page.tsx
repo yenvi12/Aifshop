@@ -368,15 +368,15 @@ const CartPage = () => {
                     <div className="text-right flex-shrink-0 space-y-1">
                       <div className="text-lg font-bold text-gray-900">
                         {item.product.price
-                          ? `$${item.product.price.toFixed(2)}`
+                          ? `${item.product.price.toLocaleString('vi-VN')}₫`
                           : item.product.compareAtPrice
-                            ? `$${item.product.compareAtPrice.toFixed(2)}`
-                            : '$0.00'
+                            ? `${item.product.compareAtPrice.toLocaleString('vi-VN')}₫`
+                            : '0₫'
                         }
                       </div>
                       {item.product.compareAtPrice && item.product.compareAtPrice > (item.product.price || item.product.compareAtPrice) && (
                         <div className="text-sm text-gray-500 line-through">
-                          ${item.product.compareAtPrice.toFixed(2)}
+                          {item.product.compareAtPrice.toLocaleString('vi-VN')}₫
                         </div>
                       )}
                     </div>
@@ -409,12 +409,12 @@ const CartPage = () => {
                 <div className="space-y-3 mb-4">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                    <span className="font-medium">{subtotal.toLocaleString('vi-VN')}₫</span>
                   </div>
                   <div className="border-t pt-3">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold text-gray-900">Total</span>
-                      <span className="text-xl font-bold text-gray-900">${total.toFixed(2)}</span>
+                      <span className="text-xl font-bold text-gray-900">{total.toLocaleString('vi-VN')}₫</span>
                     </div>
                   </div>
                 </div>
@@ -482,7 +482,7 @@ const CartPage = () => {
                         }
                       </p>
                       <div className="text-lg font-bold text-gray-900">
-                        ${product.price || product.compareAtPrice ? (product.price || product.compareAtPrice).toFixed(2) : '0.00'}
+                        {product.price || product.compareAtPrice ? (product.price || product.compareAtPrice).toLocaleString('vi-VN') + '₫' : '0₫'}
                       </div>
                     </div>
                   </div>

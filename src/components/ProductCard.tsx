@@ -119,11 +119,11 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-brand-dark font-semibold">
-              {p.price ? `$${p.price.toFixed(2)}` : p.compareAtPrice ? `$${p.compareAtPrice.toFixed(2)}` : 'Price TBA'}
+              {p.price ? `${p.price.toLocaleString('vi-VN')}₫` : p.compareAtPrice ? `${p.compareAtPrice.toLocaleString('vi-VN')}₫` : 'Price TBA'}
             </span>
             {p.compareAtPrice && p.price && p.compareAtPrice > p.price && (
               <span className="text-sm text-brand-secondary line-through">
-                ${p.compareAtPrice.toFixed(2)}
+                ${p.compareAtPrice.toLocaleString('vi-VN')}₫
               </span>
             )}
           </div>

@@ -13,3 +13,105 @@ body {
 .input {
   @apply border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary;
 }
+
+/* Messenger animations */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out;
+}
+
+/* Message animations */
+@keyframes message-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.message-item {
+  animation: message-slide-in 0.3s ease-out;
+}
+
+/* Conversation hover effect */
+.conversation-item {
+  transition: all 0.2s ease-in-out;
+}
+
+.conversation-item:hover {
+  background-color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Message bubble hover */
+.message-bubble-own:hover,
+.message-bubble-other:hover {
+  transform: scale(1.02);
+  transition: transform 0.1s ease-out;
+}
+
+/* Loading pulse animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth focus transitions */
+button:focus,
+input:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 136, 204, 0.2);
+}
+
+/* Telegram-inspired scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8f9fa;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c8cd;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8b0b7;
+}
+
+/* Dark mode support for messenger */
+.dark .message-bubble-own {
+  background-color: #0088cc;
+  color: white;
+}
+
+.dark .message-bubble-other {
+  background-color: #2c2d30;
+  color: #f8f9fa;
+  border-color: #404040;
+}

@@ -544,8 +544,8 @@ function OrderCard({ order }: { order: Order }) {
               <p className="text-sm text-brand-secondary mt-1">Qty: {item.quantity} {item.size && `• Size: ${item.size}`}</p>
             </div>
             <div className="text-right">
-              <p className="text-lg font-bold text-brand-dark">${(item.priceAtTime * item.quantity).toFixed(2)}</p>
-              <p className="text-sm text-brand-secondary">${item.priceAtTime.toFixed(2)} each</p>
+              <p className="text-lg font-bold text-brand-dark">${(item.priceAtTime * item.quantity).toLocaleString('vi-VN')}₫</p>
+              <p className="text-sm text-brand-secondary">${item.priceAtTime.toLocaleString('vi-VN')}₫ each</p>
             </div>
           </div>
         ))}
@@ -577,7 +577,7 @@ function OrderCard({ order }: { order: Order }) {
           <div className="text-right">
             <p className="text-sm text-brand-secondary font-medium">Total Amount</p>
             <span className="text-2xl font-bold text-brand-dark">
-              ${order.totalAmount > 0 ? order.totalAmount.toFixed(2) : '0.00'}
+              ${order.totalAmount > 0 ? order.totalAmount.toLocaleString('vi-VN') + '₫' : '0₫'}
             </span>
           </div>
           <button
@@ -879,7 +879,7 @@ function PaymentCard({ payment }: { payment: Payment }) {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-brand-dark">${order.totalAmount.toFixed(2)}</p>
+                    <p className="font-semibold text-brand-dark">${order.totalAmount.toLocaleString('vi-VN')}₫</p>
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                       order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
                       order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-700' :

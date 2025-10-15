@@ -297,7 +297,7 @@ export default function ProductListPage() {
             <div>
               <h1 className="text-2xl font-semibold text-brand-dark">All Products</h1>
               <p className="py-5 text-sm text-brand-secondary">
-                Based on your browsing: Necklace, Pearl • Preferred: Minimal, Daily • Budget: $10–$200
+                Based on your browsing: Necklace, Pearl • Preferred: Minimal, Daily • Budget: 100.000₫ - 300.000₫
               </p>
             </div>
             <div className="hidden md:flex gap-2">
