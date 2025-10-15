@@ -181,6 +181,9 @@ export default function HomePage() {
     { title: "Discover the Latest Fashion Trends", caption: "Browse our collection of unique styles and find what suits you best.", cta: { label: "Shop Now", href: "/shop" }, src: "/demo/dan-tri-0603awo-pr07-1-crop-1709803508993.webp", position: "left" },
     { title: "Minimal Jewelry, Maximum Impact", caption: "Handpicked pieces with timeless charm.", cta: { label: "Explore", href: "/shop" }, src: "/demo/trang-suc-bac.avif", position: "center" },
     { title: "New Season Arrivals", caption: "Fresh colors and breathable fabrics.", cta: { label: "View Collection", href: "/shop" }, src: "/demo/20250925_QR7TJv03.jpg", position: "right" },
+    { title: "Silver jewelry", caption: "Fresh colors and breathable fabrics.", cta: { label: "View Collection", href: "/shop" }, src: "/demo/trangsuc.jpg", position: "center" },
+    { title: "High heels", caption: "Noble and luxuriouss.", cta: { label: "View Collection", href: "/shop" }, src: "/demo/giay.jpg", position: "left" },
+    { title: "Hand bag", caption: "Elegant and gentle.", cta: { label: "View Collection", href: "/shop" }, src: "/demo/tuixach.png", position: "center" },
   ]}
 />
 
