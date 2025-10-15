@@ -132,6 +132,7 @@ export async function GET(request: NextRequest) {
               amount: true
             }
           },
+          shippingAddress: true,
           user: {
             select: {
               id: true,

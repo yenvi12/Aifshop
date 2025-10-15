@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
             }
           }
         },
+        shippingAddress: true,
         payment: {
           select: {
             orderCode: true,

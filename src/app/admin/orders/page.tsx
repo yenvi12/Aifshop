@@ -7,14 +7,18 @@ import { MdAdd, MdEdit, MdDelete, MdShoppingCart, MdSearch, MdFilterList, MdChec
 import toast from "react-hot-toast";
 
 interface Order {
-  id: string;
-  orderNumber: string;
-  status: string;
-  totalAmount: number;
-  trackingNumber?: string;
-  estimatedDelivery?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+   id: string;
+   orderNumber: string;
+   status: string;
+   totalAmount: number;
+   trackingNumber?: string;
+   estimatedDelivery?: Date;
+   createdAt: Date;
+   updatedAt: Date;
+   shippingAddress?: {
+     shipping?: string;
+     billing?: string;
+   } | null;
   orderItems: Array<{
     id: string;
     quantity: number;
@@ -534,19 +538,24 @@ export default function ManageOrdersPage() {
                       {order.status}
                     </span>
                     <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium shadow-sm border ${
-                      order.payment.status === 'PAID' ? 'bg-green-100 text-green-800 border-green-200' :
+                      order.payment.status === 'SUCCESS' ? 'bg-green-100 text-green-800 border-green-200' :
                       order.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                       'bg-red-100 text-red-800 border-red-200'
                     }`}>
-                      {order.payment.status === 'PAID' && <MdCheckCircle className="w-3 h-3" />}
+                      {order.payment.status === 'SUCCESS' && <MdCheckCircle className="w-3 h-3" />}
                       {order.payment.status === 'PENDING' && <MdTime className="w-3 h-3" />}
-                      {order.payment.status === 'FAILED' && <MdError className="w-3 h-3" />}
+                      {order.payment.status === 'CANCELLED' && <MdError className="w-3 h-3" />}
                       Payment: {order.payment.status}
                     </span>
                   </div>
 
                   {/* Total */}
-                  <p className="text-lg font-bold text-brand-dark">${order.totalAmount.toLocaleString('vi-VN')}₫</p>
+                  <p className="text-lg font-bold text-brand-dark">{order.payment.amount.toLocaleString('vi-VN')}₫</p>
+                  {order.payment.amount !== order.totalAmount && (
+                    <p className="text-xs text-yellow-600 mt-1">
+                      (ĐH: {order.totalAmount.toLocaleString('vi-VN')}₫)
+                    </p>
+                  )}
 
                   {/* Items */}
                   <div className="mb-4">
@@ -673,18 +682,23 @@ export default function ManageOrdersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium shadow-sm border ${
-                          order.payment.status === 'PAID' ? 'bg-green-100 text-green-800 border-green-200' :
+                          order.payment.status === 'SUCCESS' ? 'bg-green-100 text-green-800 border-green-200' :
                           order.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                           'bg-red-100 text-red-800 border-red-200'
                         }`}>
-                          {order.payment.status === 'PAID' && <MdCheckCircle className="w-3 h-3" />}
+                          {order.payment.status === 'SUCCESS' && <MdCheckCircle className="w-3 h-3" />}
                           {order.payment.status === 'PENDING' && <MdTime className="w-3 h-3" />}
-                          {order.payment.status === 'FAILED' && <MdError className="w-3 h-3" />}
+                          {order.payment.status === 'CANCELLED' && <MdError className="w-3 h-3" />}
                           {order.payment.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-brand-dark">
-                        ${order.totalAmount.toLocaleString('vi-VN')}₫
+                        {order.payment.amount.toLocaleString('vi-VN')}₫
+                        {order.payment.amount !== order.totalAmount && (
+                          <div className="text-xs text-yellow-600">
+                            (ĐH: {order.totalAmount.toLocaleString('vi-VN')}₫)
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-brand-secondary">
                         {new Date(order.createdAt).toLocaleDateString()}
@@ -852,19 +866,29 @@ export default function ManageOrdersPage() {
                     <div className="bg-brand-light/30 p-4 rounded-lg">
                       <h4 className="font-semibold text-brand-dark mb-2">Payment Status</h4>
                       <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium shadow-sm border ${
-                        selectedOrder.payment.status === 'PAID' ? 'bg-green-100 text-green-800 border-green-200' :
+                        selectedOrder.payment.status === 'SUCCESS' ? 'bg-green-100 text-green-800 border-green-200' :
                         selectedOrder.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                         'bg-red-100 text-red-800 border-red-200'
                       }`}>
-                        {selectedOrder.payment.status === 'PAID' && <MdCheckCircle className="w-4 h-4" />}
+                        {selectedOrder.payment.status === 'SUCCESS' && <MdCheckCircle className="w-4 h-4" />}
                         {selectedOrder.payment.status === 'PENDING' && <MdTime className="w-4 h-4" />}
-                        {selectedOrder.payment.status === 'FAILED' && <MdError className="w-4 h-4" />}
+                        {selectedOrder.payment.status === 'CANCELLED' && <MdError className="w-4 h-4" />}
                         {selectedOrder.payment.status}
                       </span>
                     </div>
                     <div className="bg-brand-light/30 p-4 rounded-lg">
-                      <h4 className="font-semibold text-brand-dark mb-2">Total Amount</h4>
-                      <p className="text-xl font-bold text-brand-primary">${selectedOrder.totalAmount.toLocaleString('vi-VN')}₫</p>
+                      <h4 className="font-semibold text-brand-dark mb-2">Payment Amount</h4>
+                      <p className="text-xl font-bold text-brand-primary">{selectedOrder.payment.amount.toLocaleString('vi-VN')}₫</p>
+                      {selectedOrder.payment.amount !== selectedOrder.totalAmount && (
+                        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            <span className="font-medium">Order Total:</span> {selectedOrder.totalAmount.toLocaleString('vi-VN')}₫
+                          </p>
+                          <p className="text-xs text-yellow-600 mt-1">
+                            Có sự khác biệt giữa số tiền thanh toán và tổng đơn hàng
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -886,10 +910,20 @@ export default function ManageOrdersPage() {
                           <p className="font-medium">{selectedOrder.user.phoneNumber}</p>
                         </div>
                       )}
-                      {selectedOrder.user.defaultAddress?.shipping && (
+                      {selectedOrder.shippingAddress?.shipping ? (
                         <div className="md:col-span-2">
                           <p className="text-sm text-brand-secondary">Shipping Address</p>
+                          <p className="font-medium">{selectedOrder.shippingAddress.shipping}</p>
+                        </div>
+                      ) : selectedOrder.user.defaultAddress?.shipping ? (
+                        <div className="md:col-span-2">
+                          <p className="text-sm text-brand-secondary">Shipping Address (Default)</p>
                           <p className="font-medium">{selectedOrder.user.defaultAddress.shipping}</p>
+                        </div>
+                      ) : (
+                        <div className="md:col-span-2">
+                          <p className="text-sm text-brand-secondary">Shipping Address</p>
+                          <p className="font-medium text-gray-500 italic">No shipping address available</p>
                         </div>
                       )}
                     </div>
@@ -911,8 +945,8 @@ export default function ManageOrdersPage() {
                             <p className="text-sm text-brand-secondary">Qty: {item.quantity}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-brand-dark">${(item.priceAtTime * item.quantity).toLocaleString('vi-VN')}₫</p>
-                            <p className="text-sm text-brand-secondary">${item.priceAtTime.toLocaleString('vi-VN')}₫ each</p>
+                            <p className="font-semibold text-brand-dark">{(item.priceAtTime * item.quantity).toLocaleString('vi-VN')}₫</p>
+                            <p className="text-sm text-brand-secondary">{item.priceAtTime.toLocaleString('vi-VN')}₫ each</p>
                           </div>
                         </div>
                       ))}

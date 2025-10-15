@@ -112,6 +112,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           }
         },
         payment: true,
+        shippingAddress: true,
         user: {
           select: {
             id: true,
