@@ -49,6 +49,10 @@ model User {
   payment payment[]
   Order   Order[]
 
+  // Message relations
+  sentMessages     Message[] @relation(name: "MessageSender")
+  receivedMessages Message[] @relation(name: "MessageReceiver")
+
   @@map("users")
 }
 
@@ -91,6 +95,7 @@ model Product {
   payments   payment[]
   orders     Order[]
   orderItems OrderItem[]
+  Message    Message[]
 
   @@map("products")
 }
@@ -186,4 +191,26 @@ model OrderItem {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  receiverId     String
+  productId      String
+  content        String
+  isRead         Boolean  @default(false)
+  timestamp      DateTime @default(now())
+
+  // Relations
+  sender   User    @relation(name: "MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User    @relation(name: "MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  product  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Indexes for performance
+  @@index([conversationId])
+  @@index([timestamp])
+  @@index([isRead])
+  @@map("messages")
 }

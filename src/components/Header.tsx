@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { MdSearch, MdShoppingCart, MdPerson, MdLogout } from "react-icons/md";
+import { MdSearch, MdShoppingCart, MdPerson, MdLogout, MdMessage } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { isTokenExpired } from "@/lib/tokenManager";
@@ -16,6 +16,9 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [cartItemCount, setCartItemCount] = useState<number>(0);
+  const [messageDropdownOpen, setMessageDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [recentConversations, setRecentConversations] = useState<any[]>([]);
   const authRequestIdRef = useRef(0);
 
   useEffect(() => {
@@ -130,6 +133,9 @@ export default function Header() {
       if (!target.closest(".user-menu")) {
         setDropdownOpen(false);
       }
+      if (!target.closest(".message-menu")) {
+        setMessageDropdownOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -216,6 +222,73 @@ export default function Header() {
     }
   };
 
+  // Function to fetch unread message count
+  const fetchUnreadCount = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || !user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/conversations/unread-count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      console.log('Unread count response:', data);
+
+      if (data.success && data.data) {
+        const newCount = data.data.unreadCount;
+        console.log('Setting unread count to:', newCount, 'for user:', user.id);
+        setUnreadCount(newCount);
+        // Cache in localStorage
+        localStorage.setItem('unreadMessageCount', newCount.toString());
+      } else {
+        console.log('Invalid unread count response:', data);
+        setUnreadCount(0);
+        localStorage.setItem('unreadMessageCount', '0');
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      setUnreadCount(0);
+    }
+  };
+
+  // Function to fetch recent conversations
+  const fetchRecentConversations = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || !user) {
+      setRecentConversations([]);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setRecentConversations(data.data.slice(0, 10)); // Limit to 10 recent conversations
+      } else {
+        setRecentConversations([]);
+      }
+    } catch (error) {
+      console.error('Error fetching recent conversations:', error);
+      setRecentConversations([]);
+    }
+  };
+
   // Listen for cart updates
   useEffect(() => {
     if (user) {
@@ -233,6 +306,70 @@ export default function Header() {
       };
     } else {
       setCartItemCount(0);
+    }
+  }, [user]);
+
+  // Listen for message updates with real-time + polling
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      fetchRecentConversations();
+
+      // Listen for message update events
+      const handleMessageUpdate = () => {
+        fetchUnreadCount();
+        fetchRecentConversations();
+      };
+
+      window.addEventListener('messageUpdated', handleMessageUpdate);
+
+      // Real-time listener for messages sent TO current user
+      const realtimeChannel = supabase
+        .channel(`messages-${user.id}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `receiverId=eq.${user.id}`,
+        }, (payload) => {
+          console.log('Real-time: New message for user:', payload);
+          fetchUnreadCount();
+          fetchRecentConversations();
+          window.dispatchEvent(new CustomEvent('messageReceived'));
+        })
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `receiverId=eq.${user.id}`,
+        }, (payload) => {
+          console.log('Real-time: Message updated for user:', payload);
+          fetchUnreadCount();
+          fetchRecentConversations();
+        })
+        .subscribe();
+
+      // Polling for cross-user notifications (always poll regardless of tab visibility)
+      const pollInterval = setInterval(() => {
+        console.log('Polling for unread count updates...');
+        fetchUnreadCount();
+      }, 10000); // Faster polling for testing
+
+      // Also poll conversations less frequently
+      const conversationPollInterval = setInterval(() => {
+        console.log('Polling for conversation updates...');
+        fetchRecentConversations();
+      }, 20000);
+
+      return () => {
+        window.removeEventListener('messageUpdated', handleMessageUpdate);
+        supabase.removeChannel(realtimeChannel);
+        clearInterval(pollInterval);
+        clearInterval(conversationPollInterval);
+      };
+    } else {
+      setUnreadCount(0);
+      setRecentConversations([]);
     }
   }, [user]);
 
@@ -332,8 +469,21 @@ export default function Header() {
     setUserRole(null);
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("unreadMessageCount");
     setDropdownOpen(false);
     router.push("/");
+  };
+
+  // Function to format relative time
+  const formatTime = (timestamp: string) => {
+    const now = new Date();
+    const messageTime = new Date(timestamp);
+    const diffInMinutes = Math.floor((now.getTime() - messageTime.getTime()) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
+    return `${Math.floor(diffInMinutes / 1440)}d`;
   };
 
   return (
@@ -390,6 +540,91 @@ export default function Header() {
             />
             <MdSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-secondary w-4 h-4" />
           </div>
+
+          {/* Messages */}
+          {mounted && user && (
+            <div className="relative message-menu">
+              <button
+                onClick={() => setMessageDropdownOpen(!messageDropdownOpen)}
+                className="flex items-center gap-2 text-brand-dark hover:text-brand-primary p-1 relative"
+              >
+                <MdMessage className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {messageDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-brand-light rounded-lg shadow-lg z-50 message-menu max-h-96 overflow-y-auto">
+                  <div className="p-4 border-b border-brand-light">
+                    <h3 className="text-sm font-medium text-brand-dark">Messages</h3>
+                  </div>
+
+                  <div className="py-2">
+                    {recentConversations.length > 0 ? (
+                      recentConversations.map((conversation) => (
+                        <Link
+                          key={conversation.conversationId}
+                          href={`/messenger/${conversation.conversationId}`}
+                          className="flex items-start gap-3 px-4 py-3 hover:bg-brand-light/50 cursor-pointer"
+                          onClick={() => setMessageDropdownOpen(false)}
+                        >
+                          <div className="w-10 h-10 bg-brand-light rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {conversation.product?.image ? (
+                              <img
+                                src={conversation.product.image}
+                                alt={conversation.product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 text-brand-secondary">📦</div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium text-brand-dark truncate">
+                                {conversation.product?.name || 'Product'}
+                              </p>
+                              <span className="text-xs text-brand-secondary">
+                                {formatTime(conversation.lastMessage.timestamp)}
+                              </span>
+                            </div>
+
+                            <p className="text-sm text-brand-secondary truncate mt-1">
+                              {conversation.lastMessage.content}
+                            </p>
+
+                            {conversation.unreadCount > 0 && (
+                              <span className="inline-block mt-1 px-2 py-0.5 bg-brand-primary text-white text-xs rounded-full">
+                                {conversation.unreadCount} new
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-brand-secondary text-center">
+                        No recent messages
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-brand-light">
+                    <Link
+                      href="/messenger"
+                      className="flex items-center justify-center w-full px-4 py-3 text-sm text-brand-primary hover:bg-brand-light/50"
+                      onClick={() => setMessageDropdownOpen(false)}
+                    >
+                      View All Messages
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Auth */}
           {mounted && (
