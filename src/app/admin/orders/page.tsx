@@ -546,7 +546,7 @@ export default function ManageOrdersPage() {
                   </div>
 
                   {/* Total */}
-                  <p className="text-lg font-bold text-brand-dark mb-3">${order.totalAmount.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-brand-dark">${order.totalAmount.toLocaleString('vi-VN')}₫</p>
 
                   {/* Items */}
                   <div className="mb-4">
@@ -684,7 +684,7 @@ export default function ManageOrdersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-brand-dark">
-                        ${order.totalAmount.toFixed(2)}
+                        ${order.totalAmount.toLocaleString('vi-VN')}₫
                       </td>
                       <td className="px-6 py-4 text-sm text-brand-secondary">
                         {new Date(order.createdAt).toLocaleDateString()}
@@ -864,7 +864,7 @@ export default function ManageOrdersPage() {
                     </div>
                     <div className="bg-brand-light/30 p-4 rounded-lg">
                       <h4 className="font-semibold text-brand-dark mb-2">Total Amount</h4>
-                      <p className="text-xl font-bold text-brand-primary">${selectedOrder.totalAmount.toFixed(2)}</p>
+                      <p className="text-xl font-bold text-brand-primary">${selectedOrder.totalAmount.toLocaleString('vi-VN')}₫</p>
                     </div>
                   </div>
 
@@ -911,8 +911,8 @@ export default function ManageOrdersPage() {
                             <p className="text-sm text-brand-secondary">Qty: {item.quantity}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-brand-dark">${(item.priceAtTime * item.quantity).toFixed(2)}</p>
-                            <p className="text-sm text-brand-secondary">${item.priceAtTime.toFixed(2)} each</p>
+                            <p className="font-semibold text-brand-dark">${(item.priceAtTime * item.quantity).toLocaleString('vi-VN')}₫</p>
+                            <p className="text-sm text-brand-secondary">${item.priceAtTime.toLocaleString('vi-VN')}₫ each</p>
                           </div>
                         </div>
                       ))}

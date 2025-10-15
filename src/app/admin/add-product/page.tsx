@@ -337,7 +337,7 @@ export default function AddProductPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price ($)</label>
+                  <label className="block text-sm font-medium mb-1">Price (₫)</label>
                   <input
                     type="number"
                     name="price"
@@ -348,7 +348,7 @@ export default function AddProductPage() {
                     className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
                       errors.price ? 'border-red-500' : 'border-brand-light'
                     }`}
-                    placeholder="0.00"
+                    placeholder="0₫"
                   />
                   {errors.price && (
                     <p className="text-red-500 text-xs mt-1">{errors.price}</p>
@@ -356,7 +356,7 @@ export default function AddProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Original Price (Sale) *</label>
+                  <label className="block text-sm font-medium mb-1">Original Price (Sale) * (₫)</label>
                   <input
                     type="number"
                     name="compareAtPrice"
@@ -368,7 +368,7 @@ export default function AddProductPage() {
                     className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
                       errors.compareAtPrice ? 'border-red-500' : 'border-brand-light'
                     }`}
-                    placeholder="0.00"
+                    placeholder="0₫"
                   />
                   {errors.compareAtPrice && (
                     <p className="text-red-500 text-xs mt-1">{errors.compareAtPrice}</p>

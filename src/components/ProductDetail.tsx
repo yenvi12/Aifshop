@@ -392,11 +392,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             {/* Price */}
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold text-gray-900">
-                {product.price ? `$${product.price.toFixed(2)}` : product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : 'Price TBA'}
+                {product.price ? `${product.price.toLocaleString('vi-VN')}₫` : product.compareAtPrice ? `${product.compareAtPrice.toLocaleString('vi-VN')}₫` : 'Price TBA'}
               </span>
               {product.compareAtPrice && product.price && (
                 <span className="text-xl text-gray-500 line-through">
-                  ${product.compareAtPrice.toFixed(2)}
+                  ${product.compareAtPrice.toLocaleString('vi-VN')}₫
                 </span>
               )}
               {discount > 0 && (
@@ -577,7 +577,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                       <span className="text-2xl">🚚</span>
                     </div>
                     <h3 className="font-semibold mb-2">Free Shipping</h3>
-                    <p className="text-sm text-gray-600">Free shipping on orders over $50</p>
+                    <p className="text-sm text-gray-600">Free shipping on orders over 1,150,000₫</p>
                   </div>
                   <div className="text-center">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -622,11 +622,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   <h3 className="font-semibold mb-1">{relatedProduct.name}</h3>
                   <div className="flex items-center gap-2">
                     <span className="font-bold">
-                      {relatedProduct.price ? `$${relatedProduct.price.toFixed(2)}` : 'Price TBA'}
+                      {relatedProduct.price ? `${relatedProduct.price.toLocaleString('vi-VN')}₫` : 'Price TBA'}
                     </span>
                     {relatedProduct.compareAtPrice && relatedProduct.price && (
                       <span className="text-sm text-gray-500 line-through">
-                        ${relatedProduct.compareAtPrice.toFixed(2)}
+                        ${relatedProduct.compareAtPrice.toLocaleString('vi-VN')}₫
                       </span>
                     )}
                   </div>
