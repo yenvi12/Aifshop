@@ -14,7 +14,8 @@ module.exports = {
           secondary: "#8794C0",
           light: "#E7E9EE",
           accent: "#D8CDB0",
-          soft: "#F9FAFB", // nền nhạt
+          soft: "#F9FAFB",
+           head: "#dcdbf4ff"
         },
       },
       fontFamily: {

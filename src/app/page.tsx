@@ -221,7 +221,7 @@ export default function HomePage() {
 
           <div className="grid sm:grid-cols-3 gap-4 p-4">
             {reviews.slice(0, 3).map((rv, i) => (
-              <div key={i} className="rounded-xl border border-brand-light p-3">
+              <div key={i} className="rounded-xl border border-brand-light bg-brand-light/40 p-3">
                 <div className="flex items-center gap-1 text-amber-400">
                   {Array.from({ length: 5 }).map((_, j) => (
                     <MdStar key={j} className={`w-4 h-4 ${j < rv.r ? "" : "text-brand-light"}`} />
@@ -274,21 +274,21 @@ export default function HomePage() {
         <div className="rounded-2xl border border-brand-light bg-white shadow-sm p-4">
           <h3 className="font-semibold text-brand-dark mb-3">Quick Links</h3>
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-brand-light p-4 flex items-center gap-3">
+            <div className="rounded-xl border border-brand-light bg-brand-light/40 p-4 flex items-center gap-3">
               <MdStraighten className="w-7 h-7 text-brand-primary" />
               <div>
                 <h4 className="font-semibold text-brand-dark">Size Guide</h4>
                 <p className="text-sm text-brand-secondary">Find your perfect fit</p>
               </div>
             </div>
-            <div className="rounded-xl border border-brand-light p-4 flex items-center gap-3">
+            <div className="rounded-xl border border-brand-light bg-brand-light/40 p-4 flex items-center gap-3">
               <MdLocalShipping className="w-7 h-7 text-brand-primary" />
               <div>
                 <h4 className="font-semibold text-brand-dark">Shipping Policy</h4>
                 <p className="text-sm text-brand-secondary">Learn about our shipping options</p>
               </div>
             </div>
-            <div className="rounded-xl border border-brand-light p-4 flex items-center gap-3">
+            <div className="rounded-xl border border-brand-light bg-brand-light/40 p-4 flex items-center gap-3">
               <Image src="/demo/login.jpg" alt="Gift" width={56} height={56} className="w-14 h-14 object-cover rounded-lg" />
               <div>
                 <h4 className="font-semibold text-brand-dark">Gift Ideas</h4>

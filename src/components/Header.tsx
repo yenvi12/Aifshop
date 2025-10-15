@@ -337,7 +337,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-brand-light shadow-sm border-b border-brand-accent">
+    <header className="sticky top-0 z-50 bg-brand-head shadow-sm ">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
@@ -362,9 +362,7 @@ export default function Header() {
           <Link href="/about" className="hover:text-brand-primary">
             About Us
           </Link>
-          <Link href="/contact" className="hover:text-brand-primary">
-            Contact
-          </Link>
+          
           <Link
             href="/cart"
             className="hover:text-brand-primary flex items-center gap-1 relative"
