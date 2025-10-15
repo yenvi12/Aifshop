@@ -72,8 +72,18 @@ export default function PaymentPage() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
-  // Shipping address form state (keep for display only)
+  // Shipping address form state
   const [shippingAddress, setShippingAddress] = useState({
+    firstName: '',
+    lastName: '',
+    address: '',
+    city: '',
+    postalCode: ''
+  });
+
+  // Edit mode state
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [editedAddress, setEditedAddress] = useState({
     firstName: '',
     lastName: '',
     address: '',
@@ -283,13 +293,10 @@ export default function PaymentPage() {
 
       const data = await response.json();
 
-      if (data.checkoutUrl) {
-        // Generate order code for this payment
-        const orderCode = Math.floor(Math.random() * 1000000000);
-
+      if (data.checkoutUrl && data.orderCode) {
         // Save payment info to sessionStorage for payment success page
         const paymentInfo = {
-          orderCode: orderCode.toString(),
+          orderCode: data.orderCode, // Use orderCode from API
           amount: total,
           paymentMethod: 'PayOS'
         };
@@ -320,6 +327,90 @@ export default function PaymentPage() {
     fetchCartItems();
     fetchProfile();
   }, []);
+
+  // Function to start editing address
+  const handleEditAddress = () => {
+    setEditedAddress({
+      firstName: shippingAddress.firstName,
+      lastName: shippingAddress.lastName,
+      address: shippingAddress.address,
+      city: shippingAddress.city,
+      postalCode: shippingAddress.postalCode
+    });
+    setIsEditingAddress(true);
+  };
+
+  // Function to cancel editing
+  const handleCancelEdit = () => {
+    setIsEditingAddress(false);
+    setEditedAddress({
+      firstName: '',
+      lastName: '',
+      address: '',
+      city: '',
+      postalCode: ''
+    });
+  };
+
+  // Function to save address changes
+  const handleSaveAddress = async () => {
+    try {
+      // Get Supabase token for API call
+      let supabaseToken: string | null = null;
+
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        supabaseToken = session?.access_token || null;
+      } catch (error) {
+        console.error('Error getting Supabase session:', error);
+      }
+
+      if (!supabaseToken) {
+        toast.error('Vui lòng đăng nhập để cập nhật địa chỉ');
+        return;
+      }
+
+      // Update shipping address state - this will be used in payment
+      setShippingAddress(editedAddress);
+      setIsEditingAddress(false);
+
+      toast.success('Địa chỉ đã được cập nhật thành công');
+    } catch (error) {
+      console.error('Error saving address:', error);
+      toast.error('Không thể cập nhật địa chỉ');
+    }
+  };
+
+  // Function to handle input changes in edit form
+  const handleAddressInputChange = (field: string, value: string) => {
+    setEditedAddress(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Function to reset to profile address
+  const handleResetToProfile = () => {
+    if (profileData?.defaultAddress?.shipping) {
+      const nameParts = profileData.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      setEditedAddress({
+        firstName,
+        lastName,
+        address: profileData.defaultAddress.shipping || '',
+        city: '',
+        postalCode: ''
+      });
+      toast.success('Đã reset về địa chỉ mặc định');
+    }
+  };
   
   //const inputClass = "border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary";
   //const labelClass = "text-sm font-medium text-gray-700";
@@ -362,11 +453,16 @@ export default function PaymentPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       <span className="font-semibold text-gray-900">Recipient information</span>
+                      {isEditingAddress && (
+                        <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                          Đang chỉnh sửa
+                        </span>
+                      )}
                     </div>
                     <span className="text-xs font-bold px-3 py-1 bg-brand-primary text-white rounded-full shadow-sm">Default</span>
                   </div>
 
-                  {/* Customer info */}
+                  {/* Customer info or Edit Form */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 p-3 bg-white/60 rounded-lg border border-white/40">
                       <svg className="w-4 h-4 text-brand-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,7 +476,19 @@ export default function PaymentPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <span className="text-gray-700 leading-relaxed">{profileData.defaultAddress?.shipping || 'Shipping address not updated'}</span>
+                      <div className="text-gray-700 leading-relaxed">
+                        {shippingAddress.address || shippingAddress.city || shippingAddress.postalCode ? (
+                          <div className="text-sm">
+                            {[shippingAddress.address, shippingAddress.city, shippingAddress.postalCode]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </div>
+                        ) : profileData.defaultAddress?.shipping ? (
+                          <div className="text-sm">{profileData.defaultAddress.shipping}</div>
+                        ) : (
+                          <span className="text-orange-600 font-medium">⚠️ Vui lòng cập nhật địa chỉ giao hàng</span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-3 p-3 bg-white/60 rounded-lg border border-white/40">
@@ -400,15 +508,85 @@ export default function PaymentPage() {
                     )}
                   </div>
 
-                  {/* Edit button */}
-                  <div className="mt-4 pt-4 border-t border-brand-primary/20">
-                    <button className="w-full flex items-center justify-center gap-2 p-2 bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-medium rounded-lg transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit address
-                    </button>
-                  </div>
+                  {/* Edit Form or Edit Button */}
+                  {isEditingAddress ? (
+                    <div className="mt-4 pt-4 border-t border-brand-primary/20">
+                      <div className="space-y-3 mb-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            placeholder="First Name *"
+                            value={editedAddress.firstName}
+                            onChange={(e) => handleAddressInputChange('firstName', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Last Name *"
+                            value={editedAddress.lastName}
+                            onChange={(e) => handleAddressInputChange('lastName', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Street Address * (số nhà, tên đường)"
+                          value={editedAddress.address}
+                          onChange={(e) => handleAddressInputChange('address', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            placeholder="City"
+                            value={editedAddress.city}
+                            onChange={(e) => handleAddressInputChange('city', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Postal Code"
+                            value={editedAddress.postalCode}
+                            onChange={(e) => handleAddressInputChange('postalCode', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveAddress}
+                          className="flex-1 bg-brand-primary text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-brand-primary/90 transition-colors"
+                        >
+                          Save Address
+                        </button>
+                        <button
+                          onClick={handleResetToProfile}
+                          className="px-3 bg-blue-100 text-blue-700 py-2 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
+                          title="Reset về địa chỉ mặc định từ profile"
+                        >
+                          Reset
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-3 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 pt-4 border-t border-brand-primary/20">
+                      <button
+                        onClick={handleEditAddress}
+                        className="w-full flex items-center justify-center gap-2 p-2 bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-medium rounded-lg transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        {shippingAddress.address ? 'Edit address' : 'Add shipping address'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

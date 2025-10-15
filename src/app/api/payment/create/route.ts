@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { amount, description } = body;
+    const { amount, description, shippingAddress } = body;
 
     // Tạo yêu cầu thanh toán trên PayOS
     const payment = await payos.paymentRequests.create({
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       data: {
         orderCode: orderCode.toString(),
         amount,
-        status: "pending",
+        status: "PENDING",
         userId: dbUser.id,
       },
     });
@@ -88,16 +88,51 @@ export async function POST(req: Request) {
 
         console.log(`Calculated total amount: ${totalAmount} for ${cartItems.length} items`);
 
-        // Create Order (shipping address will be pulled from user profile)
-        const order = await prisma.order.create({
-          data: {
-            userId: dbUser.id,
-            paymentId: dbPayment.id,
-            orderNumber: generateOrderNumber(),
-            status: 'ORDERED',
-            totalAmount
-            // No shippingAddress field - will be pulled from user profile
+        // Create Order with shipping address snapshot (prefer custom address over profile default)
+        const orderData: any = {
+          userId: dbUser.id,
+          paymentId: dbPayment.id,
+          orderNumber: generateOrderNumber(),
+          status: 'ORDERED',
+          totalAmount
+        };
+
+        // Use custom shipping address if provided, otherwise fall back to profile default
+        if (shippingAddress) {
+          // Format the shipping address - chỉ hiển thị địa chỉ, không cần tên
+          const addressParts = [];
+
+          // Add street address if provided
+          if (shippingAddress.address && shippingAddress.address.trim()) {
+            addressParts.push(shippingAddress.address.trim());
           }
+
+          // Add city if provided
+          if (shippingAddress.city && shippingAddress.city.trim()) {
+            addressParts.push(shippingAddress.city.trim());
+          }
+
+          // Add postal code if provided
+          if (shippingAddress.postalCode && shippingAddress.postalCode.trim()) {
+            addressParts.push(shippingAddress.postalCode.trim());
+          }
+
+          // Chỉ hiển thị địa chỉ, không cần tên người nhận
+          const shippingText = addressParts.length > 0
+            ? addressParts.join(', ')
+            : 'Địa chỉ chưa được cập nhật';
+
+          const formattedShippingAddress = {
+            shipping: shippingText,
+            billing: shippingAddress.address || `Địa chỉ: ${shippingAddress.city || 'Chưa cập nhật'}`
+          };
+          orderData.shippingAddress = formattedShippingAddress;
+        } else if (dbUser.defaultAddress) {
+          orderData.shippingAddress = dbUser.defaultAddress;
+        }
+
+        const order = await prisma.order.create({
+          data: orderData
         });
 
         // Create OrderItems
@@ -113,18 +148,16 @@ export async function POST(req: Request) {
           data: orderItemsData
         });
 
-        // Clear user's cart
-        await prisma.cart.deleteMany({
-          where: { userId: dbUser.id }
-        });
-
         console.log(`Order ${order.orderNumber} created for user ${dbUser.id}`);
       }
     } catch (error) {
       console.error('Error creating order:', error);
     }
 
-    return NextResponse.json({ checkoutUrl: payment.checkoutUrl });
+    return NextResponse.json({
+      checkoutUrl: payment.checkoutUrl,
+      orderCode: orderCode.toString()
+    });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ error: error.message }, { status: 500 });

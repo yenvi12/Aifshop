@@ -30,6 +30,10 @@ interface Order {
   trackingNumber?: string;
   estimatedDelivery?: Date;
   createdAt: Date;
+  shippingAddress?: {
+    shipping?: string;
+    billing?: string;
+  };
   orderItems: OrderItem[];
   payment: {
     orderCode: string;
@@ -669,7 +673,7 @@ function OrderCard({ order }: { order: Order }) {
                 <div>
                   <p className="text-sm text-brand-secondary font-medium mb-1">Delivery Address</p>
                   <p className="text-sm text-brand-dark font-medium break-words leading-relaxed">
-                    {order.user?.defaultAddress?.shipping || 'No shipping address provided'}
+                    {(order as any)?.shippingAddress?.shipping || order.user?.defaultAddress?.shipping || 'No shipping address provided'}
                   </p>
                 </div>
               </div>

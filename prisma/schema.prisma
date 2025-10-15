@@ -24,6 +24,12 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  CANCELLED
+}
+
 model User {
   id               String   @id @default(cuid())
   supabaseUserId   String?  @unique
@@ -138,12 +144,12 @@ model Cart {
 }
 
 model payment {
-  id        Int      @id @default(autoincrement())
-  orderCode String   @unique
+  id        Int           @id @default(autoincrement())
+  orderCode String        @unique
   amount    Float
-  status    String
+  status    PaymentStatus @default(PENDING)
   userId    String
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 
   // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -161,7 +167,7 @@ model Order {
   orderNumber       String      @unique // Display order number (ORD-001, ORD-002, etc.)
   status            OrderStatus @default(ORDERED)
   totalAmount       Float
-  // shippingAddress removed - will be pulled from user profile
+  shippingAddress   Json? // Shipping address at time of order (snapshot)
   trackingNumber    String? // For shipping tracking
   estimatedDelivery DateTime? // Estimated delivery date
   createdAt         DateTime    @default(now())

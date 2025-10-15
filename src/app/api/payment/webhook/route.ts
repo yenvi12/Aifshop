@@ -30,15 +30,18 @@ export async function POST(req: Request) {
       });
 
       if (payment) {
-        // Nếu webhook được xác thực thành công, coi như thanh toán thành công
+        // Xử lý trạng thái thanh toán từ PayOS webhook
+        // PayOS gửi webhook với thông tin giao dịch hợp lệ khi thanh toán thành công
+        // Nếu có lỗi hoặc bị cancel thì sẽ không gửi webhook hoặc gửi với thông tin khác
+
         await prisma.payment.update({
           where: { orderCode },
           data: {
-            status: 'PAID',
+            status: 'SUCCESS',
           }
         });
 
-        console.log(`Payment ${orderCode} marked as paid`);
+        console.log(`Payment ${orderCode} marked as successful`);
 
         // Update Order status to CONFIRMED when payment is successful
         try {
@@ -54,8 +57,15 @@ export async function POST(req: Request) {
           });
 
           console.log(`Orders confirmed for payment ${orderCode}`);
+
+          // Clear user's cart after successful payment
+          await prisma.cart.deleteMany({
+            where: { userId: payment.user.id }
+          });
+
+          console.log(`Cart cleared for user ${payment.user.id} after successful payment`);
           } catch (error) {
-            console.error('Error confirming orders:', error);
+            console.error('Error confirming orders or clearing cart:', error);
           }
       } else {
         console.error(`Payment with orderCode ${orderCode} not found`);

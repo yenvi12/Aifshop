@@ -10,6 +10,7 @@ interface PaymentInfo {
 
 export default function PaymentSuccessPage() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     // Get payment info from sessionStorage
@@ -18,11 +19,76 @@ export default function PaymentSuccessPage() {
       try {
         const parsed = JSON.parse(storedPaymentInfo);
         setPaymentInfo(parsed);
+
+        // Update payment status in database
+        console.log('Updating payment status for orderCode:', parsed.orderCode);
+        updatePaymentStatus(parsed.orderCode);
       } catch (error) {
         console.error('Error parsing payment info:', error);
       }
     }
   }, []);
+
+  const updatePaymentStatus = async (orderCode: string) => {
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      // Get Supabase token similar to payment page
+      let supabaseToken: string | null = null;
+
+      try {
+        // Try to get from Supabase client first (most reliable method)
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        supabaseToken = session?.access_token || null;
+      } catch (error) {
+        console.error('Error getting Supabase session:', error);
+
+        // If not available, try to get from localStorage (fallback)
+        try {
+          const storedAuth = localStorage.getItem('supabase.auth.token');
+          if (storedAuth) {
+            const authData = JSON.parse(storedAuth);
+            supabaseToken = authData.access_token || null;
+          }
+        } catch (parseError) {
+          console.error('Error parsing stored auth:', parseError);
+        }
+      }
+
+      if (supabaseToken) {
+        const response = await fetch('/api/payment/update-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseToken}`,
+          },
+          body: JSON.stringify({
+            orderCode,
+            status: 'SUCCESS'
+          }),
+        });
+
+        if (response.ok) {
+          console.log('Payment status updated to SUCCESS');
+        } else {
+          const errorText = await response.text();
+          console.error('Failed to update payment status:', response.status, errorText);
+        }
+      } else {
+        console.error('No valid token found for updating payment status');
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center transform transition-all duration-300 hover:scale-105">
