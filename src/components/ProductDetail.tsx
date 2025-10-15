@@ -635,69 +635,6 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             )}
           </div>
         </div>
-
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold mb-8">You might also like</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((relatedProduct) => (
-                <div
-                  key={relatedProduct.id}
-                  className="group cursor-pointer"
-                  onClick={() => relatedProduct.slug && router.push(`/products/${relatedProduct.slug}`)}
-                >
-                  <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 mb-4">
-                    <Image
-                      src={relatedProduct.image || '/demo/dc10.jpg'}
-                      alt={relatedProduct.name}
-                      width={300}
-                      height={300}
-                      className="w-full h-full object-cover group-hover:scale-105 transition"
-                    />
-                  </div>
-                  <h3 className="font-semibold mb-1">{relatedProduct.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold">
-                      {relatedProduct.price ? `${relatedProduct.price.toLocaleString('vi-VN')}₫` : 'Price TBA'}
-                    </span>
-                    {relatedProduct.compareAtPrice && relatedProduct.price && (
-                      <span className="text-sm text-gray-500 line-through">
-                        ${relatedProduct.compareAtPrice.toLocaleString('vi-VN')}₫
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Delete Confirmation Modal */}
-        {deleteConfirm.show && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold mb-3">Delete Review</h3>
-              <p className="text-gray-600 mb-6">Are you sure you want to delete this review? This action cannot be undone.</p>
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setDeleteConfirm({show: false, reviewId: null})}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
-                  disabled={deletingReviewId !== null}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDeleteReview}
-                  disabled={deletingReviewId !== null}
-                  className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 rounded-lg transition-colors duration-200"
-                >
-                  {deletingReviewId ? 'Deleting...' : 'Delete Review'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
