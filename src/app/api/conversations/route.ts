@@ -19,14 +19,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
     }
 
-    // Get user from database using userId from token
-    const dbUser = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { role: true, id: true }
-    });
+    // Get user from database - prioritize supabaseUserId, fallback to id
+    let dbUser;
+    if (payload.supabaseUserId) {
+      dbUser = await prisma.user.findUnique({
+        where: { supabaseUserId: payload.supabaseUserId },
+        select: { role: true, id: true, supabaseUserId: true }
+      });
+    }
+    if (!dbUser && payload.userId) {
+      dbUser = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { role: true, id: true, supabaseUserId: true }
+      });
+    }
 
     if (!dbUser) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+    }
+
+    if (!dbUser.supabaseUserId) {
+      return NextResponse.json({ success: false, error: "User not properly configured" }, { status: 400 });
     }
 
     let conversations: any[] = [];
@@ -35,7 +48,7 @@ export async function GET(request: NextRequest) {
       // For USER: Get conversations they've started (as sender)
       const userConversations = await prisma.message.groupBy({
         by: ["conversationId"],
-        where: { senderId: dbUser.id },
+        where: { senderId: dbUser.supabaseUserId },
         _count: { id: true },
         _max: { timestamp: true }
       });
@@ -45,7 +58,7 @@ export async function GET(request: NextRequest) {
           where: { conversationId: conv.conversationId },
           orderBy: { timestamp: "desc" },
           include: {
-            sender: { select: { firstName: true, lastName: true } },
+            sender: { select: { firstName: true, lastName: true, supabaseUserId: true } },
             product: { select: { id: true, name: true, image: true, slug: true } }
           }
         });
@@ -53,7 +66,7 @@ export async function GET(request: NextRequest) {
         const unreadCount = await prisma.message.count({
           where: {
             conversationId: conv.conversationId,
-            receiverId: dbUser.id,
+            receiverId: dbUser.supabaseUserId,
             isRead: false
           }
         });
@@ -70,39 +83,51 @@ export async function GET(request: NextRequest) {
               receiverId: lastMessage.receiverId
             },
             unreadCount,
-            messageCount: conv._count.id
+            messageCount: (conv._count as any).id
           });
         }
       }
     } else if (dbUser.role === "ADMIN") {
-      // For ADMIN: Get all conversations where they are involved (as sender or receiver)
-      // This includes conversations they started AND conversations where USERs messaged them
-      const adminConversations = await prisma.message.groupBy({
+      // For ADMIN: Get ALL conversations that involve admins and users
+      // This creates a shared conversation pool where all admins can see all user-admin conversations
+
+      // First get all admin user IDs to avoid join ambiguity
+      const adminUserIds = await prisma.user.findMany({
+        where: { role: "ADMIN" },
+        select: { supabaseUserId: true }
+      });
+      const adminIds = adminUserIds.map(u => u.supabaseUserId).filter((id): id is string => id !== null);
+
+      const allAdminConversations = await prisma.message.groupBy({
         by: ["conversationId"],
         where: {
           OR: [
-            { senderId: dbUser.id },   // Conversations ADMIN started
-            { receiverId: dbUser.id }  // Conversations sent to ADMIN
+            // Messages sent by any admin
+            { senderId: { in: adminIds } },
+            // Messages received by any admin
+            { receiverId: { in: adminIds } }
           ]
         },
         _count: { id: true },
         _max: { timestamp: true }
       });
 
-      for (const conv of adminConversations) {
+      for (const conv of allAdminConversations) {
         const lastMessage = await prisma.message.findFirst({
           where: { conversationId: conv.conversationId },
           orderBy: { timestamp: "desc" },
           include: {
-            sender: { select: { firstName: true, lastName: true } },
+            sender: { select: { id: true, firstName: true, lastName: true, supabaseUserId: true, role: true } },
+            receiver: { select: { id: true, firstName: true, lastName: true, supabaseUserId: true, role: true } },
             product: { select: { id: true, name: true, image: true, slug: true } }
           }
         });
 
+        // Count unread messages for this specific admin
         const unreadCount = await prisma.message.count({
           where: {
             conversationId: conv.conversationId,
-            receiverId: dbUser.id,
+            receiverId: dbUser.supabaseUserId,
             isRead: false
           }
         });
@@ -119,7 +144,7 @@ export async function GET(request: NextRequest) {
               receiverId: lastMessage.receiverId
             },
             unreadCount,
-            messageCount: conv._count.id
+            messageCount: (conv._count as any).id
           });
         }
       }

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate new access token
-    const newAccessToken = generateAccessToken(user.id, user.email, (user as any).role)
+    const newAccessToken = generateAccessToken(user.id, user.email, (user as any).role, user.supabaseUserId || undefined)
 
     return NextResponse.json({
       success: true,

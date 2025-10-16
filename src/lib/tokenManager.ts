@@ -6,6 +6,7 @@ export interface TokenPayload {
   userId: string
   email: string
   role: string
+  supabaseUserId?: string
   type: string
   iat: number
   exp: number

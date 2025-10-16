@@ -74,7 +74,6 @@ export async function GET(request: NextRequest) {
       const dbUsers = await prisma.user.findMany({
         where: { role: 'ADMIN' },
         select: {
-          id: true,
           supabaseUserId: true,
           email: true,
           firstName: true,
@@ -84,6 +83,12 @@ export async function GET(request: NextRequest) {
         },
         take: limit
       })
+
+      // Transform to use supabaseUserId as id for messaging
+      const transformedUsers = dbUsers.map(user => ({
+        ...user,
+        id: user.supabaseUserId
+      }))
 
       // If no admin users in database, try to find from Supabase Auth
       if (dbUsers.length === 0) {
@@ -117,7 +122,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        data: dbUsers
+        data: transformedUsers
       })
     }
 

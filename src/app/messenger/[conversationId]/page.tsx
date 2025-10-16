@@ -54,6 +54,8 @@ type Conversation = {
       firstName: string;
       lastName: string;
     };
+    senderId: string;
+    receiverId: string;
   };
   unreadCount: number;
   messageCount: number;
@@ -73,6 +75,7 @@ export default function MessengerPage() {
   const [selectedConversation, setSelectedConversation] = useState<string>(conversationId);
   const [productInfo, setProductInfo] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [conversationPartner, setConversationPartner] = useState<any>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -92,7 +95,8 @@ export default function MessengerPage() {
 
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        setUserId(payload.userId);
+        // Use supabaseUserId if available, otherwise fallback to userId
+        setUserId(payload.supabaseUserId || payload.userId);
         setUserRole(payload.role);
       } catch (error) {
         console.error("Error parsing token:", error);
@@ -142,7 +146,20 @@ export default function MessengerPage() {
         // Extract product info from first message
         if (data.data.length > 0) {
           setProductInfo(data.data[0].product);
+          // Extract conversation partner info
+          const firstMessage = data.data[0];
+          const partner = firstMessage.senderId !== userId ? firstMessage.sender : firstMessage.receiver;
+          setConversationPartner(partner);
+        } else {
+          // No messages yet, clear product info
+          setProductInfo(null);
+          setConversationPartner(null);
         }
+      } else if (response.status === 404) {
+        // Conversation not found or no access - this is normal for new conversations
+        setMessages([]);
+        setProductInfo(null);
+        setConversationPartner(null);
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -159,43 +176,58 @@ export default function MessengerPage() {
       const token = localStorage.getItem("accessToken");
       if (!token) throw new Error("Not authenticated");
 
-      // Extract productId from conversationId (format: userId-productId)
-      const productId = selectedConversation.split("-")[1];
-      if (!productId) throw new Error("Invalid conversation");
+      // Get conversation info including productId and receiver
+      let productId = "";
+      let receiverId = "";
 
       // Determine receiver based on user role
-      // For USER: send to any ADMIN
-      // For ADMIN: send to the USER in the conversation
-      let receiverId = "";
-      if (userRole === "USER") {
-        // Always find an ADMIN user for USER to send to
+      if (userRole === "ADMIN") {
+        // ADMIN: Find the USER they're responding to
+        if (messages.length > 0) {
+          const otherMessage = messages.find(m => m.senderId !== userId || m.receiverId !== userId);
+          if (otherMessage) {
+            receiverId = otherMessage.senderId === userId ? otherMessage.receiverId : otherMessage.senderId;
+          }
+        }
+      } else {
+        // USER: Always message to ADMIN
         try {
           const adminResponse = await fetch("/api/users?role=ADMIN&limit=1&forMessaging=true", {
             headers: { Authorization: `Bearer ${token}` }
           });
           const adminData = await adminResponse.json();
           if (adminData.success && adminData.data.length > 0) {
-            receiverId = adminData.data[0].id;
-          } else {
-            throw new Error("No admin users found");
+            receiverId = adminData.data[0].supabaseUserId || adminData.data[0].id;
           }
         } catch (error) {
           console.error("Error finding admin:", error);
-          throw new Error("Cannot find admin to send message to");
-        }
-      } else {
-        // ADMIN sending to USER - get USER ID from conversation
-        const userIdFromConv = selectedConversation.split("-")[0];
-        if (userIdFromConv && userIdFromConv !== userId) {
-          receiverId = userIdFromConv;
-        } else {
-          throw new Error("Invalid conversation for admin");
         }
       }
 
-      if (!receiverId) {
-        throw new Error("No receiver found");
+      // Get productId from existing messages or use default
+      if (messages.length > 0) {
+        productId = messages[0].productId;
+      } else {
+        // Try to get from conversations list
+        const currentConv = conversations.find(c => c.conversationId === selectedConversation);
+        if (currentConv) {
+          productId = currentConv.product.id;
+        } else {
+          // Use default product for messaging
+          try {
+            const productResponse = await fetch("/api/products?limit=1");
+            const productData = await productResponse.json();
+            if (productData.success && productData.data.length > 0) {
+              productId = productData.data[0].id;
+            }
+          } catch (error) {
+            console.error("Error finding default product:", error);
+          }
+        }
       }
+
+      if (!productId) throw new Error("Cannot determine product ID");
+      if (!receiverId) throw new Error("Cannot determine receiver");
 
       const response = await fetch("/api/messages", {
         method: "POST",
@@ -334,19 +366,32 @@ export default function MessengerPage() {
                   </svg>
                 </button>
 
-                {productInfo && (
+                {/* Show product info or conversation partner */}
+                {conversationPartner && (
                   <>
-                    <img
-                      src={productInfo.image || "/demo/dc10.jpg"}
-                      alt={productInfo.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-[#e1e5e9] flex items-center justify-center">
+                      {conversationPartner.avatar ? (
+                        <img
+                          src={conversationPartner.avatar}
+                          alt={`${conversationPartner.firstName} ${conversationPartner.lastName}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : conversationPartner.firstName === "Support" && conversationPartner.lastName === "Team" ? (
+                        <div className="text-white text-xl">👨‍💼</div>
+                      ) : (
+                        <div className="text-white text-sm font-medium bg-[#8e9297] w-full h-full flex items-center justify-center">
+                          {conversationPartner.firstName.charAt(0).toUpperCase()}
+                          {conversationPartner.lastName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
                     <div>
                       <h2 className="font-semibold text-[#2c2d30]">
-                        {productInfo.name}
+                        {conversationPartner.firstName} {conversationPartner.lastName}
+                        {conversationPartner.firstName === "Support" && <span className="ml-2 px-2 py-1 bg-[#0088cc] text-white text-xs rounded-full">Support</span>}
                       </h2>
                       <p className="text-sm text-[#8e9297]">
-                        Thảo luận sản phẩm
+                        {productInfo ? `Về sản phẩm: ${productInfo.name}` : "Cuộc trò chuyện"}
                       </p>
                     </div>
                   </>

@@ -202,16 +202,16 @@ model OrderItem {
 model Message {
   id             String   @id @default(cuid())
   conversationId String
-  senderId       String
-  receiverId     String
+  senderId       String // Now stores Supabase user ID
+  receiverId     String // Now stores Supabase user ID
   productId      String
   content        String
   isRead         Boolean  @default(false)
   timestamp      DateTime @default(now())
 
-  // Relations
-  sender   User    @relation(name: "MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User    @relation(name: "MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  // Relations - using supabaseUserId for user lookups
+  sender   User    @relation(name: "MessageSender", fields: [senderId], references: [supabaseUserId], onDelete: Cascade)
+  receiver User    @relation(name: "MessageReceiver", fields: [receiverId], references: [supabaseUserId], onDelete: Cascade)
   product  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   // Indexes for performance

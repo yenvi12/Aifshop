@@ -61,23 +61,27 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; reviewId: string | null }>({ show: false, reviewId: null });
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
-  // Get current user ID from JWT token
+  // Get current user ID and role from JWT token
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        setCurrentUserId(payload.userId);
+        setCurrentUserId(payload.userId || payload.supabaseUserId);
+        setCurrentUserRole(payload.role);
       } catch (error) {
         setCurrentUserId(null);
+        setCurrentUserRole(null);
       }
     } else {
       setCurrentUserId(null);
+      setCurrentUserRole(null);
     }
   }, []);
 
@@ -407,17 +411,25 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   Add to cart
                 </button>
 
-                {/* Message Button - Primary CTA */}
-                <button
-                  onClick={handleMessage}
-                  className="group relative w-auto inline-flex items-center gap-3 rounded-xl py-2.5 px-6 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold border-2 border-[#0088cc] hover:border-[#0077b3] hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
-                  disabled={!currentUserId}
-                  title={!currentUserId ? "Please login to message" : "Message seller"}
-                >
-                  <MdMessage className={`w-5 h-5 transition-transform duration-300 ${!currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"}`} />
-                  <span>Message</span>
-                  {!currentUserId && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-                </button>
+                {/* Message Button - Primary CTA - Only show for USER role */}
+                {currentUserRole !== "ADMIN" && (
+                  <button
+                    onClick={handleMessage}
+                    className="group relative w-auto inline-flex items-center gap-3 rounded-xl py-2.5 px-6 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold border-2 border-[#0088cc] hover:border-[#0077b3] hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+                    disabled={!currentUserId}
+                    title={
+                      !currentUserId
+                        ? "Please login to message"
+                        : currentUserRole === "ADMIN"
+                        ? "Admins cannot message from product pages"
+                        : "Message support"
+                    }
+                  >
+                    <MdMessage className={`w-5 h-5 transition-transform duration-300 ${!currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"}`} />
+                    <span>Message</span>
+                    {!currentUserId && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
+                  </button>
+                )}
 
                 {/* Wishlist Button */}
                 <button onClick={() => setWished(!wished)} className="p-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition">

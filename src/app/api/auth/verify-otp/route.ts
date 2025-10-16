@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
    await removeRegistrationData(transactionId)
 
    // Tạo JWT tokens
-   const accessToken = generateAccessToken(user.id, user.email) //, (user as any).role)
+   const accessToken = generateAccessToken(user.id, user.email, 'USER', user.supabaseUserId || undefined) //, (user as any).role)
     const refreshToken = generateRefreshToken(user.id)
     const hashedRefreshToken = hashRefreshToken(refreshToken)
 

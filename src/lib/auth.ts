@@ -16,10 +16,10 @@ export async function hashPassword(password: string): Promise<string> {
   })
 }
 
-// Tạo JWT access token (short-lived)
-export function generateAccessToken(userId: string, email: string, role: string = 'USER'): string {
+// Tạo JWT access token (short-lived) với supabaseUserId
+export function generateAccessToken(userId: string, email: string, role: string = 'USER', supabaseUserId?: string): string {
   return jwt.sign(
-    { userId, email, role, type: 'access' },
+    { userId, email, role, supabaseUserId, type: 'access' },
     JWT_SECRET,
     { expiresIn: '15m' } // 15 phút
   )
