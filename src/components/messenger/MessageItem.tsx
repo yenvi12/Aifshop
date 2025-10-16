@@ -62,21 +62,25 @@ export default function MessageItem({ message, isOwn }: MessageItemProps) {
         {/* Avatar */}
         <div className={`flex-shrink-0 ${isOwn ? "ml-3" : "mr-3"}`}>
           <div className="w-8 h-8 rounded-full overflow-hidden bg-[#e1e5e9]">
-            {message.sender.avatar ? (
-              <Image
-                src={message.sender.avatar}
-                alt={`${message.sender.firstName} ${message.sender.lastName}`}
-                width={32}
-                height={32}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white text-sm font-medium bg-[#8e9297]">
-                {message.sender.firstName.charAt(0).toUpperCase()}
-                {message.sender.lastName.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
+              {message.sender.avatar ? (
+                <Image
+                  src={message.sender.avatar}
+                  alt={`${message.sender.firstName} ${message.sender.lastName}`}
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
+              ) : message.sender.firstName === "Support" && message.sender.lastName === "Team" ? (
+                <div className="w-full h-full flex items-center justify-center text-white text-lg bg-[#0088cc]">
+                  👨‍💼
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white text-sm font-medium bg-[#8e9297]">
+                  {message.sender.firstName.charAt(0).toUpperCase()}
+                  {message.sender.lastName.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
         </div>
 
         {/* Message Bubble */}

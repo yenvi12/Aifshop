@@ -21,14 +21,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
     }
 
-    // Verify user exists in database
-    const dbUser = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, role: true }
-    });
+    // Verify user exists in database - prioritize supabaseUserId, fallback to id
+    let dbUser;
+    if (payload.supabaseUserId) {
+      dbUser = await prisma.user.findUnique({
+        where: { supabaseUserId: payload.supabaseUserId },
+        select: { id: true, role: true, supabaseUserId: true }
+      });
+    }
+    if (!dbUser && payload.userId) {
+      dbUser = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, role: true, supabaseUserId: true }
+      });
+    }
 
     if (!dbUser) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+    }
+
+    if (!dbUser.supabaseUserId) {
+      return NextResponse.json({ success: false, error: "User not properly configured" }, { status: 400 });
     }
 
     // Get conversationId from query params
@@ -40,15 +53,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user is part of this conversation
-    const conversation = await prisma.message.findFirst({
-      where: {
-        conversationId,
-        OR: [
-          { senderId: dbUser.id },
-          { receiverId: dbUser.id }
-        ]
-      }
-    });
+    let conversation;
+    if (dbUser.role === "ADMIN") {
+      // For admins, allow access to any conversation that involves admin-user communication
+      conversation = await prisma.message.findFirst({
+        where: {
+          conversationId,
+          OR: [
+            { sender: { role: "ADMIN" } },
+            { receiver: { role: "ADMIN" } }
+          ]
+        }
+      });
+    } else {
+      // For regular users, maintain original access control
+      conversation = await prisma.message.findFirst({
+        where: {
+          conversationId,
+          OR: [
+            { senderId: dbUser.supabaseUserId },
+            { receiverId: dbUser.supabaseUserId }
+          ]
+        }
+      });
+    }
 
     if (!conversation) {
       return NextResponse.json({ success: false, error: "Conversation not found or access denied" }, { status: 404 });
@@ -71,19 +99,49 @@ export async function GET(request: NextRequest) {
       orderBy: { timestamp: "asc" }
     });
 
+    // Unify admin display for consistent UI
+    const unifiedMessages = messages.map(message => ({
+      ...message,
+      sender: message.sender.role === "ADMIN" ? {
+        ...message.sender,
+        firstName: "Support",
+        lastName: "Team",
+        avatar: null // Will use default support icon
+      } : message.sender,
+      receiver: message.receiver.role === "ADMIN" ? {
+        ...message.receiver,
+        firstName: "Support",
+        lastName: "Team",
+        avatar: null // Will use default support icon
+      } : message.receiver
+    }));
+
     // Mark messages as read (only for receiver)
-    await prisma.message.updateMany({
-      where: {
-        conversationId,
-        receiverId: dbUser.id,
-        isRead: false
-      },
-      data: { isRead: true }
-    });
+    if (dbUser.role === "ADMIN") {
+      // For admins, mark messages as read for any admin in this conversation
+      await prisma.message.updateMany({
+        where: {
+          conversationId,
+          receiver: { role: "ADMIN" },
+          isRead: false
+        },
+        data: { isRead: true }
+      });
+    } else {
+      // For regular users, only mark messages sent directly to them
+      await prisma.message.updateMany({
+        where: {
+          conversationId,
+          receiverId: dbUser.supabaseUserId,
+          isRead: false
+        },
+        data: { isRead: true }
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      data: messages
+      data: unifiedMessages
     });
 
   } catch (error) {
@@ -109,14 +167,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
     }
 
-    // Verify user exists in database
-    const dbUser = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, role: true }
-    });
+    // Verify user exists in database - prioritize supabaseUserId, fallback to id
+    let dbUser;
+    if (payload.supabaseUserId) {
+      dbUser = await prisma.user.findUnique({
+        where: { supabaseUserId: payload.supabaseUserId },
+        select: { id: true, role: true, supabaseUserId: true }
+      });
+    }
+    if (!dbUser && payload.userId) {
+      dbUser = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, role: true, supabaseUserId: true }
+      });
+    }
 
     if (!dbUser) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+    }
+
+    if (!dbUser.supabaseUserId) {
+      return NextResponse.json({ success: false, error: "User not properly configured" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -133,6 +204,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid message content" }, { status: 400 });
     }
 
+    // Resolve receiver to get supabaseUserId - prioritize supabaseUserId search, fallback to id
+    let receiverUser;
+    if (receiverId) {
+      // Try to find by supabaseUserId first
+      receiverUser = await prisma.user.findUnique({
+        where: { supabaseUserId: receiverId },
+        select: { id: true, supabaseUserId: true, role: true }
+      });
+      // If not found and receiverId looks like a UUID, try by id
+      if (!receiverUser && receiverId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        receiverUser = await prisma.user.findUnique({
+          where: { id: receiverId },
+          select: { id: true, supabaseUserId: true, role: true }
+        });
+      }
+    }
+
+    if (!receiverUser || !receiverUser.supabaseUserId) {
+      return NextResponse.json({ success: false, error: "Receiver not found" }, { status: 404 });
+    }
+
+    const resolvedReceiverId = receiverUser.supabaseUserId;
+
     // For new conversations, validate receiver role
     // Skip validation if this is an existing conversation (has messages)
     const existingConversation = await prisma.message.findFirst({
@@ -141,21 +235,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (!existingConversation) {
-      // New conversation - validate roles
-      const receiver = await prisma.user.findUnique({
-        where: { id: receiverId },
-        select: { role: true }
-      });
-
-      if (!receiver) {
-        return NextResponse.json({ success: false, error: "Receiver not found" }, { status: 404 });
-      }
-
-      const isValidConversation = (dbUser.role === "USER" && receiver.role === "ADMIN") ||
-                                 (dbUser.role === "ADMIN" && receiver.role === "USER");
+      // New conversation - ensure USER always messages ADMIN
+      const isValidConversation = (dbUser.role === "USER" && receiverUser.role === "ADMIN") ||
+                                  (dbUser.role === "ADMIN" && receiverUser.role === "USER");
 
       if (!isValidConversation) {
-        return NextResponse.json({ success: false, error: "Invalid conversation participants" }, { status: 400 });
+        return NextResponse.json({
+          success: false,
+          error: "Users can only message with admins. Please contact support for assistance."
+        }, { status: 400 });
+      }
+    } else {
+      // For existing conversations, if the receiver is an admin, allow any admin to respond
+      // This enables shared admin conversations where multiple admins can handle the same conversation
+      if (receiverUser.role === "ADMIN" && dbUser.role === "ADMIN") {
+        // Allow admin-to-admin messaging within existing conversations
+        // This is fine for shared conversations
       }
     }
 
@@ -173,8 +268,8 @@ export async function POST(request: NextRequest) {
     const message = await prisma.message.create({
       data: {
         conversationId,
-        senderId: dbUser.id,
-        receiverId,
+        senderId: dbUser.supabaseUserId,
+        receiverId: resolvedReceiverId,
         productId,
         content: sanitizedContent
       },

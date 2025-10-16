@@ -107,13 +107,17 @@ export default function Header() {
                   sessionData.tokens.refreshToken
                 );
                 setUser(session.user);
-                setUserRole(sessionData.user?.role || null);
+                setUserRole(sessionData.user?.role || 'USER');
               } else {
+                // Even if session creation fails, set user to enable logout
                 setUser(session.user);
+                setUserRole(null);
               }
             } catch {
               if (authRequestIdRef.current !== requestId) return;
+              // Even if session creation fails, set user to enable logout
               setUser(session.user);
+              setUserRole(null);
             }
           } else {
             if (authRequestIdRef.current !== requestId) return;
@@ -172,14 +176,86 @@ export default function Header() {
     }
   };
 
+  // ====== Fetch Unread Message Count ======
+  const fetchUnreadCount = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token || !user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/conversations/unread-count", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setUnreadCount(data.data.unreadCount);
+      } else {
+        setUnreadCount(0);
+      }
+    } catch {
+      setUnreadCount(0);
+    }
+  };
+
+  // ====== Fetch Recent Conversations ======
+  const fetchRecentConversations = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token || !user) {
+      setRecentConversations([]);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/conversations", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        // Take only first 5 recent conversations
+        setRecentConversations(data.data.slice(0, 5));
+      } else {
+        setRecentConversations([]);
+      }
+    } catch {
+      setRecentConversations([]);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchCartItemCount();
+      fetchUnreadCount();
+      fetchRecentConversations();
+
       const handleCartUpdate = () => fetchCartItemCount();
+      const handleMessageUpdate = () => {
+        fetchUnreadCount();
+        fetchRecentConversations();
+      };
+
       window.addEventListener("cartUpdated", handleCartUpdate);
-      return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+      window.addEventListener("messageUpdated", handleMessageUpdate);
+
+      return () => {
+        window.removeEventListener("cartUpdated", handleCartUpdate);
+        window.removeEventListener("messageUpdated", handleMessageUpdate);
+      };
     } else {
       setCartItemCount(0);
+      setUnreadCount(0);
+      setRecentConversations([]);
     }
   }, [user]);
 
@@ -191,6 +267,8 @@ export default function Header() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("unreadMessageCount");
+    setUnreadCount(0);
+    setRecentConversations([]);
     setDropdownOpen(false);
     router.push("/");
   };

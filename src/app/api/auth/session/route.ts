@@ -27,19 +27,50 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user in database
-    const dbUser = await prisma.user.findUnique({
+    let dbUser = await prisma.user.findUnique({
       where: { supabaseUserId: user.id }
     })
 
+    // If user doesn't exist in database but exists in Supabase (e.g., Google login),
+    // create the database record automatically
     if (!dbUser) {
-      return NextResponse.json(
-        { success: false, error: 'User not found in database' },
-        { status: 404 }
-      )
+      const { hashPassword } = await import('@/lib/auth')
+      const hashedPassword = await hashPassword(user.email!) // Use email as dummy password for OAuth users
+
+      // Extract profile information from OAuth provider metadata
+      const metadata = user.user_metadata
+      let firstName = metadata?.given_name || metadata?.first_name || ''
+      let lastName = metadata?.family_name || metadata?.last_name || ''
+      const avatar = metadata?.picture || metadata?.avatar_url || null
+
+      // For Google OAuth, name might be in full name format
+      if (!firstName && !lastName && metadata?.name) {
+        const nameParts = metadata.name.trim().split(' ')
+        if (nameParts.length > 1) {
+          firstName = nameParts[0]
+          lastName = nameParts.slice(1).join(' ')
+        } else {
+          firstName = metadata.name
+        }
+      }
+
+      dbUser = await prisma.user.create({
+        data: {
+          supabaseUserId: user.id,
+          email: user.email!,
+          firstName,
+          lastName,
+          avatar,
+          dateOfBirth: new Date('2000-01-01'),
+          password: hashedPassword,
+          isVerified: true,
+          role: 'USER'
+        }
+      })
     }
 
     // Generate JWT tokens
-    const accessToken = generateAccessToken(dbUser.id, dbUser.email, (dbUser as any).role)
+    const accessToken = generateAccessToken(dbUser.id, dbUser.email, (dbUser as any).role, dbUser.supabaseUserId || undefined)
     const refreshToken = generateRefreshToken(dbUser.id)
 
     // Hash refresh token and save to database

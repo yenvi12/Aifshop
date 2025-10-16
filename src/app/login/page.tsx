@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MdMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff } from "react-icons/md";
@@ -9,12 +10,56 @@ import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false);
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const oauth = searchParams.get('oauth');
+      if (oauth === 'true') {
+        setIsOAuthLoading(true);
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (session?.user && !error) {
+            // Create session tokens for OAuth user
+            const response = await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+              }
+            });
+
+            const sessionData = await response.json();
+            if (sessionData.success) {
+              localStorage.setItem('accessToken', sessionData.tokens.accessToken);
+              localStorage.setItem('refreshToken', sessionData.tokens.refreshToken);
+              toast.success('Đăng nhập thành công!');
+              router.push("/");
+            } else {
+              setError('Không thể tạo session. Vui lòng thử lại.');
+            }
+          } else {
+            setError('OAuth authentication failed');
+          }
+        } catch (error) {
+          console.error('OAuth callback error:', error);
+          setError('Không thể hoàn tất đăng nhập');
+        } finally {
+          setIsOAuthLoading(false);
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, [searchParams, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -187,29 +232,34 @@ export default function LoginPage() {
               {/* Google button */}
               <button
                 type="button"
+                disabled={isOAuthLoading}
                 onClick={async () => {
                   try {
+                    setError(null);
+                    setIsOAuthLoading(true);
                     const { data, error } = await supabase.auth.signInWithOAuth({
                       provider: 'google',
                       options: {
-                        redirectTo: window.location.origin
+                        redirectTo: `${window.location.origin}/login?oauth=true`
                       }
                     })
                     if (error) {
-                      setError(error.message)
+                      setError(error.message);
+                      setIsOAuthLoading(false);
                     }
                   } catch (error) {
-                    setError('Failed to sign in with Google')
+                    setError('Failed to sign in with Google');
+                    setIsOAuthLoading(false);
                   }
                 }}
-                className="w-full rounded-xl py-2.5 border border-brand-light flex items-center justify-center gap-2 hover:bg-brand-light/40 transition"
+                className="w-full rounded-xl py-2.5 border border-brand-light flex items-center justify-center gap-2 hover:bg-brand-light/40 transition disabled:opacity-60"
               >
                 <img
                   src="https://www.svgrepo.com/show/475656/google-color.svg"
                   alt="Google"
                   className="w-5 h-5"
                 />
-                Google
+                {isOAuthLoading ? "Connecting..." : "Google"}
               </button>
 
               <p className="text-center text-sm text-brand-secondary">
