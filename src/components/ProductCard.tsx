@@ -160,17 +160,7 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
 
           {/* Nút hành động */}
           <div className="flex items-center gap-2">
-            {/* Nút AI */}
-            <button
-              aria-label="Ask AI"
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5
-                         bg-white text-brand-primary border border-brand-light
-                         hover:bg-brand-light/60 transition"
-              title="Ask AI for styling tips"
-            >
-              <MdSmartToy className="w-4 h-4" />
-              <span className="text-sm font-semibold">AI</span>
-            </button>
+            
 
             {/* Add */}
             <button
