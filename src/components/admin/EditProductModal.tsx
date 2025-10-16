@@ -229,15 +229,25 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
       }
     }
 
+    // Size validation
+    let totalSizeStock = 0;
     if (formData.sizes.length > 0) {
       formData.sizes.forEach((size, index) => {
         if (!size.name.trim()) {
           newErrors[`size_${index}_name`] = `Size ${index + 1} name is required`;
         }
-        if (size.stock < 0) {
-          newErrors[`size_${index}_stock`] = `Size ${index + 1} stock must be 0 or more`;
+        if (isNaN(size.stock) || size.stock < 0) {
+          newErrors[`size_${index}_stock`] = `Size ${index + 1} stock must be a number 0 or more`;
+        } else {
+          totalSizeStock += size.stock;
         }
       });
+
+      // Check total size stocks <= stock quantity
+      const stockValue = parseInt(formData.stock);
+      if (stockValue && totalSizeStock > stockValue) {
+        newErrors.sizes = `Total size stocks (${totalSizeStock}) cannot exceed stock quantity (${stockValue})`;
+      }
     }
 
     setErrors(newErrors);
@@ -550,6 +560,14 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* General size error */}
+              {errors.sizes && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 text-sm font-medium">Size Validation Error</p>
+                  <p className="text-red-700 text-sm mt-1">{errors.sizes}</p>
                 </div>
               )}
             </div>
