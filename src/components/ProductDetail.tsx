@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage } from "react-icons/md";
+import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage, MdSmartToy } from "react-icons/md";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
 
@@ -410,7 +410,13 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                 {/* Message Button - Primary CTA */}
                 <button
                   onClick={handleMessage}
-                  className="group relative w-auto inline-flex items-center gap-3 rounded-xl py-2.5 px-6 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold border-2 border-[#0088cc] hover:border-[#0077b3] hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+                  className="group relative w-auto inline-flex items-center gap-3 rounded-xl py-2.5
+                   px-6 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white 
+                   font-bold border-2 border-[#0088cc] hover:border-[#0077b3] 
+                   hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 
+                   disabled:opacity-60 disabled:hover:scale-100 
+                   disabled:hover:shadow-none transition-all duration-300 
+                   focus:ring-4 focus:ring-blue-300 focus:outline-none"
                   disabled={!currentUserId}
                   title={!currentUserId ? "Please login to message" : "Message seller"}
                 >
@@ -418,6 +424,22 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   <span>Message</span>
                   {!currentUserId && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
                 </button>
+
+                {/* Nút AI */}
+                <button
+                    aria-label="Ask AI"
+                    className="group relative inline-flex items-center gap-3 rounded-xl 
+             py-2.5 px-6 bg-gradient-to-r from-[#8b5cf6] via-[#d946ef] to-[#ec4899]
+             text-white font-bold border-2 border-transparent 
+             hover:shadow-lg hover:shadow-pink-500/40 hover:scale-105 
+             disabled:opacity-60 disabled:hover:scale-100 
+             transition-all duration-300 focus:ring-4 focus:ring-pink-300 
+             focus:outline-none"
+                              title="Ask AI for styling tips"
+                            >
+                              <MdSmartToy className="w-4 h-4" />
+                              <span className="text-sm font-semibold">AI</span>
+                            </button>
 
                 {/* Wishlist Button */}
                 <button onClick={() => setWished(!wished)} className="p-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition">
