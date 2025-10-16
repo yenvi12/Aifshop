@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage, MdSmartToy } from "react-icons/md";
+import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage, MdSmartToy, MdShoppingCart } from "react-icons/md";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
 
@@ -395,58 +395,107 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             )}
 
             {/* Quantity and Actions */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                {/* Add to Cart Button */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={!selectedSize && sizes.length > 0}
-                  title={!selectedSize && sizes.length > 0 ? "Please select a size first" : "Add to cart"}
-                  className="w-auto inline-block rounded-xl py-2.5 px-6 bg-brand-accent text-brand-dark font-semibold border border-brand-light hover:bg-brand-light/90 disabled:opacity-60 transition"
-                >
-                  Add to cart
-                </button>
+<div className="space-y-3">
+  {/* --- Hàng 1: Buy Now, Add to cart, Wishlist --- */}
+  <div className="flex flex-wrap items-center  gap-3 sm:gap-4">
+    {/* Buy Now */}
+    <button
+      onClick={() => {
+        handleAddToCart();
+        window.location.href = "/cart";
+      }}
+      disabled={!selectedSize && sizes.length > 0}
+      title="Buy this item now"
+      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
+                 bg-gradient-to-r from-[#f97316] via-[#ef4444] to-[#dc2626]
+                 text-white font-bold border-2 border-transparent
+                 hover:shadow-lg hover:shadow-orange-400/40 hover:scale-[1.02]
+                 disabled:opacity-60 disabled:hover:scale-100
+                 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-300"
+    >
+      <MdShoppingCart className="w-5 h-5" />
+      <span>Buy Now</span>
+    </button>
 
-                {/* Message Button - Primary CTA */}
-                <button
-                  onClick={handleMessage}
-                  className="group relative w-auto inline-flex items-center gap-3 rounded-xl py-2.5
-                   px-6 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white 
-                   font-bold border-2 border-[#0088cc] hover:border-[#0077b3] 
-                   hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 
-                   disabled:opacity-60 disabled:hover:scale-100 
-                   disabled:hover:shadow-none transition-all duration-300 
-                   focus:ring-4 focus:ring-blue-300 focus:outline-none"
-                  disabled={!currentUserId}
-                  title={!currentUserId ? "Please login to message" : "Message seller"}
-                >
-                  <MdMessage className={`w-5 h-5 transition-transform duration-300 ${!currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"}`} />
-                  <span>Message</span>
-                  {!currentUserId && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-                </button>
+    {/* Add to Cart */}
+    <button
+      onClick={handleAddToCart}
+      disabled={!selectedSize && sizes.length > 0}
+      title={
+        !selectedSize && sizes.length > 0
+          ? "Please select a size first"
+          : "Add to cart"
+      }
+      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
+                 bg-brand-accent text-brand-dark font-semibold border border-brand-light
+                 hover:border-brand-primary hover:brightness-110
+                 hover:shadow-lg hover:shadow-brand-accent/30 hover:scale-[1.02]
+                 disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none
+                 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none"
+    >
+      Add to cart
+    </button>
 
-                {/* Nút AI */}
-                <button
-                    aria-label="Ask AI"
-                    className="group relative inline-flex items-center gap-3 rounded-xl 
-             py-2.5 px-6 bg-gradient-to-r from-[#8b5cf6] via-[#d946ef] to-[#ec4899]
-             text-white font-bold border-2 border-transparent 
-             hover:shadow-lg hover:shadow-pink-500/40 hover:scale-105 
-             disabled:opacity-60 disabled:hover:scale-100 
-             transition-all duration-300 focus:ring-4 focus:ring-pink-300 
-             focus:outline-none"
-                              title="Ask AI for styling tips"
-                            >
-                              <MdSmartToy className="w-4 h-4" />
-                              <span className="text-sm font-semibold">AI</span>
-                            </button>
+    {/* ❤️ Wishlist */}
+    <button
+      onClick={() => setWished(!wished)}
+      title={wished ? "Remove from wishlist" : "Add to wishlist"}
+      className="inline-flex items-center justify-center rounded-xl h-11 w-11
+                 border border-gray-300 hover:bg-gray-100
+                 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none"
+    >
+      {wished ? (
+        <MdFavorite className="w-5 h-5 text-red-500" />
+      ) : (
+        <MdFavoriteBorder className="w-5 h-5 text-brand-dark" />
+      )}
+    </button>
+  </div>
 
-                {/* Wishlist Button */}
-                <button onClick={() => setWished(!wished)} className="p-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition">
-                  {wished ? <MdFavorite className="w-5 h-5 text-red-500" /> : <MdFavoriteBorder className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
+  {/* --- Hàng 2: Message & AI --- */}
+  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+    {/* Message */}
+    <button
+      onClick={handleMessage}
+      disabled={!currentUserId}
+      title={!currentUserId ? "Please login to message" : "Message seller"}
+      className="group relative inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
+                 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold
+                 border-2 border-[#0088cc] hover:border-[#0077b3]
+                 hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02]
+                 disabled:opacity-60 disabled:hover:scale-100
+                 transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+    >
+      <MdMessage
+        className={`w-5 h-5 transition-transform duration-300 ${
+          !currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"
+        }`}
+      />
+      <span>Message</span>
+      {!currentUserId && (
+        <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+      )}
+    </button>
+
+    {/* AI */}
+    <button
+      aria-label="Ask AI"
+      title="Ask AI for styling tips"
+      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
+                 bg-gradient-to-r from-[#8b5cf6] via-[#d946ef] to-[#ec4899]
+                 text-white font-bold border-2 border-transparent
+                 hover:shadow-lg hover:shadow-pink-500/40 hover:scale-[1.02]
+                 disabled:opacity-60 disabled:hover:scale-100
+                 transition-all duration-300 focus:ring-4 focus:ring-pink-300 focus:outline-none"
+    >
+      <MdSmartToy className="w-5 h-5" />
+      <span>AI</span>
+    </button>
+  </div>
+</div>
+
+
+
 
             {/* Additional Info */}
             <div className="space-y-3 text-sm text-gray-600">

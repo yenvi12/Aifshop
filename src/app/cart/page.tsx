@@ -133,8 +133,8 @@ const CartPage = () => {
     } catch (err) {
       console.error('Error updating quantity:', err);
       // Revert optimistic update on error
-       await fetchCartItems();
-       toast.error('Unable to connect to server');
+      await fetchCartItems();
+      toast.error('Unable to connect to server');
     }
   };
 
@@ -168,22 +168,17 @@ const CartPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Refresh cart items to ensure consistency
-          await fetchCartItems();
-          toast.success(data.message || 'Product removed from cart');
-
-          // Send event to update cart count in Header and other components
-          window.dispatchEvent(new CustomEvent('cartUpdated'));
+        await fetchCartItems();
+        toast.success(data.message || 'Product removed from cart');
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
       } else {
-        // Revert optimistic update on error
-         await fetchCartItems();
-         toast.error(data.error || 'Unable to remove product');
+        await fetchCartItems();
+        toast.error(data.error || 'Unable to remove product');
       }
     } catch (err) {
       console.error('Error removing item:', err);
-      // Revert optimistic update on error
-       await fetchCartItems();
-       toast.error('Unable to connect to server');
+      await fetchCartItems();
+      toast.error('Unable to connect to server');
     }
   };
 
@@ -215,17 +210,14 @@ const CartPage = () => {
 
   // Handle quantity update from UI
   const handleUpdateQuantity = (item: CartItem, newQuantity: number) => {
-    // Validate quantity client-side before sending request
     if (newQuantity > item.product.stock) {
       toast.error(`Chỉ còn ${item.product.stock} sản phẩm trong kho`);
       return;
     }
-
     if (newQuantity < 1) {
       toast.error('Số lượng phải lớn hơn 0');
       return;
     }
-
     updateQuantity(item.product.id, newQuantity, item.size);
   };
 
@@ -246,20 +238,20 @@ const CartPage = () => {
   const total = subtotal;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-brand-light/40 to-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Your Shopping Cart</h1>
-          <div className="text-sm text-gray-500">
-            <span className="font-medium text-blue-600">{cartItems.length} items</span>
+          <h1 className="text-2xl font-bold text-brand-dark">Your Shopping Cart</h1>
+          <div className="text-sm text-brand-secondary">
+            <span className="font-medium text-brand-primary">{cartItems.length} items</span>
           </div>
         </div>
 
         {loading ? (
           <div className="text-center py-16">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            <p className="text-gray-500 text-lg mt-2">Loading cart...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-dark"></div>
+            <p className="text-brand-secondary text-lg mt-2">Loading cart...</p>
           </div>
         ) : error ? (
           <div className="text-center py-16">
@@ -267,10 +259,10 @@ const CartPage = () => {
           </div>
         ) : cartItems.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500 text-lg">Your cart is empty</p>
+            <p className="text-brand-secondary text-lg">Your cart is empty</p>
             <button
               onClick={handleContinueShopping}
-              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+              className="mt-4 rounded-xl px-6 py-2 bg-brand-primary text-white hover:brightness-110 hover:shadow-smooth transition-all"
             >
               Continue Shopping
             </button>
@@ -280,10 +272,13 @@ const CartPage = () => {
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item) => (
-                <div key={`${item.product.id}-${item.size || 'no-size'}`} className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow duration-200">
+                <div
+                  key={`${item.product.id}-${item.size || 'no-size'}`}
+                  className="bg-white rounded-2xl border border-brand-light p-6 shadow-sm hover:shadow-smooth transition-shadow"
+                >
                   <div className="flex gap-4">
                     {/* Product Image */}
-                    <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="w-24 h-24 bg-brand-soft rounded-xl overflow-hidden flex-shrink-0">
                       <img
                         src={item.product.image || '/demo/placeholder.jpg'}
                         alt={item.product.name}
@@ -293,51 +288,59 @@ const CartPage = () => {
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0 space-y-2">
-                      <h3 className="font-semibold text-gray-900 text-lg leading-tight">{item.product.name}</h3>
+                      <h3 className="font-semibold text-brand-dark text-lg leading-tight">
+                        {item.product.name}
+                      </h3>
+
                       <div className="flex items-center gap-3 text-sm">
                         {item.product.badge && (
-                          <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full font-medium">
+                          <span className="px-3 py-1.5 rounded-full font-medium bg-brand-light text-brand-primary">
                             {item.product.badge}
                           </span>
                         )}
                         {item.size && (
-                          <span className="bg-gray-100 text-gray-800 px-3 py-1.5 rounded-full font-medium">
+                          <span className="px-3 py-1.5 rounded-full font-medium bg-brand-soft text-brand-dark">
                             Size: {item.size}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-6 text-sm text-gray-500">
-                        <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-full">
-                          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+
+                      <div className="flex items-center gap-6 text-sm">
+                        <div className="flex items-center gap-2 bg-emerald-50 px-3 py-2 rounded-full border border-emerald-100">
+                          <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-green-700 font-medium">{item.product.stock} trong kho</span>
+                          <span className="text-emerald-700 font-medium">
+                            {item.product.stock} trong kho
+                          </span>
                         </div>
                       </div>
 
                       {/* Quantity Controls and Actions */}
-                      <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between pt-3 mt-3 border-t border-brand-light">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center bg-gray-50 rounded-lg p-1">
+                          <div className="flex items-center bg-brand-soft rounded-lg p-1 border border-brand-light">
                             <button
                               onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
                               disabled={item.quantity <= 1}
-                              className={`w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center transition-all duration-200 ${
+                              className={`w-8 h-8 rounded-md border border-brand-light flex items-center justify-center transition-all duration-200 ${
                                 item.quantity <= 1
                                   ? 'opacity-50 cursor-not-allowed'
-                                  : 'hover:bg-white hover:shadow-sm'
+                                  : 'bg-white hover:shadow-sm'
                               }`}
                             >
-                              <FiMinus className="w-4 h-4" />
+                              <FiMinus className="w-4 h-4 text-brand-dark" />
                             </button>
-                            <span className="w-12 text-center font-semibold text-base">{item.quantity}</span>
+                            <span className="w-12 text-center font-semibold text-base text-brand-dark">
+                              {item.quantity}
+                            </span>
                             <button
                               onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
                               disabled={item.quantity >= item.product.stock}
-                              className={`w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center transition-all duration-200 ${
+                              className={`w-8 h-8 rounded-md border border-brand-light flex items-center justify-center transition-all duration-200 ${
                                 item.quantity >= item.product.stock
                                   ? 'opacity-50 cursor-not-allowed'
-                                  : 'hover:bg-white hover:shadow-sm'
+                                  : 'bg-white hover:shadow-sm'
                               }`}
                               title={
                                 item.quantity >= item.product.stock
@@ -345,18 +348,18 @@ const CartPage = () => {
                                   : 'Add item'
                               }
                             >
-                              <FiPlus className="w-4 h-4" />
+                              <FiPlus className="w-4 h-4 text-brand-dark" />
                             </button>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <button className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200">
+                          <button className="p-2 text-brand-secondary hover:text-red-500 hover:bg-red-50 rounded-full transition-all">
                             <FiHeart className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleRemoveItem(item)}
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200"
+                            className="p-2 text-brand-secondary hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                           >
                             <FiX className="w-4 h-4" />
                           </button>
@@ -366,7 +369,7 @@ const CartPage = () => {
 
                     {/* Price */}
                     <div className="text-right flex-shrink-0 space-y-1">
-                      <div className="text-lg font-bold text-gray-900">
+                      <div className="text-lg font-bold text-brand-dark">
                         {item.product.price
                           ? `${item.product.price.toLocaleString('vi-VN')}₫`
                           : item.product.compareAtPrice
@@ -374,8 +377,10 @@ const CartPage = () => {
                             : '0₫'
                         }
                       </div>
-                      {item.product.compareAtPrice && item.product.compareAtPrice > (item.product.price || item.product.compareAtPrice) && (
-                        <div className="text-sm text-gray-500 line-through">
+                      {item.product.compareAtPrice &&
+                        item.product.compareAtPrice >
+                          (item.product.price || item.product.compareAtPrice) && (
+                        <div className="text-sm text-brand-secondary line-through">
                           {item.product.compareAtPrice.toLocaleString('vi-VN')}₫
                         </div>
                       )}
@@ -385,10 +390,10 @@ const CartPage = () => {
               ))}
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-6 mt-6 border-t border-gray-100">
+              <div className="flex gap-4 pt-6 mt-6 border-t border-brand-light">
                 <button
                   onClick={handleContinueShopping}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  className="flex items-center gap-2 text-brand-dark hover:text-brand-primary transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
@@ -400,54 +405,66 @@ const CartPage = () => {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm border p-6 sticky top-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h2>
-                <div className="text-sm text-gray-600 mb-4">
-                  Code: AIF-2025
+              <div className="bg-white rounded-2xl border border-brand-light p-6 shadow-sm sticky top-6">
+                <h2 className="text-lg font-bold text-brand-dark mb-1">Order Summary</h2>
+                <div className="text-xs text-brand-secondary mb-4">
+                  Code: <span className="font-medium text-brand-primary">AIF-2025</span>
                 </div>
 
                 <div className="space-y-3 mb-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">{subtotal.toLocaleString('vi-VN')}₫</span>
+                    <span className="text-brand-secondary">Subtotal</span>
+                    <span className="font-medium text-brand-dark">{subtotal.toLocaleString('vi-VN')}₫</span>
                   </div>
-                  <div className="border-t pt-3">
+                  <div className="border-t border-brand-light pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-gray-900">Total</span>
-                      <span className="text-xl font-bold text-gray-900">{total.toLocaleString('vi-VN')}₫</span>
+                      <span className="text-lg font-bold text-brand-dark">Total</span>
+                      <span className="text-xl font-bold text-brand-dark">{total.toLocaleString('vi-VN')}₫</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Promo Code */}
-                <div className="mb-4">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Enter promo code"
-                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button className="bg-gray-900 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800">
-                      Apply
-                    </button>
-                  </div>
-                </div>
+<div className="mb-4">
+  <div className="flex gap-2">
+    <input
+      type="text"
+      placeholder="Enter promo code"
+      className="flex-1 border border-brand-light rounded-lg px-3 py-2 text-sm bg-brand-soft focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+    />
+    <button
+      className="px-4 py-2 rounded-xl text-sm font-semibold
+                 bg-brand-accent text-brand-dark border border-brand-light
+                 hover:bg-brand-accent/90 hover:shadow-md
+                 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/25"
+    >
+      Apply
+    </button>
+  </div>
+</div>
 
-                {/* Checkout Buttons */}
-                <div className="space-y-2">
-                  <button
-                    onClick={() => router.push('/payment')}
-                    className="w-full bg-gray-900 text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
-                  >
-                    Checkout Now
-                  </button>
-                  <button
-                    onClick={() => router.push('/payment')}
-                    className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    Buy Now
-                  </button>
-                </div>
+{/* Checkout Buttons */}
+<div className="space-y-3">
+  <button
+    onClick={() => router.push('/payment')}
+    className="w-full py-3 rounded-xl font-semibold
+               bg-brand-secondary text-brand-dark border border-brand-light
+               hover:bg-brand-secondary/90 hover:shadow-md
+               transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/25"
+  >
+    Checkout Now
+  </button>
+
+  <button
+    onClick={() => router.push('/payment')}
+    className="w-full py-3 rounded-xl font-semibold
+               bg-brand-accent text-brand-dark border border-brand-light
+               hover:bg-brand-accent/90 hover:shadow-md
+               transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/25"
+  >
+    Buy Now
+  </button>
+</div>
               </div>
             </div>
           </div>
@@ -456,17 +473,20 @@ const CartPage = () => {
         {/* Suggested Products */}
         {cartItems.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-xl font-bold text-gray-900 mb-8">Recommended for you</h2>
+            <h2 className="text-xl font-bold text-brand-dark mb-8">Recommended for you</h2>
             {recommendedLoading ? (
               <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                <p className="text-gray-500 text-lg mt-2">Loading recommended products...</p>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-dark"></div>
+                <p className="text-brand-secondary text-lg mt-2">Loading recommended products...</p>
               </div>
             ) : recommendedProducts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {recommendedProducts.map((product) => (
-                  <div key={product.id} className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="aspect-square bg-gray-100">
+                  <div
+                    key={product.id}
+                    className="bg-white rounded-2xl border border-brand-light overflow-hidden shadow-sm hover:shadow-smooth transition-shadow"
+                  >
+                    <div className="aspect-square bg-brand-soft">
                       <img
                         src={product.image || '/demo/placeholder.jpg'}
                         alt={product.name}
@@ -474,15 +494,18 @@ const CartPage = () => {
                       />
                     </div>
                     <div className="p-4">
-                      <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">{product.name}</h3>
-                      <p className="text-sm text-gray-500 mb-2">
+                      <h3 className="font-medium text-brand-dark mb-1 line-clamp-2">
+                        {product.name}
+                      </h3>
+                      <p className="text-sm text-brand-secondary mb-2">
                         {product.sizes && product.sizes.length > 0
                           ? `${product.sizes.join(', ')}`
-                          : 'No sizes available'
-                        }
+                          : 'No sizes available'}
                       </p>
-                      <div className="text-lg font-bold text-gray-900">
-                        {product.price || product.compareAtPrice ? (product.price || product.compareAtPrice).toLocaleString('vi-VN') + '₫' : '0₫'}
+                      <div className="text-lg font-bold text-brand-dark">
+                        {product.price || product.compareAtPrice
+                          ? (product.price || product.compareAtPrice).toLocaleString('vi-VN') + '₫'
+                          : '0₫'}
                       </div>
                     </div>
                   </div>
@@ -490,7 +513,7 @@ const CartPage = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500 text-lg">No recommended products available</p>
+                <p className="text-brand-secondary text-lg">No recommended products available</p>
               </div>
             )}
           </div>

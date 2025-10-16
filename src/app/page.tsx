@@ -178,7 +178,7 @@ export default function HomePage() {
   className="py-6 md:py-8"
   interval={3000}
   slides={[
-    { title: "Discover the Latest Fashion Trends", caption: "Browse our collection of unique styles and find what suits you best.", cta: { label: "Shop Now", href: "/shop" }, src: "/demo/dan-tri-0603awo-pr07-1-crop-1709803508993.webp", position: "left" },
+    { title: "Khám phá những xu hướng thời trang mới nhất", caption: "Duyệt qua bộ sưu tập các phong cách độc đáo của chúng tôi và tìm ra phong cách phù hợp nhất với bạn.", cta: { label: "Shop Now", href: "/shop" }, src: "/demo/dan-tri-0603awo-pr07-1-crop-1709803508993.webp", position: "left" },
     { title: "Minimal Jewelry, Maximum Impact", caption: "Handpicked pieces with timeless charm.", cta: { label: "Explore", href: "/shop" }, src: "/demo/trang-suc-bac.avif", position: "center" },
     { title: "New Season Arrivals", caption: "Fresh colors and breathable fabrics.", cta: { label: "View Collection", href: "/shop" }, src: "/demo/20250925_QR7TJv03.jpg", position: "right" },
     { title: "Silver jewelry", caption: "Fresh colors and breathable fabrics.", cta: { label: "View Collection", href: "/shop" }, src: "/demo/trangsuc.jpg", position: "center" },
