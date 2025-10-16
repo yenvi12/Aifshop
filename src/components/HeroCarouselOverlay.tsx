@@ -20,7 +20,9 @@ type Props = {
 
 const DEFAULT_INTERVAL = 2000;
 
-const defaultSlides: SlideInput[] = [/* giữ như bạn đang có */];
+const defaultSlides: SlideInput[] = [
+  // giữ như bạn đang có hoặc truyền qua props
+];
 
 export default function HeroCarouselOverlay({
   slides = defaultSlides,
@@ -32,7 +34,7 @@ export default function HeroCarouselOverlay({
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const pausedRef = useRef<boolean>(false);
 
-  // ---- helpers: start/stop/kick autoplay ----
+  // ---- autoplay helpers ----
   const stop = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = undefined;
@@ -45,11 +47,9 @@ export default function HeroCarouselOverlay({
     }, interval);
   };
   const kick = () => {
-    // gọi sau mọi tương tác để đảm bảo tiếp tục chạy
     start();
   };
 
-  // mount + khi index/interval đổi -> giữ autoplay
   useEffect(() => {
     if (!pausedRef.current) start();
     return stop;
@@ -87,13 +87,11 @@ export default function HeroCarouselOverlay({
         className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
-        /* Bỏ focus-capture để không bị pause khi bấm nút */
       >
         {/* Slide track */}
         <div
           className="relative h-[520px] md:h-[420px]"
-          // click vào ảnh cũng "đá" lại autoplay
-          onClick={kick}
+          onClick={kick} // click nền thì tiếp tục autoplay
         >
           {slides.map((s, i) => (
             <SlideItem key={i} slide={s} active={i === index} />
@@ -104,20 +102,20 @@ export default function HeroCarouselOverlay({
         <button
           aria-label="Previous slide"
           onClick={prev}
-          className="absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-white/70 text-slate-800 shadow hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+          className="absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-white/70 text-slate-800 shadow hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary z-20"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button
           aria-label="Next slide"
           onClick={next}
-          className="absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-white/70 text-slate-800 shadow hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+          className="absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-white/70 text-slate-800 shadow hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary z-20"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
 
         {/* Dots */}
-        <div className="pointer-events-auto absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2">
+        <div className="pointer-events-auto absolute bottom-4 left-0 right-0 z-20 flex items-center justify-center gap-2">
           {slides.map((_, i) => (
             <button
               key={i}
@@ -154,21 +152,25 @@ function SlideItem({
     <div
       aria-hidden={!active}
       className={`absolute inset-0 transition-opacity duration-700 ${
-        active ? "opacity-100" : "opacity-0"
+        // 🔒 slide ẩn phải không nhận click
+        active ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
     >
+      {/* Ảnh nền – không ăn click */}
       <img
         src={src}
         alt={slide.title}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-cover pointer-events-none select-none"
         draggable={false}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-      <div className={`absolute inset-0 flex ${align} justify-center p-6 md:p-12`} aria-live="polite">
+      {/* Overlay – không ăn click */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none" />
+      {/* Nội dung – nổi trên cùng */}
+      <div
+        className={`absolute inset-0 z-10 flex ${align} justify-center p-6 md:p-12`}
+        aria-live="polite"
+      >
         <div className="max-w-xl space-y-4 text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.35)]">
-          <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-medium tracking-wide">
-            Fresh & curated
-          </span>
           <h1 className="text-3xl font-extrabold md:text-5xl">{slide.title}</h1>
           {"caption" in slide && slide.caption && (
             <p className="text-base/relaxed md:text-lg/relaxed text-white/90">{slide.caption}</p>
@@ -176,6 +178,7 @@ function SlideItem({
           {"cta" in slide && slide.cta && (
             <a
               href={slide.cta.href}
+              onClick={(e) => e.stopPropagation()} // 🚫 không cho nổi bọt lên track
               className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-3 text-sm font-semibold text-white shadow hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-white/60"
             >
               {slide.cta.label}
