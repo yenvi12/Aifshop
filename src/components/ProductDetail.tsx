@@ -400,27 +400,8 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
             {/* Quantity and Actions */}
 <div className="space-y-3">
-  {/* --- Hàng 1: Buy Now, Add to cart, Wishlist --- */}
-  <div className="flex flex-wrap items-center  gap-3 sm:gap-4">
-    {/* Buy Now */}
-    <button
-      onClick={() => {
-        handleAddToCart();
-        window.location.href = "/cart";
-      }}
-      disabled={!selectedSize && sizes.length > 0}
-      title="Buy this item now"
-      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
-                 bg-gradient-to-r from-[#f97316] via-[#ef4444] to-[#dc2626]
-                 text-white font-bold border-2 border-transparent
-                 hover:shadow-lg hover:shadow-orange-400/40 hover:scale-[1.02]
-                 disabled:opacity-60 disabled:hover:scale-100
-                 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-300"
-    >
-      <MdShoppingCart className="w-5 h-5" />
-      <span>Buy Now</span>
-    </button>
-
+  {/* --- Hàng 1: Add to cart, Wishlist --- */}
+  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
     {/* Add to Cart */}
     <button
       onClick={handleAddToCart}
@@ -459,27 +440,29 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   {/* --- Hàng 2: Message & AI --- */}
   <div className="flex flex-wrap items-center gap-3 sm:gap-4">
     {/* Message */}
-    <button
-      onClick={handleMessage}
-      disabled={!currentUserId}
-      title={!currentUserId ? "Please login to message" : "Message seller"}
-      className="group relative inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
-                 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold
-                 border-2 border-[#0088cc] hover:border-[#0077b3]
-                 hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02]
-                 disabled:opacity-60 disabled:hover:scale-100
-                 transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
-    >
-      <MdMessage
-        className={`w-5 h-5 transition-transform duration-300 ${
-          !currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"
-        }`}
-      />
-      <span>Message</span>
-      {!currentUserId && (
-        <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-      )}
-    </button>
+    {currentUserRole && currentUserRole !== "ADMIN" && (
+      <button
+        onClick={handleMessage}
+        disabled={!currentUserId}
+        title={!currentUserId ? "Please login to message" : "Message seller"}
+        className="group relative inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
+                   bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold
+                   border-2 border-[#0088cc] hover:border-[#0077b3]
+                   hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02]
+                   disabled:opacity-60 disabled:hover:scale-100
+                   transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+      >
+        <MdMessage
+          className={`w-5 h-5 transition-transform duration-300 ${
+            !currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"
+          }`}
+        />
+        <span>Message</span>
+        {!currentUserId && (
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+        )}
+      </button>
+    )}
 
     {/* AI */}
     <button
@@ -499,25 +482,6 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 </div>
 
 
-                {/* Message Button - Primary CTA - Only show for USER role */}
-                {currentUserRole !== "ADMIN" && (
-                  <button
-                    onClick={handleMessage}
-                    className="group relative w-auto inline-flex items-center gap-3 rounded-xl py-2.5 px-6 bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold border-2 border-[#0088cc] hover:border-[#0077b3] hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
-                    disabled={!currentUserId}
-                    title={
-                      !currentUserId
-                        ? "Please login to message"
-                        : currentUserRole === "ADMIN"
-                        ? "Admins cannot message from product pages"
-                        : "Message support"
-                    }
-                  >
-                    <MdMessage className={`w-5 h-5 transition-transform duration-300 ${!currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"}`} />
-                    <span>Message</span>
-                    {!currentUserId && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-                  </button>
-                )}
 
 
             {/* Additional Info */}
