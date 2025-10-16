@@ -458,21 +458,6 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                     <p className="text-red-500 text-xs mt-1">{errors.stock}</p>
                   )}
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating (0-5)</label>
-                  <input
-                    type="number"
-                    name="rating"
-                    value={formData.rating}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="5"
-                    step="0.1"
-                    className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
-                    placeholder="0"
-                  />
-                </div>
               </div>
 
               <div>
