@@ -13,16 +13,28 @@ export default function PaymentSuccessPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    // Get payment info from sessionStorage
-    const storedPaymentInfo = sessionStorage.getItem('paymentInfo');
+    // Get payment info from sessionStorage (check both paymentInfo and orderInfo keys)
+    let storedPaymentInfo = sessionStorage.getItem('paymentInfo');
+    let storageKey = 'paymentInfo';
+
+    // If paymentInfo not found, try orderInfo (for COD payments)
+    if (!storedPaymentInfo) {
+      storedPaymentInfo = sessionStorage.getItem('orderInfo');
+      storageKey = 'orderInfo';
+    }
+
     if (storedPaymentInfo) {
       try {
         const parsed = JSON.parse(storedPaymentInfo);
         setPaymentInfo(parsed);
 
-        // Update payment status in database
-        console.log('Updating payment status for orderCode:', parsed.orderCode);
-        updatePaymentStatus(parsed.orderCode);
+        // Update payment status in database (only for PayOS payments)
+        if (storageKey === 'paymentInfo') {
+          console.log('Updating payment status for orderCode:', parsed.orderCode);
+          updatePaymentStatus(parsed.orderCode);
+        } else {
+          console.log('COD payment detected, skipping status update');
+        }
       } catch (error) {
         console.error('Error parsing payment info:', error);
       }
