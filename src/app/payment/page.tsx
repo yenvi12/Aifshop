@@ -322,6 +322,104 @@ export default function PaymentPage() {
     }
   };
 
+  // Handle COD payment processing
+  const handleCODPayment = async () => {
+    if (cartItems.length === 0) {
+      toast.error('Giỏ hàng trống');
+      return;
+    }
+
+    // Validate shipping address
+    if (!shippingAddress.firstName || !shippingAddress.lastName || !shippingAddress.address) {
+      toast.error('Vui lòng nhập đầy đủ thông tin giao hàng trước khi đặt hàng COD. Nhấn nút "Add shipping address" để cập nhật địa chỉ.');
+      return;
+    }
+
+    try {
+      setProcessingPayment(true);
+
+      // Get Supabase token similar to fetchProfile function
+      let supabaseToken: string | null = null;
+
+      try {
+        // Try to get from Supabase client first (most reliable method)
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        supabaseToken = session?.access_token || null;
+      } catch (error) {
+
+        // If not available, try to get from localStorage (fallback)
+        try {
+          const storedAuth = localStorage.getItem('supabase.auth.token');
+          if (storedAuth) {
+            const authData = JSON.parse(storedAuth);
+            supabaseToken = authData.access_token || null;
+          }
+        } catch (parseError) {
+        }
+      }
+
+      if (!supabaseToken) {
+        toast.error('Vui lòng đăng nhập để thanh toán');
+        router.push('/login');
+        return;
+      }
+
+      // Create COD order request
+
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentMethod: 'COD',
+          paymentStatus: 'PENDING',
+          orderStatus: 'ORDERED',
+          amount: total,
+          shippingAddress,
+          cartItems,
+          shippingMethod: selectedShipping,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.order) {
+        // Save order info to sessionStorage for order success page
+        const orderInfo = {
+          orderCode: data.order.orderCode || data.order.id,
+          amount: total,
+          paymentMethod: 'COD',
+          status: 'PENDING'
+        };
+        sessionStorage.setItem('orderInfo', JSON.stringify(orderInfo));
+
+        toast.success('Đơn hàng COD đã được tạo thành công! Bạn sẽ thanh toán khi nhận hàng.');
+        router.push('/payment-success');
+      } else {
+        console.error('❌ Lỗi tạo đơn hàng COD:', data.error);
+        toast.error(data.error || 'Không thể tạo đơn hàng');
+      }
+    } catch (err) {
+      console.error('❌ Lỗi xử lý thanh toán COD:');
+      console.error('- Chi tiết lỗi:', err);
+      console.error('- Loại lỗi:', typeof err);
+      if (err instanceof Error) {
+        console.error('- Thông báo lỗi:', err.message);
+        console.error('- Stack trace:', err.stack);
+      }
+      toast.error('Không thể xử lý thanh toán COD');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   // Load cart items and profile on component mount
   useEffect(() => {
     fetchCartItems();
@@ -704,6 +802,33 @@ export default function PaymentPage() {
                 </div>
               ) : (
                 `Thanh toán ${total.toLocaleString('vi-VN')}₫ với PayOS`
+              )}
+            </button>
+
+            <button
+              onClick={handleCODPayment}
+              disabled={
+                loading ||
+                cartItems.length === 0 ||
+                processingPayment ||
+                !shippingAddress.firstName ||
+                !shippingAddress.lastName ||
+                !shippingAddress.address
+              }
+              className="w-full rounded-xl py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed transition-colors mb-3"
+              title={
+                (!shippingAddress.firstName || !shippingAddress.lastName || !shippingAddress.address)
+                  ? 'Vui lòng nhập đầy đủ thông tin giao hàng'
+                  : 'Thanh toán khi nhận hàng'
+              }
+            >
+              {processingPayment ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Đang xử lý...
+                </div>
+              ) : (
+                `Thanh toán khi nhận hàng (COD)`
               )}
             </button>
 

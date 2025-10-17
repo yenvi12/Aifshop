@@ -48,15 +48,53 @@ export async function POST(req: Request) {
     });
 
     if (updatedPayment.count === 0) {
-      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+      console.error(`Payment not found: orderCode=${orderCode}, userId=${dbUser.id}`);
+      return NextResponse.json({
+        error: 'Payment not found',
+        details: 'Payment record may have been already updated or expired'
+      }, { status: 404 });
+    }
+
+    console.log(`Payment status updated successfully: orderCode=${orderCode}, status=${status}, userId=${dbUser.id}`);
+
+    // Clear user's cart after successful payment (only for SUCCESS status)
+    if (status === 'SUCCESS') {
+      try {
+        await prisma.cart.deleteMany({
+          where: { userId: dbUser.id }
+        });
+        console.log(`Cart cleared for user ${dbUser.id} after successful payment`);
+      } catch (error) {
+        console.error('Error clearing cart:', error);
+        // Don't fail the request if cart clearing fails
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Payment status updated successfully'
+      message: 'Payment status updated successfully',
+      updatedCount: updatedPayment.count
     });
   } catch (error: any) {
     console.error('Error updating payment status:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Provide more specific error messages
+    let errorMessage = 'Internal server error';
+    let statusCode = 500;
+
+    if (error.code === 'P2002') {
+      errorMessage = 'Payment already has this status';
+      statusCode = 400;
+    } else if (error.code === 'P2025') {
+      errorMessage = 'Payment record not found';
+      statusCode = 404;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    return NextResponse.json({
+      error: errorMessage,
+      timestamp: new Date().toISOString()
+    }, { status: statusCode });
   }
 }

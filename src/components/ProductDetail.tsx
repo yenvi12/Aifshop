@@ -626,7 +626,11 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   <h3 className="font-semibold mb-1">{relatedProduct.name}</h3>
                   <div className="flex items-center gap-2">
                     <span className="font-bold">
-                      {relatedProduct.price ? `${relatedProduct.price.toLocaleString("vi-VN")}₫` : "Price TBA"}
+                      {relatedProduct.price
+                        ? `${relatedProduct.price.toLocaleString("vi-VN")}₫`
+                        : relatedProduct.compareAtPrice
+                        ? `${relatedProduct.compareAtPrice.toLocaleString("vi-VN")}₫`
+                        : "Price TBA"}
                     </span>
                     {relatedProduct.compareAtPrice && relatedProduct.price && (
                       <span className="text-sm text-gray-500 line-through">
