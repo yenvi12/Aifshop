@@ -120,3 +120,241 @@ textarea:focus {
   to   { opacity: 1; transform: scale(1); }
 }
 .animate-fade-in { animation: fadeIn .5s ease-out both; }
+
+/* Chat AI Animations */
+@keyframes chatSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes chatFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(90, 103, 148, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(90, 103, 148, 0.6);
+  }
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes typingDot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-fade-in-up {
+  animation: chatSlideUp 0.3s ease-out;
+}
+
+.animate-fade-out {
+  animation: chatFadeOut 0.2s ease-in;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+.animate-message-slide {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+.typing-dot-1 { animation: typingDot 1.4s infinite 0s; }
+.typing-dot-2 { animation: typingDot 1.4s infinite 0.2s; }
+.typing-dot-3 { animation: typingDot 1.4s infinite 0.4s; }
+
+/* Chat button hover effects */
+.chat-button-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-button-hover:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 10px 25px rgba(90, 103, 148, 0.3);
+}
+
+.chat-button-hover:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Smooth scrollbar for chat messages */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #5A6794;
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #4a5678;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+   .chat-modal-mobile {
+     border-radius: 20px 20px 0 0 !important;
+     max-height: 85vh;
+     height: calc(100vh - 80px);
+   }
+  
+  .chat-button-mobile {
+    bottom: 20px;
+    right: 20px;
+  }
+}
+
+/* Improved chat modal responsive */
+.chat-modal-responsive {
+  height: clamp(400px, 85vh, 600px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Chat messages area improvements */
+.chat-messages-improved {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scroll-behavior: smooth;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Fixed input area */
+.chat-input-fixed {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Smooth transitions for suggestions */
+.quick-suggestions {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: bottom;
+}
+
+.quick-suggestions-enter {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Improved input field focus */
+.input-improved {
+  transition: all 0.2s ease;
+}
+
+.input-improved:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(90, 103, 148, 0.15);
+}
+
+/* Better button interactions */
+.btn-interaction {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-interaction:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-interaction:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Modal backdrop improvements */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Safe area support for mobile devices */
+@supports (padding: max(0px)) {
+  .chat-modal-mobile {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+  
+  .chat-input-fixed {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Improved scrollbar for chat */
+.chat-messages-improved::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-messages-improved::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages-improved::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+.chat-messages-improved::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .quick-suggestions,
+  .input-improved,
+  .btn-interaction,
+  .chat-modal-responsive {
+    transition: none;
+    animation: none;
+  }
+}
