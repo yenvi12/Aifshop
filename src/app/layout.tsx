@@ -4,6 +4,7 @@ import ClientWrapper from "@/components/ClientWrapper";
 import HeaderWrapper from "@/components/HeaderWrapper";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Footer from "@/components/Footer";
+import ChatAI from "@/components/ai-chat/ChatAIWrapper";
 
 export const metadata: Metadata = {
   title: "AIFShop",
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
             <Footer></Footer>
           </div>
+          <ChatAI />
         </ClientWrapper>
       </body>
     </html>
