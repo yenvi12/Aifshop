@@ -119,19 +119,24 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
 
       {/* Chat Container */}
       <div className={`
-        fixed z-50 bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl
+        fixed z-50 bg-white shadow-2xl
         border border-brand-light
         transition-all duration-300 ease-out
+        chat-modal-container
         ${isMinimized
-          ? 'bottom-20 right-6 w-80 h-14'
+          ? 'bottom-20 right-6 w-80 h-14 chat-modal-minimized'
           : 'bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-96 chat-modal-responsive'
         }
         ${isOpen ? 'animate-fade-in-up' : 'animate-fade-out'}
-        chat-modal-mobile
+        ${isMinimized
+          ? 'chat-modal-mobile chat-modal-minimized'
+          : 'chat-modal-mobile chat-modal-expanded'
+        }
+        ${!isMinimized ? 'chat-modal-desktop chat-modal-expanded' : 'chat-modal-desktop chat-modal-minimized'}
       `}>
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-brand-primary to-brand-secondary text-white p-4 rounded-t-2xl sm:rounded-t-2xl flex items-center justify-between">
+        <div className="bg-gradient-to-r from-brand-primary to-brand-secondary text-white p-4 flex items-center justify-between header-rounded">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
               <MdSmartToy className="w-5 h-5" />
