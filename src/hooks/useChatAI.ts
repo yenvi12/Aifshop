@@ -150,7 +150,19 @@ export function useChatAI(options: UseChatAIOptions = {}) {
 
       return aiResponse;
     } catch (err) {
+      console.error('Error in sendMessage:', err);
+      
+      // Handle AbortError specifically - don't show error to user
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.log('Request was aborted, not showing error to user');
+        // Don't set error state for abort errors
+        // Don't add error message for abort errors
+        return;
+      }
+      
       const errorMessage = err instanceof Error ? err.message : 'Đã có lỗi xảy ra';
+      
+      // Only set error and show fallback message for non-abort errors
       setError(errorMessage);
       
       // Add error message from AI

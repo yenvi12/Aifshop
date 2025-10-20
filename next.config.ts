@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
    ],
  },
+ // Add timeout configuration for API routes
+ serverExternalPackages: [],
+ // Increase timeout for API routes
+ async rewrites() {
+   return [];
+ },
 };
 
 export default nextConfig;

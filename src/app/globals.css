@@ -228,17 +228,47 @@ textarea:focus {
   background: #4a5678;
 }
 
+/* Chat Modal Border Radius Fix - Higher Specificity */
+.chat-modal-container {
+  border-radius: 1rem !important;
+}
+
+/* Header border radius to match container */
+.header-rounded {
+  border-radius: 1rem 1rem 0 0 !important;
+}
+
+/* Minimized state - all corners rounded */
+.chat-modal-minimized .header-rounded {
+  border-radius: 1rem !important;
+}
+
 /* Mobile responsive adjustments */
 @media (max-width: 640px) {
-   .chat-modal-mobile {
-     border-radius: 20px 20px 0 0 !important;
+   .chat-modal-mobile.chat-modal-expanded {
+     border-radius: 1rem 1rem 0 0 !important;
      max-height: 85vh;
      height: calc(100vh - 80px);
+   }
+   
+   .chat-modal-mobile.chat-modal-minimized {
+     border-radius: 1rem !important;
    }
   
   .chat-button-mobile {
     bottom: 20px;
     right: 20px;
+  }
+}
+
+/* Desktop adjustments */
+@media (min-width: 641px) {
+  .chat-modal-desktop.chat-modal-expanded {
+    border-radius: 1rem !important;
+  }
+  
+  .chat-modal-desktop.chat-modal-minimized {
+    border-radius: 1rem !important;
   }
 }
 

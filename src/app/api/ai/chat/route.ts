@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isTokenExpired } from '@/lib/tokenManager';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// OpenRouter API configuration
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL_NAME = 'z-ai/glm-4.5-air:free';
+// Google AI Studio API configuration
+const MODEL_NAME = 'gemini-2.5-flash';
+const API_TIMEOUT = 60000; // 60 seconds
 
 // System prompt cho AI chuyên tư vấn trang sức
 const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn trang sức cao cấp cho AIFShop - cửa hàng trang sức và thời trang uy tín tại Việt Nam. Với kinh nghiệm sâu rộng về các loại trang sức, xu hướng thời trang và kiến thức gemstone, bạn sẽ giúp khách hàng:
@@ -67,78 +68,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get OpenRouter API key from environment
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    // Get Google AI API key from environment
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
-      console.error('OpenRouter API key not configured');
+      console.error('Google AI API key not configured');
       return NextResponse.json(
         { error: 'AI service temporarily unavailable' },
         { status: 503 }
       );
     }
 
-    // Prepare messages for OpenRouter
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...conversationHistory.slice(-10), // Keep last 10 messages for context
-      { role: 'user', content: message }
-    ];
+    // Initialize Google AI
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-    // Make request to OpenRouter
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXTAUTH_URL || 'http://localhost:3000',
-        'X-Title': 'AIFShop AI Assistant'
-      },
-      body: JSON.stringify({
-        model: MODEL_NAME,
-        messages: messages,
-        max_tokens: 1000,
-        temperature: 0.7,
-        top_p: 0.9,
-        frequency_penalty: 0.1,
-        presence_penalty: 0.1
-      })
-    });
+    // Prepare conversation history for Google AI
+    const conversationHistoryText = conversationHistory.slice(-10).map((msg: any) =>
+      `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+    ).join('\n');
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenRouter API error:', errorData);
+    // Create the prompt with system prompt and conversation history
+    const fullPrompt = `${SYSTEM_PROMPT}\n\n${conversationHistoryText}\n\nUser: ${message}\nAssistant:`;
+
+    console.log('Calling Google AI API with prompt length:', fullPrompt.length);
+
+    // Call Google AI API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+    let aiResponse: string;
+    try {
+      const result = await Promise.race([
+        model.generateContent(fullPrompt),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('API timeout')), API_TIMEOUT)
+        )
+      ] as const);
+
+      clearTimeout(timeoutId);
       
-      if (response.status === 401) {
-        return NextResponse.json(
-          { error: 'AI service authentication failed' },
-          { status: 503 }
-        );
+      if (!(result as any).response) {
+        throw new Error('No response from Google AI');
       }
+
+      aiResponse = (result as any).response.text();
+      console.log('Google AI response received, length:', aiResponse.length);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('Google AI API call failed:', error);
       
-      if (response.status === 429) {
+      if (error instanceof Error && error.message === 'API timeout') {
         return NextResponse.json(
           { error: 'AI service temporarily busy - Please try again' },
           { status: 429 }
         );
       }
-
-      return NextResponse.json(
-        { error: 'AI service temporarily unavailable' },
-        { status: 503 }
-      );
+      
+      throw error;
     }
-
-    const data = await response.json();
-    
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('Invalid response from OpenRouter:', data);
-      return NextResponse.json(
-        { error: 'Invalid response from AI service' },
-        { status: 503 }
-      );
-    }
-
-    const aiResponse = data.choices[0].message.content;
     
     // Check if AI response is empty or null
     if (!aiResponse || aiResponse.trim() === '') {
@@ -153,8 +140,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       response: aiResponse,
-      usage: data.usage || null,
-      model: MODEL_NAME
+      usage: null, // Google AI doesn't provide usage info in free tier
+      model: MODEL_NAME,
+      usedFallback: false
     });
 
   } catch (error) {
