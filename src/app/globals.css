@@ -251,6 +251,11 @@ textarea:focus {
      height: calc(100vh - 80px);
    }
    
+   .chat-modal-mobile.chat-modal-expanded.chat-modal-responsive-with-context {
+     max-height: 80vh;
+     height: calc(100vh - 100px);
+   }
+   
    .chat-modal-mobile.chat-modal-minimized {
      border-radius: 1rem !important;
    }
@@ -258,6 +263,19 @@ textarea:focus {
   .chat-button-mobile {
     bottom: 20px;
     right: 20px;
+  }
+}
+
+/* Extra small height adjustments (mobile landscape, small screens) */
+@media (max-height: 600px) {
+  .chat-modal-mobile.chat-modal-expanded.chat-modal-responsive-with-context {
+    max-height: 75vh;
+    height: calc(100vh - 120px);
+  }
+  
+  .chat-modal-mobile.chat-modal-expanded {
+    max-height: 80vh;
+    height: calc(100vh - 60px);
   }
 }
 
@@ -274,6 +292,14 @@ textarea:focus {
 
 /* Improved chat modal responsive */
 .chat-modal-responsive {
+  height: clamp(400px, 85vh, 600px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Chat modal responsive with product context - same height as regular modal */
+.chat-modal-responsive-with-context {
   height: clamp(400px, 85vh, 600px);
   max-height: 90vh;
   display: flex;
@@ -387,4 +413,38 @@ textarea:focus {
     transition: none;
     animation: none;
   }
+}
+
+/* Chat modal header fixed height */
+.chat-modal-header-fixed {
+  height: 60px !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
+  overflow: hidden !important;
+}
+
+/* Ensure proper text truncation in header */
+.chat-modal-title-truncate {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Header container adjustments for fixed height */
+.chat-modal-header-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Title section with proper flex */
+.chat-modal-title-section {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+  overflow: hidden !important;
 }

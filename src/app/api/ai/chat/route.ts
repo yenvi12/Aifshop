@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isTokenExpired } from '@/lib/tokenManager';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { IntentRecognizer, Intent } from '@/lib/ai/intentRecognizer';
+import { ProductContextBuilder, OrderContextBuilder, GeneralContextBuilder } from '@/lib/ai/contextBuilders';
+import { SizeAdvisor } from '@/lib/ai/sizeAdvisor';
+import jwt from 'jsonwebtoken';
 
 // Google AI Studio API configuration
 const MODEL_NAME = 'gemini-2.5-flash';
@@ -34,6 +38,13 @@ const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn trang sức cao cấp cho
 - Cung cấp thông tin chính xác, hữu ích
 - Gợi ý sản phẩm thực tế có sẵn tại AIFShop
 
+🔹 **QUAN TRỌNG - HƯỚNG DẪN TƯ VẤN:**
+- **PHẢI** dựa vào THÔNG TIN SẢN PHẨM được cung cấp bên dưới để trả lời
+- **KHÔNG** trả lời dựa trên kiến thức chung khi có thông tin sản phẩm cụ thể
+- **LUÔN LUÔN** tham khảo size, mô tả, giá cả từ thông tin sản phẩm thực tế
+- **ƯU TIÊN** thông tin từ database hơn kiến thức chung
+- Nếu thông tin sản phẩm không đầy đủ, hãy hỏi thêm để tư vấn chính xác
+
 Hãy trả lời ngắn gọn, dễ hiểu và luôn hướng đến giải quyết vấn đề của khách hàng. Khi cần, hãy hỏi thêm thông tin để tư vấn chính xác nhất.`;
 
 export async function POST(request: NextRequest) {
@@ -59,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json();
-    const { message, conversationHistory = [] } = body;
+    const { message, conversationHistory = [], productId, context, productCategory } = body;
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -82,15 +93,62 @@ export async function POST(request: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
+    // Recognize user intent
+    const intent: Intent = IntentRecognizer.recognizeIntent(message);
+    console.log('Recognized intent:', intent);
+    console.log('Received productId:', productId);
+
+    // Build context based on intent
+    let contextData = '';
+    
+    if (productId && (intent.type === 'PRODUCT_ADVICE' || intent.type === 'SIZE_RECOMMENDATION' || intent.type === 'PRICE_INQUIRY')) {
+      // Product-specific context
+      console.log('Building product context for productId:', productId);
+      contextData = await ProductContextBuilder.buildContext(productId);
+      console.log('Product context built successfully, length:', contextData.length);
+      
+      // Add size recommendation if specifically asked
+      if (intent.type === 'SIZE_RECOMMENDATION') {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+          const userId = decoded.userId || decoded.supabaseUserId;
+          
+          let recommendation;
+          if (productCategory?.toLowerCase().includes('nhẫn')) {
+            recommendation = await SizeAdvisor.recommendRingSize(productId, userId);
+          } else if (productCategory?.toLowerCase().includes('vòng')) {
+            recommendation = await SizeAdvisor.recommendBraceletSize(productId, userId);
+          }
+          
+          if (recommendation) {
+            contextData += `\n\n📏 **TƯ VẤN SIZE TỰ ĐỘNG:**\n${recommendation.reasoning}\nSize đề xuất: ${recommendation.recommendedSize}\n${recommendation.measurementGuide}`;
+          }
+        } catch (error) {
+          console.error('Error getting size recommendation:', error);
+        }
+      }
+    } else if (intent.type === 'ORDER_STATUS') {
+      // Order context - need user ID from token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+      const userId = decoded.userId || decoded.supabaseUserId;
+      contextData = await OrderContextBuilder.buildOrderContext(userId);
+    } else {
+      // General context
+      contextData = GeneralContextBuilder.buildGeneralContext();
+    }
+
     // Prepare conversation history for Google AI
     const conversationHistoryText = conversationHistory.slice(-10).map((msg: any) =>
       `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
     ).join('\n');
 
-    // Create the prompt with system prompt and conversation history
-    const fullPrompt = `${SYSTEM_PROMPT}\n\n${conversationHistoryText}\n\nUser: ${message}\nAssistant:`;
+    // Create enhanced prompt with context - Ưu tiên contextData đã build từ database
+    const contextPrompt = contextData || context || '';
+    const fullPrompt = `${SYSTEM_PROMPT}\n\n${contextPrompt ? `📋 **THÔNG TIN SẢN PHẨM CẦN TƯ VẤN:**\n${contextPrompt}\n\n` : ''}${conversationHistoryText}\n\nUser: ${message}\nAssistant:`;
 
     console.log('Calling Google AI API with prompt length:', fullPrompt.length);
+    console.log('Context Data Length:', contextData.length);
+    console.log('Full Prompt Preview:', fullPrompt.substring(0, 500) + '...');
 
     // Call Google AI API with timeout
     const controller = new AbortController();

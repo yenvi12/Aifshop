@@ -104,7 +104,7 @@ export function useChatAI(options: UseChatAIOptions = {}) {
   }, [enablePersistence]);
 
   // Send message to AI
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, productId?: string) => {
     if (!content.trim()) return;
 
     setIsLoading(true);
@@ -125,17 +125,39 @@ export function useChatAI(options: UseChatAIOptions = {}) {
       // Generate context for caching
       const context = messages.slice(-3).map(msg => msg.content).join('|');
       console.log('Generated context for caching:', context);
+      console.log('Sending productId to API:', productId);
 
-      // Use optimized chat call with caching and retry logic
-      console.log('Calling optimizedChatCall with:', { content, context });
-      const aiResponse = await optimizedChatCall(content, context);
-      console.log('Received response from optimizedChatCall:', aiResponse);
+      // Call AI API directly with product context
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: content,
+          conversationHistory: messages,
+          productId: productId,
+          context: productId ? 'product-specific' : 'general'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể kết nối với AI');
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'AI response failed');
+      }
+
+      const aiResponse = data.response;
+      console.log('Received AI response:', aiResponse);
 
       // Add AI response
-      console.log('Adding AI response to chat:', aiResponse);
       if (!aiResponse || aiResponse.trim() === '') {
         console.error('AI response is empty or invalid:', aiResponse);
-        // Use a fallback response instead of the empty/undefined one
         const fallbackResponse = 'Xin lỗi, tôi không thể xử lý yêu cầu của bạn lúc này. Vui lòng thử lại sau.';
         addMessage({
           content: fallbackResponse,
@@ -143,6 +165,7 @@ export function useChatAI(options: UseChatAIOptions = {}) {
         });
         return fallbackResponse;
       }
+
       addMessage({
         content: aiResponse,
         role: 'assistant'
@@ -155,8 +178,6 @@ export function useChatAI(options: UseChatAIOptions = {}) {
       // Handle AbortError specifically - don't show error to user
       if (err instanceof Error && err.name === 'AbortError') {
         console.log('Request was aborted, not showing error to user');
-        // Don't set error state for abort errors
-        // Don't add error message for abort errors
         return;
       }
       
@@ -177,7 +198,7 @@ export function useChatAI(options: UseChatAIOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, addMessage, optimizedChatCall]);
+  }, [messages, addMessage]);
 
   // Get predefined jewelry-specific suggestions
   const getJewelrySuggestions = useCallback(() => {
