@@ -204,9 +204,24 @@ export function useChatAI(options: UseChatAIOptions = {}) {
   const getJewelrySuggestions = useCallback(() => {
     return [
       {
+        id: 'product-listing',
+        text: 'Xem tất cả sản phẩm',
+        action: () => sendMessage('Cho tôi xem danh sách tất cả sản phẩm đang có.')
+      },
+      {
+        id: 'order-history',
+        text: 'Xem lịch sử đơn hàng',
+        action: () => sendMessage('Tôi muốn xem lịch sử đơn hàng của mình.')
+      },
+      {
+        id: 'order-status',
+        text: 'Kiểm tra trạng thái đơn hàng',
+        action: () => sendMessage('Kiểm tra giúp tôi trạng thái đơn hàng gần nhất.')
+      },
+      {
         id: 'ring-sizing',
         text: 'Tư vấn size nhẫn',
-        action: () => sendMessage('Tư vấn size nhãn cho tôi. Tôi không biết size nhẫn của mình.')
+        action: () => sendMessage('Tư vấn size nhẫn cho tôi. Tôi không biết size nhẫn của mình.')
       },
       {
         id: 'necklace-guide',
@@ -273,6 +288,26 @@ export function useChatAI(options: UseChatAIOptions = {}) {
     const lastAIResponse = lastMessage.content.toLowerCase();
     
     // Analyze AI response to provide relevant follow-up suggestions
+    if (lastAIResponse.includes('danh sách sản phẩm') || lastAIResponse.includes('sản phẩm đang có') || lastAIResponse.includes('hiện tại shop đang có')) {
+      return [
+        {
+          id: 'category-products',
+          text: 'Xem theo danh mục',
+          action: () => sendMessage('Cho tôi xem sản phẩm theo từng danh mục riêng')
+        },
+        {
+          id: 'product-details',
+          text: 'Chi tiết sản phẩm',
+          action: () => sendMessage('Tôi muốn xem chi tiết một sản phẩm cụ thể')
+        },
+        {
+          id: 'price-range',
+          text: 'Theo khoảng giá',
+          action: () => sendMessage('Tôi muốn tìm sản phẩm trong khoảng giá cụ thể')
+        }
+      ];
+    }
+
     if (lastAIResponse.includes('nhẫn') || lastAIResponse.includes('size')) {
       return [
         {

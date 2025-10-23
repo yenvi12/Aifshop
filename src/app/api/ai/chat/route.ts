@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isTokenExpired } from '@/lib/tokenManager';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { IntentRecognizer, Intent } from '@/lib/ai/intentRecognizer';
-import { ProductContextBuilder, OrderContextBuilder, GeneralContextBuilder } from '@/lib/ai/contextBuilders';
+import { ProductContextBuilder, OrderContextBuilder, GeneralContextBuilder, ProductListContextBuilder } from '@/lib/ai/contextBuilders';
 import { SizeAdvisor } from '@/lib/ai/sizeAdvisor';
 import jwt from 'jsonwebtoken';
 
@@ -38,12 +38,41 @@ const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn trang sức cao cấp cho
 - Cung cấp thông tin chính xác, hữu ích
 - Gợi ý sản phẩm thực tế có sẵn tại AIFShop
 
+🔹 **ĐỊNH DẠNG TRẢ LỜI - RẤT QUAN TRỌNG:**
+- **Sử dụng Markdown formatting** để câu trả lời dễ đọc hơn
+- **Headers**: Dùng \`#\`, \`##\`, \`###\` cho tiêu đề
+- **Lists**: Dùng \`*\` hoặc \`1.\` cho danh sách
+- **Tables**: Dùng \`|\` để tạo bảng so sánh
+- **Bold**: Dùng \`**text**\` để nhấn mạnh thông tin quan trọng
+- **Product references**: Dùng \`[product:productId]\` để tham chiếu sản phẩm
+- **Action buttons**: Dùng \`[button:variant:text]\` để tạo nút hành động
+
 🔹 **QUAN TRỌNG - HƯỚNG DẪN TƯ VẤN:**
 - **PHẢI** dựa vào THÔNG TIN SẢN PHẨM được cung cấp bên dưới để trả lời
 - **KHÔNG** trả lời dựa trên kiến thức chung khi có thông tin sản phẩm cụ thể
 - **LUÔN LUÔN** tham khảo size, mô tả, giá cả từ thông tin sản phẩm thực tế
 - **ƯU TIÊN** thông tin từ database hơn kiến thức chung
 - Nếu thông tin sản phẩm không đầy đủ, hãy hỏi thêm để tư vấn chính xác
+
+🔹 **VÍ DỤ ĐỊNH DẠNG:**
+\`\`\`
+### 💎 Sản phẩm gợi ý
+
+Dưới đây là một số sản phẩm phù hợp với nhu cầu của bạn:
+
+| Sản phẩm | Giá | Chất liệu | Đặc điểm |
+|----------|-----|-----------|----------|
+| Nhẫn kim cương | 15.000.000₫ | Vàng 18K | Kim cương tự nhiên |
+| Dây chuyền bạc | 2.500.000₫ | Bạc 925 | Thiết kế tinh tế |
+
+**Lưu ý quan trọng:**
+* Size nhẫn nên đo vào buổi sáng khi tay còn mát
+* Trang sức bạc cần được bảo quản đúng cách
+
+[product:ring001]
+[button:primary:Xem chi tiết sản phẩm]
+[button:secondary:Tư vấn thêm]
+\`\`\`
 
 Hãy trả lời ngắn gọn, dễ hiểu và luôn hướng đến giải quyết vấn đề của khách hàng. Khi cần, hãy hỏi thêm thông tin để tư vấn chính xác nhất.`;
 
@@ -130,8 +159,31 @@ export async function POST(request: NextRequest) {
     } else if (intent.type === 'ORDER_STATUS') {
       // Order context - need user ID from token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-      const userId = decoded.userId || decoded.supabaseUserId;
-      contextData = await OrderContextBuilder.buildOrderContext(userId);
+      console.log('ORDER_STATUS intent detected');
+      console.log('Decoded token structure:', Object.keys(decoded));
+      console.log('Token userId:', decoded.userId);
+      console.log('Token supabaseUserId:', decoded.supabaseUserId);
+      
+      let userId = decoded.userId || decoded.supabaseUserId;
+      console.log('Final userId used for order context:', userId);
+      
+      if (!userId) {
+        console.error('No userId found in token for ORDER_STATUS intent');
+        contextData = 'Không thể xác định người dùng để truy cập thông tin đơn hàng.';
+      } else {
+        contextData = await OrderContextBuilder.buildOrderContext(userId);
+        console.log('Order context built successfully, length:', contextData.length);
+      }
+    } else if (intent.type === 'PRODUCT_LISTING') {
+      // Product listing context
+      console.log('PRODUCT_LISTING intent detected');
+      console.log('Intent entities:', intent.entities);
+      
+      const limit = intent.entities.limit || 10;
+      const categories = intent.entities.categories;
+      
+      contextData = await ProductListContextBuilder.buildProductListContext(limit, categories);
+      console.log('Product list context built successfully, length:', contextData.length);
     } else {
       // General context
       contextData = GeneralContextBuilder.buildGeneralContext();

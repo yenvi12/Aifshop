@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { MdPerson, MdSmartToy } from "react-icons/md";
+import FormattedMessage from "./FormattedMessage";
 
 export interface Message {
   id: string;
@@ -88,12 +89,24 @@ export default function MessageItem({ message, isTyping = false }: MessageItemPr
         }
       `}>
         {/* Message content */}
-        <p className={`
-          text-sm leading-relaxed
-          ${isUser ? 'text-white' : 'text-brand-dark'}
-        `}>
-          {message.content}
-        </p>
+        {isUser ? (
+          <p className="text-sm leading-relaxed text-white">
+            {message.content}
+          </p>
+        ) : (
+          <FormattedMessage
+            content={message.content}
+            className="text-brand-dark"
+            onProductClick={(productId) => {
+              console.log('Product clicked:', productId);
+              // Handle product click - could open product modal, navigate, etc.
+            }}
+            onButtonClick={(buttonText, variant) => {
+              console.log('Button clicked:', buttonText, variant);
+              // Handle button click - could trigger AI response, navigation, etc.
+            }}
+          />
+        )}
         
         {/* Timestamp */}
         <div className={`

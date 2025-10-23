@@ -1,5 +1,5 @@
 export interface Intent {
-  type: 'PRODUCT_ADVICE' | 'ORDER_STATUS' | 'PRICE_INQUIRY' | 'SIZE_RECOMMENDATION' | 'GENERAL'
+  type: 'PRODUCT_ADVICE' | 'ORDER_STATUS' | 'PRICE_INQUIRY' | 'SIZE_RECOMMENDATION' | 'PRODUCT_LISTING' | 'GENERAL'
   confidence: number
   entities: {
     productId?: string
@@ -8,6 +8,7 @@ export interface Intent {
     priceRange?: { min: number; max: number }
     sizeQuery?: boolean
     productType?: string
+    limit?: number
   }
 }
 
@@ -28,6 +29,12 @@ export class IntentRecognizer {
     SIZE_RECOMMENDATION: [
       'size', 'kích cỡ', 'đo', 'vòng tay', 'vòng ngón', 'size nhẫn',
       'fit', 'just right', 'too small', 'too big'
+    ],
+    PRODUCT_LISTING: [
+      'liệt kê', 'danh sách', 'tất cả sản phẩm', 'show products', 'xem sản phẩm',
+      'có những sản phẩm nào', 'sản phẩm đang có', 'shop có gì', 'hiển thị sản phẩm',
+      'xem tất cả', 'danh mục sản phẩm', 'tất cả', 'show all', 'list products',
+      'xem hàng', 'có gì', 'sản phẩm có sẵn', 'inventory', 'stock'
     ]
   }
 
@@ -39,7 +46,8 @@ export class IntentRecognizer {
       PRODUCT_ADVICE: this.calculateScore(normalizedMessage, this.KEYWORDS.PRODUCT_ADVICE),
       ORDER_STATUS: this.calculateScore(normalizedMessage, this.KEYWORDS.ORDER_STATUS),
       PRICE_INQUIRY: this.calculateScore(normalizedMessage, this.KEYWORDS.PRICE_INQUIRY),
-      SIZE_RECOMMENDATION: this.calculateScore(normalizedMessage, this.KEYWORDS.SIZE_RECOMMENDATION)
+      SIZE_RECOMMENDATION: this.calculateScore(normalizedMessage, this.KEYWORDS.SIZE_RECOMMENDATION),
+      PRODUCT_LISTING: this.calculateScore(normalizedMessage, this.KEYWORDS.PRODUCT_LISTING)
     }
 
     // Find the intent with highest score
@@ -108,6 +116,12 @@ export class IntentRecognizer {
           max: Math.max(...prices)
         }
       }
+    }
+
+    // Extract limit for product listing
+    const limitMatches = message.match(/(\d+)\s*(sản phẩm|items?|products?)/i)
+    if (limitMatches) {
+      entities.limit = parseInt(limitMatches[1])
     }
 
     // Extract categories
