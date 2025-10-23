@@ -195,7 +195,32 @@ ${this.formatRelatedProducts(relatedProducts)}
 
 export class OrderContextBuilder {
   static async buildOrderContext(userId: string): Promise<string> {
+    console.log('Building order context for userId:', userId);
+    
     try {
+      // First check if user exists
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, firstName: true, lastName: true, email: true }
+      });
+      
+      if (!user) {
+        console.log('User not found with id:', userId);
+        // Try to find by supabaseUserId
+        const userBySupabaseId = await prisma.user.findUnique({
+          where: { supabaseUserId: userId },
+          select: { id: true, firstName: true, lastName: true, email: true }
+        });
+        
+        if (!userBySupabaseId) {
+          return 'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.';
+        }
+        
+        console.log('Found user by supabaseUserId, using actual userId:', userBySupabaseId.id);
+        userId = userBySupabaseId.id;
+      }
+
+      console.log('Querying orders for userId:', userId);
       const orders = await prisma.order.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
@@ -216,14 +241,21 @@ export class OrderContextBuilder {
         }
       })
 
+      console.log('Found orders count:', orders.length);
+      
       if (orders.length === 0) {
-        return 'Bạn chưa có đơn hàng nào.'
+        return 'Bạn chưa có đơn hàng nào.';
       }
 
       return this.formatOrderContext(orders)
     } catch (error) {
       console.error('Error building order context:', error)
-      return 'Không thể tải thông tin đơn hàng lúc này.'
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        userId: userId
+      })
+      return `Không thể tải thông tin đơn hàng lúc này: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
 
@@ -277,6 +309,100 @@ ${index + 1}. **Đơn hàng #${order.orderNumber}**
       'CANCELLED': 'Đã hủy'
     }
     return statusMap[status] || status
+  }
+}
+
+export class ProductListContextBuilder {
+  static async buildProductListContext(limit: number = 10, categories?: string[]): Promise<string> {
+    try {
+      console.log('Building product list context with limit:', limit, 'categories:', categories);
+      
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.append('limit', limit.toString());
+      queryParams.append('status', 'active');
+      
+      if (categories && categories.length > 0) {
+        // For now, we'll use the first category if multiple are provided
+        queryParams.append('category', categories[0]);
+      }
+
+      // Fetch products from API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products?${queryParams.toString()}`, {
+        cache: 'no-store' // Always fetch fresh data
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch products:', response.status, response.statusText);
+        return 'Không thể tải danh sách sản phẩm lúc này. Vui lòng thử lại sau.';
+      }
+
+      const result = await response.json();
+
+      if (!result.success || !result.data || result.data.length === 0) {
+        return 'Hiện tại không có sản phẩm nào trong danh mục này. Vui lòng chọn danh mục khác hoặc liên hệ hotline để được tư vấn.';
+      }
+
+      const products = result.data;
+      console.log('Fetched products count:', products.length);
+
+      return this.formatProductListContext(products, categories);
+    } catch (error) {
+      console.error('Error building product list context:', error);
+      return 'Không thể tải danh sách sản phẩm lúc này. Vui lòng thử lại sau.';
+    }
+  }
+
+  private static formatProductListContext(products: any[], categories?: string[]): string {
+    let context = `
+🏪 **DANH SÁCH SẢN PHẨM AIFShop** ${categories ? `(Danh mục: ${categories[0]})` : '(Tất cả sản phẩm)'}
+
+Hiện tại shop đang có ${products.length} sản phẩm đẹp. Dưới đây là danh sách chi tiết:
+
+`;
+
+    products.forEach((product: any, index: number) => {
+      const price = product.price ? `${product.price.toLocaleString('vi-VN')}₫` : 'Liên hệ';
+      const discount = product.compareAtPrice && product.price
+        ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
+        : 0;
+      
+      context += `
+${index + 1}. **${product.name}**
+   - Giá: ${price}
+   ${product.compareAtPrice ? `- Giá gốc: ${product.compareAtPrice.toLocaleString('vi-VN')}₫` : ''}
+   ${discount > 0 ? `- Giảm giá: ${discount}%` : ''}
+   - Danh mục: ${product.category}
+   ${product.badge ? `- Tags: ${product.badge}` : ''}
+   ${product.rating ? `- Rating: ${product.rating.toFixed(1)}/5⭐` : ''}
+   - Link: /products/${product.slug}
+   ${product.description ? `- Mô tả: ${product.description.substring(0, 100)}...` : ''}
+`;
+
+      // Add size information if available
+      if (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) {
+        const availableSizes = product.sizes.filter((size: any) => size.stock > 0);
+        if (availableSizes.length > 0) {
+          context += `   - Size có sẵn: ${availableSizes.map((size: any) => size.name).join(', ')}\n`;
+        }
+      }
+    });
+
+    context += `
+💡 **GỢI Ý:**
+- Nhập số thứ tự của sản phẩm để xem chi tiết
+- Nhập "tư vấn [tên sản phẩm]" để được tư vấn kỹ hơn
+- Nhập "size [tên sản phẩm]" để được tư vấn size phù hợp
+- Nhập "giá [tên sản phẩm]" để xem thông tin giá và khuyến mãi
+
+🔗 **ĐIỀU HƯỚNG:**
+- Click vào link sản phẩm để xem chi tiết và đặt hàng
+- Hoặc nói với tôi tên sản phẩm bạn quan tâm để tôi giúp bạn!
+
+📞 **Hỗ trợ:** Hotline 1900-xxxx (8:00 - 22:00 mỗi ngày)
+`;
+
+    return context;
   }
 }
 
