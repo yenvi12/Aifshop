@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import ChatModal from "./ChatModal";
 import ChatButton from "./ChatButton";
+import { useChat } from "@/contexts/ChatContext";
 
-export default function ChatAIWrapper() {
-  const [isOpen, setIsOpen] = useState(false);
+interface ChatAIWrapperProps {
+  productContext?: {
+    productId: string;
+    productName: string;
+    productPrice: number | null;
+    productCompareAtPrice: number | null;
+    productCategory: string;
+    productImage?: string;
+    productDescription?: string;
+    productSizes?: any[];
+  };
+}
+
+export default function ChatAIWrapper({ productContext: propProductContext }: ChatAIWrapperProps = {}) {
   const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
+  const { isOpen, productContext: contextProductContext, openChat, closeChat } = useChat();
 
   // Hide chat on certain pages
   const hideChatPaths = ['/login', '/register'];
@@ -18,14 +32,27 @@ export default function ChatAIWrapper() {
     if (!isOpen) {
       setUnreadCount(0); // Reset unread count when opening chat
     }
-    setIsOpen(!isOpen);
+    
+    if (isOpen) {
+      closeChat();
+    } else {
+      openChat();
+    }
   };
-  
-  const closeChat = () => setIsOpen(false);
+
+  // Auto-open modal when productContext is provided via props
+  useEffect(() => {
+    if (propProductContext && !isOpen) {
+      openChat(propProductContext);
+    }
+  }, [propProductContext, isOpen, openChat]);
 
   if (shouldHideChat) {
     return null;
   }
+
+  // Always use the context state, not local state
+  const currentProductContext = propProductContext || contextProductContext;
 
   return (
     <>
@@ -33,13 +60,17 @@ export default function ChatAIWrapper() {
         <ChatModal
           isOpen={isOpen}
           onClose={closeChat}
+          productContext={currentProductContext || undefined}
         />
       ) : (
-        <ChatButton
-          isOpen={false}
-          onToggle={toggleChat}
-          unreadCount={unreadCount}
-        />
+        // Only show button when there's no productContext prop
+        !propProductContext && (
+          <ChatButton
+            isOpen={false}
+            onToggle={toggleChat}
+            unreadCount={unreadCount}
+          />
+        )
       )}
     </>
   );

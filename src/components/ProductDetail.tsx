@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage, MdSmartToy, MdShoppingCart } from "react-icons/md";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
+import { useChat } from "@/contexts/ChatContext";
 
 type SizeOption = {
   name: string;
@@ -34,6 +35,7 @@ type Product = {
   price?: number;
   compareAtPrice?: number;
   slug?: string;
+  category?: string;
 };
 
 type Props = {
@@ -52,6 +54,7 @@ type Props = {
 
 export default function ProductDetail({ product, relatedProducts = [] }: Props) {
   const router = useRouter();
+  const { openChat } = useChat();
   const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState("description");
   const [quantity, setQuantity] = useState(1);
@@ -466,8 +469,18 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
     {/* AI */}
     <button
+      onClick={() => openChat({
+        productId: product.id,
+        productName: product.name,
+        productPrice: product.price || null,
+        productCompareAtPrice: product.compareAtPrice || null,
+        productCategory: product.category || 'trang sức',
+        productImage: product.image || undefined,
+        productDescription: product.description || undefined,
+        productSizes: sizes || undefined
+      })}
       aria-label="Ask AI"
-      title="Ask AI for styling tips"
+      title="Ask AI for product advice"
       className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
                  bg-gradient-to-r from-[#8b5cf6] via-[#d946ef] to-[#ec4899]
                  text-white font-bold border-2 border-transparent
@@ -669,6 +682,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             </div>
           </div>
         )}
+
       </div>
     </>
   );
