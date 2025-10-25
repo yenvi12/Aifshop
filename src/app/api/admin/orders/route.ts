@@ -1,61 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import jwt from 'jsonwebtoken';
+import { PrismaClient, Prisma, OrderStatus, PaymentStatus } from "@prisma/client";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789';
+const JWT_SECRET =
+  process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production-123456789";
 
-// Helper function to verify admin token
+// ✅ JWT payload type
+interface AdminJwtPayload extends JwtPayload {
+  userId: string;
+  email: string;
+  role: string;
+}
+
+// ✅ Token verification with type safety
 function verifyAdminToken(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { error: 'Authorization header missing', status: 401 };
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return { error: "Authorization header missing", status: 401 };
   }
 
   const token = authHeader.substring(7);
-
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    if (decoded.role !== 'ADMIN') {
-      return { error: 'Admin access required', status: 403 };
+    const decoded = jwt.verify(token, JWT_SECRET) as AdminJwtPayload;
+    if (decoded.role !== "ADMIN") {
+      return { error: "Admin access required", status: 403 };
     }
-    return { userId: decoded.userId, email: decoded.email, role: decoded.role };
-  } catch (error) {
-    return { error: 'Invalid or expired token', status: 401 };
+    return {
+      userId: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+    };
+  } catch {
+    return { error: "Invalid or expired token", status: 401 };
   }
 }
 
 export async function GET(request: NextRequest) {
-   try {
-     // Verify admin token
-     const authResult = verifyAdminToken(request);
-     if (authResult.error) {
-       return NextResponse.json(
-         { success: false, error: authResult.error },
-         { status: authResult.status }
-       );
-     }
+  try {
+    // Auth check
+    const authResult = verifyAdminToken(request);
+    if ("error" in authResult) {
+      return NextResponse.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      );
+    }
 
-    // Get query parameters
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || '';
-    const paymentStatus = searchParams.get('paymentStatus') || '';
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "";
+    const paymentStatus = searchParams.get("paymentStatus") || "";
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
-    const where: any = {};
+    // ✅ Type-safe where clause
+    const where: Prisma.OrderWhereInput = {};
 
     if (search) {
       where.OR = [
         {
           orderNumber: {
             contains: search,
-            mode: 'insensitive'
-          }
+            mode: "insensitive",
+          },
         },
         {
           user: {
@@ -63,38 +73,41 @@ export async function GET(request: NextRequest) {
               {
                 firstName: {
                   contains: search,
-                  mode: 'insensitive'
-                }
+                  mode: "insensitive",
+                },
               },
               {
                 lastName: {
                   contains: search,
-                  mode: 'insensitive'
-                }
+                  mode: "insensitive",
+                },
               },
               {
                 email: {
                   contains: search,
-                  mode: 'insensitive'
-                }
-              }
-            ]
-          }
-        }
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
+        },
       ];
     }
 
-    if (status) {
-      where.status = status;
+    // ✅ Ensure enum values are valid
+    if (status && Object.values(OrderStatus).includes(status as OrderStatus)) {
+      where.status = status as OrderStatus;
     }
 
-    if (paymentStatus) {
+    if (
+      paymentStatus &&
+      Object.values(PaymentStatus).includes(paymentStatus as PaymentStatus)
+    ) {
       where.payment = {
-        status: paymentStatus
+        status: paymentStatus as PaymentStatus,
       };
     }
 
-    // Get orders with pagination
     const [orders, totalCount] = await Promise.all([
       prisma.order.findMany({
         where,
@@ -119,18 +132,18 @@ export async function GET(request: NextRequest) {
                   id: true,
                   name: true,
                   image: true,
-                  slug: true
-                }
-              }
-            }
+                  slug: true,
+                },
+              },
+            },
           },
           payment: {
             select: {
               id: true,
               orderCode: true,
               status: true,
-              amount: true
-            }
+              amount: true,
+            },
           },
           shippingAddress: true,
           user: {
@@ -140,15 +153,15 @@ export async function GET(request: NextRequest) {
               lastName: true,
               email: true,
               phoneNumber: true,
-              defaultAddress: true
-            }
-          }
+              defaultAddress: true,
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.order.count({ where })
+      prisma.order.count({ where }),
     ]);
 
     const totalPages = Math.ceil(totalCount / limit);
@@ -160,20 +173,21 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         totalCount,
-        totalPages
-      }
+        totalPages,
+      },
     });
-  } catch (error: any) {
-    console.error('Error fetching admin orders:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
+    console.error("Error fetching admin orders:", error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Verify admin token
     const authResult = verifyAdminToken(request);
-    if (authResult.error) {
+    if ("error" in authResult) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }
@@ -181,36 +195,42 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const orderId = searchParams.get('id');
+    const orderId = searchParams.get("id");
 
     if (!orderId) {
-      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Order ID is required" },
+        { status: 400 }
+      );
     }
 
-    // Check if order can be deleted (only cancelled orders)
     const order = await prisma.order.findUnique({
-      where: { id: orderId }
+      where: { id: orderId },
     });
 
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    if (order.status !== 'CANCELLED') {
-      return NextResponse.json({ error: 'Only cancelled orders can be deleted' }, { status: 400 });
+    if (order.status !== "CANCELLED") {
+      return NextResponse.json(
+        { error: "Only cancelled orders can be deleted" },
+        { status: 400 }
+      );
     }
 
-    // Delete order (cascade will handle orderItems)
     await prisma.order.delete({
-      where: { id: orderId }
+      where: { id: orderId },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Order deleted successfully'
+      message: "Order deleted successfully",
     });
-  } catch (error: any) {
-    console.error('Error deleting order:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
+    console.error("Error deleting order:", error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

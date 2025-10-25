@@ -674,7 +674,7 @@ export default function ManageProductsPage() {
             <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-semibold text-brand-dark mb-4">Delete Product</h3>
               <p className="text-brand-secondary mb-6">
-                Are you sure you want to delete "{selectedProduct.name}"? This action cannot be undone.
+                Are you sure you want to delete &quot;{selectedProduct.name}&quot;? This action cannot be undone.
               </p>
               <div className="flex gap-3">
                 <button

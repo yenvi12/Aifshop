@@ -1,8 +1,17 @@
+"use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Ẩn footer ở trang login và register
+  if (pathname === "/login" || pathname === "/register") {
+    return null;
+  }
+
   return (
-    <footer className="w-full bg-brand-head  py-6 text-xs text-brand-secondary">
+    <footer className="w-full bg-brand-head py-6 text-xs text-brand-secondary">
       <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-2">
         <p>© 2025 AIFShop. All rights reserved.</p>
         <div className="flex items-center flex-wrap gap-4 text-center">

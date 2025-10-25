@@ -1,36 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from 'jsonwebtoken';
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789';
+import jwt, { JwtPayload } from "jsonwebtoken";
 
-// Helper function to verify admin token
+const JWT_SECRET =
+  process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production-123456789";
+
+// ✅ Interface cho JWT payload
+interface AdminJwtPayload extends JwtPayload {
+  userId: string;
+  email: string;
+  role: string;
+}
+
+// ✅ Helper: verify token
 function verifyAdminToken(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { error: 'Authorization header missing', status: 401 };
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return { error: "Authorization header missing", status: 401 };
   }
 
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    if (decoded.role !== 'ADMIN') {
-      return { error: 'Admin access required', status: 403 };
+    const decoded = jwt.verify(token, JWT_SECRET) as AdminJwtPayload;
+    if (decoded.role !== "ADMIN") {
+      return { error: "Admin access required", status: 403 };
     }
-    return { userId: decoded.userId, email: decoded.email, role: decoded.role };
-  } catch (error) {
-    return { error: 'Invalid or expired token', status: 401 };
+    return {
+      userId: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+    };
+  } catch {
+    return { error: "Invalid or expired token", status: 401 };
   }
 }
 
-// Helper function to get today's date range in UTC for UTC+7 timezone
+// ✅ Helper: Tính ngày hôm nay ở UTC dựa trên giờ địa phương +7
 function getTodayRangeUTC() {
   const now = new Date();
-  // Add 7 hours for UTC+7
   const localNow = new Date(now.getTime() + 7 * 60 * 60000);
-  // Start of day in local time
-  const startLocal = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate());
-  // Convert back to UTC
+  const startLocal = new Date(
+    localNow.getFullYear(),
+    localNow.getMonth(),
+    localNow.getDate()
+  );
   const startUTC = new Date(startLocal.getTime() - 7 * 60 * 60000);
   const endUTC = new Date(startUTC.getTime() + 24 * 60 * 60 * 1000);
   return { startUTC, endUTC };
@@ -38,40 +52,36 @@ function getTodayRangeUTC() {
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin token
     const authResult = verifyAdminToken(request);
-    if (authResult.error) {
+    if ("error" in authResult) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }
       );
     }
 
-    // Get date range from query params (for analytics page)
     const url = new URL(request.url);
-    const range = url.searchParams.get('range') || '30d';
+    const range = url.searchParams.get("range") || "30d";
 
-    // Calculate date range
     const now = new Date();
     let startDate: Date;
     switch (range) {
-      case '7d':
+      case "7d":
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
-      case '30d':
+      case "30d":
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         break;
-      case '90d':
+      case "90d":
         startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
         break;
-      case '1y':
+      case "1y":
         startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
         break;
       default:
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
-    // Calculate stats in parallel for better performance
     const [
       totalProducts,
       totalUsers,
@@ -87,169 +97,158 @@ export async function GET(request: NextRequest) {
       revenueTrend,
       userGrowth,
       ordersByStatus,
-      topProducts
+      topProducts,
     ] = await Promise.all([
-      // Total active products
-      prisma.product.count({
-        where: { isActive: true }
-      }),
+      prisma.product.count({ where: { isActive: true } }),
 
-      // Total users (from Supabase Auth)
       (async () => {
-        const { data: supabaseUsers, error } = await (await import('@/lib/supabase-server')).supabaseAdmin.auth.admin.listUsers();
+        const { data: supabaseUsers, error } = await (
+          await import("@/lib/supabase-server")
+        ).supabaseAdmin.auth.admin.listUsers();
         if (error) {
-          console.error('Failed to fetch users:', error);
+          console.error("Failed to fetch users:", error);
           return 0;
         }
-        return supabaseUsers.users.filter(user => user.email).length;
+        return supabaseUsers.users.filter((user) => user.email).length;
       })(),
 
-      // Total orders
       prisma.order.count(),
 
-      // Orders today
       (async () => {
         const { startUTC, endUTC } = getTodayRangeUTC();
         return prisma.order.count({
-          where: {
-            createdAt: {
-              gte: startUTC,
-              lt: endUTC
-            }
-          }
+          where: { createdAt: { gte: startUTC, lt: endUTC } },
         });
       })(),
 
-      // Pending orders
-      prisma.order.count({
-        where: { status: 'ORDERED' }
-      }),
+      prisma.order.count({ where: { status: "ORDERED" } }),
 
-      // Total revenue
-      prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: { status: { in: ['SHIPPED', 'DELIVERED'] } }
-      }).then(result => result._sum.totalAmount || 0),
+      prisma.order
+        .aggregate({
+          _sum: { totalAmount: true },
+          where: { status: { in: ["SHIPPED", "DELIVERED"] } },
+        })
+        .then((result) => result._sum.totalAmount || 0),
 
-      // Average order value
-      prisma.order.aggregate({
-        _avg: { totalAmount: true },
-        where: { status: { in: ['SHIPPED', 'DELIVERED'] } }
-      }).then(result => result._avg.totalAmount || 0),
+      prisma.order
+        .aggregate({
+          _avg: { totalAmount: true },
+          where: { status: { in: ["SHIPPED", "DELIVERED"] } },
+        })
+        .then((result) => result._avg.totalAmount || 0),
 
-      // Orders in selected range
       prisma.order.count({
         where: {
           createdAt: { gte: startDate },
-          status: { in: ['SHIPPED', 'DELIVERED'] }
-        }
+          status: { in: ["SHIPPED", "DELIVERED"] },
+        },
       }),
 
-      // Revenue in selected range
-      prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: {
-          createdAt: { gte: startDate },
-          status: { in: ['SHIPPED', 'DELIVERED'] }
-        }
-      }).then(result => result._sum.totalAmount || 0),
-
-      // Previous period revenue (for comparison)
-      (async () => {
-        const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
-        const previousEnd = startDate;
-        return prisma.order.aggregate({
+      prisma.order
+        .aggregate({
           _sum: { totalAmount: true },
           where: {
-            createdAt: { gte: previousStart, lt: previousEnd },
-            status: { in: ['SHIPPED', 'DELIVERED'] }
-          }
-        }).then(result => result._sum.totalAmount || 0);
+            createdAt: { gte: startDate },
+            status: { in: ["SHIPPED", "DELIVERED"] },
+          },
+        })
+        .then((result) => result._sum.totalAmount || 0),
+
+      (async () => {
+        const previousStart = new Date(
+          startDate.getTime() - (now.getTime() - startDate.getTime())
+        );
+        const previousEnd = startDate;
+        return prisma.order
+          .aggregate({
+            _sum: { totalAmount: true },
+            where: {
+              createdAt: { gte: previousStart, lt: previousEnd },
+              status: { in: ["SHIPPED", "DELIVERED"] },
+            },
+          })
+          .then((result) => result._sum.totalAmount || 0);
       })(),
 
-      // Previous period orders (for comparison)
       (async () => {
-        const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
+        const previousStart = new Date(
+          startDate.getTime() - (now.getTime() - startDate.getTime())
+        );
         const previousEnd = startDate;
         return prisma.order.count({
           where: {
             createdAt: { gte: previousStart, lt: previousEnd },
-            status: { in: ['SHIPPED', 'DELIVERED'] }
-          }
+            status: { in: ["SHIPPED", "DELIVERED"] },
+          },
         });
       })(),
 
-      // Revenue trend data (last 30 days) - Mock data for now
       (async () => {
         const trendData = [];
         for (let i = 29; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
           trendData.push({
-            date: date.toISOString().split('T')[0],
-            revenue: Math.floor(Math.random() * 10000) + 5000, // Mock revenue
-            orders: Math.floor(Math.random() * 20) + 5 // Mock orders
+            date: date.toISOString().split("T")[0],
+            revenue: Math.floor(Math.random() * 10000) + 5000,
+            orders: Math.floor(Math.random() * 20) + 5,
           });
         }
         return trendData;
       })(),
 
-      // User growth data (last 30 days) - Mock data for now
       (async () => {
         const trendData = [];
         for (let i = 29; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
           trendData.push({
-            date: date.toISOString().split('T')[0],
-            users: Math.floor(Math.random() * 10) + 5 // Mock data
+            date: date.toISOString().split("T")[0],
+            users: Math.floor(Math.random() * 10) + 5,
           });
         }
         return trendData;
       })(),
 
-      // Orders by status - Mock data for now
       (async () => {
-        const mockStatusData = [
-          { status: 'DELIVERED', count: 145, percentage: 65.3 },
-          { status: 'SHIPPED', count: 38, percentage: 17.1 },
-          { status: 'PROCESSING', count: 25, percentage: 11.3 },
-          { status: 'ORDERED', count: 12, percentage: 5.4 },
-          { status: 'CANCELLED', count: 2, percentage: 0.9 }
+        return [
+          { status: "DELIVERED", count: 145, percentage: 65.3 },
+          { status: "SHIPPED", count: 38, percentage: 17.1 },
+          { status: "PROCESSING", count: 25, percentage: 11.3 },
+          { status: "ORDERED", count: 12, percentage: 5.4 },
+          { status: "CANCELLED", count: 2, percentage: 0.9 },
         ];
-        return mockStatusData;
       })(),
 
-      // Top products by sales - Mock data for now
       (async () => {
-        const mockProducts = [
-          { name: 'Premium Gold Ring', sales: 45, revenue: 22500, orders: 38 },
-          { name: 'Diamond Necklace', sales: 32, revenue: 48000, orders: 28 },
-          { name: 'Silver Earrings', sales: 28, revenue: 8400, orders: 25 },
-          { name: 'Luxury Watch', sales: 18, revenue: 36000, orders: 15 },
-          { name: 'Pearl Bracelet', sales: 15, revenue: 6750, orders: 12 }
+        return [
+          { name: "Premium Gold Ring", sales: 45, revenue: 22500, orders: 38 },
+          { name: "Diamond Necklace", sales: 32, revenue: 48000, orders: 28 },
+          { name: "Silver Earrings", sales: 28, revenue: 8400, orders: 25 },
+          { name: "Luxury Watch", sales: 18, revenue: 36000, orders: 15 },
+          { name: "Pearl Bracelet", sales: 15, revenue: 6750, orders: 12 },
         ];
-        return mockProducts;
-      })()
+      })(),
     ]);
 
-    // Calculate trends
-    const revenueChange = previousPeriodRevenue > 0 ?
-      ((revenueInRange - previousPeriodRevenue) / previousPeriodRevenue) * 100 : 0;
-    const ordersChange = previousPeriodOrders > 0 ?
-      ((ordersInRange - previousPeriodOrders) / previousPeriodOrders) * 100 : 0;
+    const revenueChange =
+      previousPeriodRevenue > 0
+        ? ((revenueInRange - previousPeriodRevenue) /
+            previousPeriodRevenue) *
+          100
+        : 0;
+    const ordersChange =
+      previousPeriodOrders > 0
+        ? ((ordersInRange - previousPeriodOrders) / previousPeriodOrders) * 100
+        : 0;
 
-    // Mock user growth trend (simplified)
-    const userChange = 15.2; // This would need actual user registration data
+    const conversionRate =
+      totalUsers > 0 ? (totalOrders / totalUsers) * 100 : 0;
 
-    // Calculate conversion rate (simplified - orders per 100 users)
-    const conversionRate = totalUsers > 0 ? (totalOrders / totalUsers) * 100 : 0;
-
-    // AOV trend (simplified)
+    const userChange = 15.2;
     const aovChange = 5;
 
     return NextResponse.json({
       success: true,
       data: {
-        // Basic stats
         totalProducts,
         totalUsers,
         totalOrders,
@@ -258,39 +257,54 @@ export async function GET(request: NextRequest) {
         totalRevenue,
         averageOrderValue,
         conversionRate,
-
-        // Time series data
         revenueTrend,
         userGrowth,
         ordersByStatus,
         topProducts,
-
-        // Trends
         trends: {
           revenue: {
             change: Math.round(revenueChange * 100) / 100,
-            direction: revenueChange > 0 ? 'up' : revenueChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
+            direction:
+              revenueChange > 0
+                ? "up"
+                : revenueChange < 0
+                ? "down"
+                : ("neutral" as const),
           },
           orders: {
             change: Math.round(ordersChange * 100) / 100,
-            direction: ordersChange > 0 ? 'up' : ordersChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
+            direction:
+              ordersChange > 0
+                ? "up"
+                : ordersChange < 0
+                ? "down"
+                : ("neutral" as const),
           },
           users: {
             change: userChange,
-            direction: userChange > 0 ? 'up' : userChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
+            direction:
+              userChange > 0
+                ? "up"
+                : userChange < 0
+                ? "down"
+                : ("neutral" as const),
           },
           aov: {
             change: aovChange,
-            direction: aovChange > 0 ? 'up' : aovChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
-          }
-        }
-      }
+            direction:
+              aovChange > 0
+                ? "up"
+                : aovChange < 0
+                ? "down"
+                : ("neutral" as const),
+          },
+        },
+      },
     });
-  } catch (error: any) {
-    console.error('Error fetching admin stats:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
+    console.error("Error fetching admin stats:", error);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
