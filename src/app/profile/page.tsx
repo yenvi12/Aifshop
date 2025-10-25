@@ -53,6 +53,25 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cuộn mượt tới section theo id
+  const scrollToId = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      router.push(`/profile#${id}`);
+    }
+  };
+
+  // Nếu truy cập /profile#addresses (hoặc hash khác) thì tự cuộn sau khi load xong
+  useEffect(() => {
+    if (!loading && typeof window !== "undefined" && window.location.hash) {
+      const id = window.location.hash.slice(1);
+      requestAnimationFrame(() => scrollToId(id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
   const fetchProfile = async (token: string) => {
     try {
       const response = await fetch('/api/profile', {
@@ -122,9 +141,8 @@ export default function ProfilePage() {
   if (!user) return <div>Please log in</div>;
 
   return (
-    <main className="min-h-screen bg-white text-brand-dark">
+    <main className="min-h-screen bg-white text-brand-dark scroll-smooth">
       <div className="h-4" />
-      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="sr-only">Profile</h1>
@@ -160,13 +178,10 @@ export default function ProfilePage() {
             </div>
 
             <nav className="mt-4 space-y-2">
-              <MenuItem active onClick={() => router.push("/profile")}>Profile</MenuItem>
-              <MenuItem icon={<MdLocationOn />} onClick={() => router.push("/profile/addresses")}>Addresses</MenuItem>
-              <MenuItem icon={<MdPayment />} onClick={() => router.push("/profile/payments")}>Payments</MenuItem>
+              <MenuItem active onClick={() => scrollToId("profile")}>Profile</MenuItem>
+              <MenuItem icon={<MdLocationOn />} onClick={() => scrollToId("addresses")}>Addresses</MenuItem>
+              <MenuItem icon={<MdPayment />} onClick={() => scrollToId("payments")}>Payments</MenuItem>
               <MenuItem icon={<MdShoppingCart />} onClick={() => router.push("/orders")}>Orders & Preorders</MenuItem>
-              <MenuItem icon={<MdStyle />} onClick={() => router.push("/profile/preferences")}>Quotes</MenuItem>
-              <MenuItem icon={<MdSecurity />} onClick={() => router.push("/profile/security")}>Security</MenuItem>
-
               <div className="pt-3 border-t border-brand-accent" />
             </nav>
           </aside>
@@ -187,108 +202,123 @@ export default function ProfilePage() {
             </div>
 
             {/* Personal information — READ ONLY */}
-            <Section title="Personal information">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <ViewField label="Full name" value={user.name} />
-                <ViewField label="Email" value={user.email} />
-                <ViewField label="Phone" value={user.phone || '-'} />
-                <ViewField label="Birthday" value={user.birthday ? user.birthday.toLocaleDateString('en-CA') : '-'} />
-              </div>
-              <div className="mt-3">
-                <ViewField label="Bio" value={user.bio || '-'} full />
-              </div>
-            </Section>
+            <div id="profile" className="scroll-mt-24">
+              <Section title="Personal information">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <ViewField label="Full name" value={user.name} />
+                  <ViewField label="Email" value={user.email} />
+                  <ViewField label="Phone" value={user.phone || '-'} />
+                  <ViewField label="Birthday" value={user.birthday ? user.birthday.toLocaleDateString('en-CA') : '-'} />
+                </div>
+                <div className="mt-3">
+                  <ViewField label="Bio" value={user.bio || '-'} full />
+                </div>
+              </Section>
+            </div>
 
             {/* Style preferences */}
-            <Section title="Style preferences">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {user.stylePreferences.length > 0 ? (
-                  user.stylePreferences.map((t) => <Tag key={t}>{t}</Tag>)
-                ) : (
-                  <span className="text-sm text-brand-secondary">No preferences yet</span>
-                )}
-              </div>
-            </Section>
+            <div id="style" className="scroll-mt-24">
+              <Section title="Style preferences">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {user.stylePreferences.length > 0 ? (
+                    user.stylePreferences.map((t) => <Tag key={t}>{t}</Tag>)
+                  ) : (
+                    <span className="text-sm text-brand-secondary">No preferences yet</span>
+                  )}
+                </div>
+              </Section>
+            </div>
 
             {/* Default address */}
-            <Section title="Default address">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <ViewField label="Shipping address" value={user.defaultAddress.shipping || '-'} />
-                <ViewField label="Billing address" value={user.defaultAddress.billing || '-'} />
-              </div>
-            </Section>
+            <div id="addresses" className="scroll-mt-24">
+              <Section title="Default address">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <ViewField label="Shipping address" value={user.defaultAddress.shipping || '-'} />
+                  <ViewField label="Billing address" value={user.defaultAddress.billing || '-'} />
+                </div>
+              </Section>
+            </div>
 
             {/* Payment methods */}
-            <Section
-              title="Payment methods"
-              right={
-                <button
-                  className="text-brand-secondary hover:text-brand-primary inline-flex items-center gap-1"
-                  onClick={() => setOpenPayments((v) => !v)}
-                >
-                  {openPayments ? <>Hide <MdKeyboardArrowDown className="h-4 w-4" /></> : <>Show <MdChevronRight className="h-4 w-4" /></>}
-                </button>
-              }
-            >
-              {openPayments && (
-                <div className="space-y-2">
-                  <AccordionRow title="Stripe • Visa **** 4242" />
-                  <AccordionRow title="VNPAY" />
-                  <AccordionRow title="MoMo Wallet" />
-                </div>
-              )}
-            </Section>
+            <div id="payments" className="scroll-mt-24">
+              <Section
+                title="Payment methods"
+                right={
+                  <button
+                    className="text-brand-secondary hover:text-brand-primary inline-flex items-center gap-1"
+                    onClick={() => setOpenPayments((v) => !v)}
+                  >
+                    {openPayments ? <>Hide <MdKeyboardArrowDown className="h-4 w-4" /></> : <>Show <MdChevronRight className="h-4 w-4" /></>}
+                  </button>
+                }
+              >
+                {openPayments && (
+                  <div className="space-y-2">
+                    <AccordionRow title="Stripe • Visa **** 4242" />
+                    <AccordionRow title="VNPAY" />
+                    <AccordionRow title="MoMo Wallet" />
+                  </div>
+                )}
+              </Section>
+            </div>
 
             {/* Recent activity */}
-            <Section
-              title="Recent activity"
-              right={
-                <button
-                  className="text-brand-secondary hover:text-brand-primary inline-flex items-center gap-1"
-                  onClick={() => setOpenRecent((v) => !v)}
-                >
-                  {openRecent ? <>Hide <MdKeyboardArrowDown className="h-4 w-4" /></> : <>Show <MdChevronRight className="h-4 w-4" /></>}
-                </button>
-              }
-            >
-              {openRecent && (
-                <div className="space-y-3">
-                  <ActivityRow
-                    id="#PRE-1987"
-                    title="Linen Blazer — Preorder"
-                    meta="Authorized on Stripe • ETA 10–15 days"
-                    statusLabel="Confirmed"
-                    statusColor="bg-emerald-100 text-emerald-700"
-                    img="https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=120&auto=format&fit=crop"
-                  />
-                  <ActivityRow
-                    id="#REQ-2031"
-                    title="Silk Scarf — Quote"
-                    meta="Awaiting approval • Reply before Jul 5, 2025"
-                    statusLabel="Pending"
-                    statusColor="bg-amber-100 text-amber-700"
-                    img="https://images.unsplash.com/photo-1520975922284-8b456906c813?q=80&w=120&auto=format&fit=crop"
-                  />
-                  <ActivityRow
-                    id="#ORD-3312"
-                    title="Utility Cotton Jacket"
-                    meta="Shipped • VNPost • Tracking VN12345"
-                    statusLabel="In transit"
-                    statusColor="bg-indigo-100 text-indigo-700"
-                    img="https://images.unsplash.com/photo-1520975693412-35c8c1f84f49?q=80&w=120&auto=format&fit=crop"
-                  />
+            <div id="activity" className="scroll-mt-24">
+              <Section
+                title="Recent activity"
+                right={
+                  <button
+                    className="text-brand-secondary hover:text-brand-primary inline-flex items-center gap-1"
+                    onClick={() => setOpenRecent((v) => !v)}
+                  >
+                    {openRecent ? <>Hide <MdKeyboardArrowDown className="h-4 w-4" /></> : <>Show <MdChevronRight className="h-4 w-4" /></>}
+                  </button>
+                }
+              >
+                {openRecent && (
+                  <div className="space-y-3">
+                    <ActivityRow
+                      id="#PRE-1987"
+                      title="Linen Blazer — Preorder"
+                      meta="Authorized on Stripe • ETA 10–15 days"
+                      statusLabel="Confirmed"
+                      statusColor="bg-emerald-100 text-emerald-700"
+                      img="https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=120&auto=format&fit=crop"
+                    />
+                    <ActivityRow
+                      id="#REQ-2031"
+                      title="Silk Scarf — Quote"
+                      meta="Awaiting approval • Reply before Jul 5, 2025"
+                      statusLabel="Pending"
+                      statusColor="bg-amber-100 text-amber-700"
+                      img="https://images.unsplash.com/photo-1520975922284-8b456906c813?q=80&w=120&auto=format&fit=crop"
+                    />
+                    <ActivityRow
+                      id="#ORD-3312"
+                      title="Utility Cotton Jacket"
+                      meta="Shipped • VNPost • Tracking VN12345"
+                      statusLabel="In transit"
+                      statusColor="bg-indigo-100 text-indigo-700"
+                      img="https://images.unsplash.com/photo-1520975693412-35c8c1f84f49?q=80&w=120&auto=format&fit=crop"
+                    />
 
-                  <div className="flex items-center gap-2 pt-1">
-                    <button className="inline-flex items-center gap-2 rounded-xl border border-brand-accent px-3 py-1.5 text-sm hover:bg-brand-light/60">
-                      <MdHistory className="h-4 w-4" /> View all activity
-                    </button>
-                    <button className="inline-flex items-center gap-2 rounded-xl bg-amber-100 text-amber-800 px-3 py-1.5 text-sm hover:bg-amber-200">
-                      Browse recommendations
-                    </button>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button className="inline-flex items-center gap-2 rounded-xl border border-brand-accent px-3 py-1.5 text-sm hover:bg-brand-light/60">
+                        <MdHistory className="h-4 w-4" /> View all activity
+                      </button>
+                      <button className="inline-flex items-center gap-2 rounded-xl bg-amber-100 text-amber-800 px-3 py-1.5 text-sm hover:bg-amber-200">
+                        Browse recommendations
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </Section>
+                )}
+              </Section>
+            </div>
+
+            {/* Security (đặt id nếu muốn cuộn tới) */}
+            <div id="security" className="scroll-mt-24">
+              {/* Bạn có thể thêm Section "Security" riêng ở đây nếu có nội dung */}
+            </div>
 
             <div className="pt-4 text-xs text-center text-brand-secondary">
               <p>

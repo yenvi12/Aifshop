@@ -156,13 +156,6 @@ export default function OrdersPage() {
         {activeTab === 'payments' && (
           <PaymentsTab payments={payments} />
         )}
-
-        {/* Footer */}
-        <div className="mt-12 pt-8 border-t border-brand-accent text-center text-xs text-brand-secondary">
-          <p>
-            © 2025 AIFShop. All rights reserved. • Need help? Contact our support team
-          </p>
-        </div>
       </div>
     </main>
   );
@@ -548,8 +541,8 @@ function OrderCard({ order }: { order: Order }) {
               <p className="text-sm text-brand-secondary mt-1">Qty: {item.quantity} {item.size && `• Size: ${item.size}`}</p>
             </div>
             <div className="text-right">
-              <p className="text-lg font-bold text-brand-dark">${(item.priceAtTime * item.quantity).toLocaleString('vi-VN')}₫</p>
-              <p className="text-sm text-brand-secondary">${item.priceAtTime.toLocaleString('vi-VN')}₫ each</p>
+              <p className="text-lg font-bold text-brand-dark">{(item.priceAtTime * item.quantity).toLocaleString('vi-VN')}₫</p>
+              <p className="text-sm text-brand-secondary">{item.priceAtTime.toLocaleString('vi-VN')}₫ each</p>
             </div>
           </div>
         ))}
@@ -581,7 +574,7 @@ function OrderCard({ order }: { order: Order }) {
           <div className="text-right">
             <p className="text-sm text-brand-secondary font-medium">Total Amount</p>
             <span className="text-2xl font-bold text-brand-dark">
-              ${order.totalAmount > 0 ? order.totalAmount.toLocaleString('vi-VN') + '₫' : '0₫'}
+              {order.totalAmount > 0 ? order.totalAmount.toLocaleString('vi-VN') + '₫' : '0₫'}
             </span>
           </div>
           <button

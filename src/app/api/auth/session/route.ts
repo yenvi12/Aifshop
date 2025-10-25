@@ -1,56 +1,62 @@
-import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
-import { prisma } from '@/lib/prisma'
-import { supabaseAdmin } from '@/lib/supabase-server'
-import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-server';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  hashRefreshToken,
+  hashPassword
+} from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Get Supabase session token from request
-    const authHeader = request.headers.get('authorization')
+    const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { success: false, error: 'Authorization header missing' },
         { status: 401 }
-      )
+      );
     }
 
-    const supabaseToken = authHeader.substring(7)
+    const supabaseToken = authHeader.substring(7);
 
-    // Verify Supabase token
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(supabaseToken)
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(supabaseToken);
     if (error || !user) {
       return NextResponse.json(
         { success: false, error: 'Invalid Supabase token' },
         { status: 401 }
-      )
+      );
     }
 
-    // Find user in database
     let dbUser = await prisma.user.findUnique({
       where: { supabaseUserId: user.id }
-    })
+    });
 
-    // If user doesn't exist in database but exists in Supabase (e.g., Google login),
-    // create the database record automatically
     if (!dbUser) {
-      const { hashPassword } = await import('@/lib/auth')
-      const hashedPassword = await hashPassword(user.email!) // Use email as dummy password for OAuth users
+      const hashedPassword = await hashPassword(user.email!);
 
-      // Extract profile information from OAuth provider metadata
-      const metadata = user.user_metadata
-      let firstName = metadata?.given_name || metadata?.first_name || ''
-      let lastName = metadata?.family_name || metadata?.last_name || ''
-      const avatar = metadata?.picture || metadata?.avatar_url || null
+      const metadata = user.user_metadata as {
+        given_name?: string;
+        family_name?: string;
+        first_name?: string;
+        last_name?: string;
+        name?: string;
+        picture?: string;
+        avatar_url?: string;
+      };
 
-      // For Google OAuth, name might be in full name format
+      let firstName = metadata?.given_name || metadata?.first_name || '';
+      let lastName = metadata?.family_name || metadata?.last_name || '';
+      const avatar = metadata?.picture || metadata?.avatar_url || null;
+
       if (!firstName && !lastName && metadata?.name) {
-        const nameParts = metadata.name.trim().split(' ')
+        const nameParts = metadata.name.trim().split(' ');
         if (nameParts.length > 1) {
-          firstName = nameParts[0]
-          lastName = nameParts.slice(1).join(' ')
+          firstName = nameParts[0];
+          lastName = nameParts.slice(1).join(' ');
         } else {
-          firstName = metadata.name
+          firstName = metadata.name;
         }
       }
 
@@ -66,19 +72,23 @@ export async function POST(request: NextRequest) {
           isVerified: true,
           role: 'USER'
         }
-      })
+      });
     }
 
-    // Generate JWT tokens
-    const accessToken = generateAccessToken(dbUser.id, dbUser.email, (dbUser as any).role, dbUser.supabaseUserId || undefined)
-    const refreshToken = generateRefreshToken(dbUser.id)
+    const accessToken = generateAccessToken(
+      dbUser.id,
+      dbUser.email,
+      dbUser.role,
+      dbUser.supabaseUserId ?? undefined
+    );
 
-    // Hash refresh token and save to database
-    const refreshTokenHash = hashRefreshToken(refreshToken)
+    const refreshToken = generateRefreshToken(dbUser.id);
+    const refreshTokenHash = hashRefreshToken(refreshToken);
+
     await prisma.user.update({
       where: { id: dbUser.id },
-      data: { refreshTokenHash } as any
-    })
+      data: { refreshTokenHash }
+    });
 
     return NextResponse.json({
       success: true,
@@ -87,19 +97,19 @@ export async function POST(request: NextRequest) {
         email: dbUser.email,
         firstName: dbUser.firstName,
         lastName: dbUser.lastName,
-        role: (dbUser as any).role
+        role: dbUser.role
       },
       tokens: {
         accessToken,
         refreshToken
       }
-    })
+    });
 
   } catch (error) {
-    console.error('Session error:', error)
+    console.error('Session error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }

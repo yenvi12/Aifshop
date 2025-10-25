@@ -35,6 +35,7 @@ import {
   ResponsiveContainer
 } from "recharts";
 import { format, subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
+import { PieLabelRenderProps } from 'recharts';
 
 interface AnalyticsData {
   // Basic stats
@@ -388,28 +389,42 @@ export default function AnalyticsPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={data?.ordersByStatus}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage }: any) => `${name}: ${percentage.toFixed(1)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {data?.ordersByStatus.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={[
-                        chartColors.accent,
-                        chartColors.warning,
-                        chartColors.danger,
-                        chartColors.secondary,
-                        chartColors.purple
-                      ][index % 5]}
-                    />
-                  ))}
-                </Pie>
+  data={data?.ordersByStatus}
+  cx="50%"
+  cy="50%"
+  labelLine={false}
+  label={(props: PieLabelRenderProps) => {
+    const { name, percent, x, y, textAnchor, fill } = props;
+    return (
+      <text
+        x={x}
+        y={y}
+        textAnchor={textAnchor}
+        fill={fill}
+        dominantBaseline="central"
+      >
+        {`${name}: ${((percent as number) * 100).toFixed(1)}%`}
+      </text>
+    );
+  }}
+  outerRadius={100}
+  fill="#8884d8"
+  dataKey="count"
+>
+  {data?.ordersByStatus.map((entry, index) => (
+    <Cell
+      key={`cell-${index}`}
+      fill={[
+        chartColors.accent,
+        chartColors.warning,
+        chartColors.danger,
+        chartColors.secondary,
+        chartColors.purple
+      ][index % 5]}
+    />
+  ))}
+</Pie>
+
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'white',

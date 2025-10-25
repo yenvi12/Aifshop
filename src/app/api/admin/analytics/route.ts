@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789';
+
+// ✅ Define a custom payload type for your JWT
+interface AdminJwtPayload extends JwtPayload {
+  userId: string;
+  email: string;
+  role: string;
+}
 
 // Helper function to verify admin token
 function verifyAdminToken(request: NextRequest) {
@@ -13,12 +21,15 @@ function verifyAdminToken(request: NextRequest) {
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    // ✅ Use proper typing instead of `as any`
+    const decoded = jwt.verify(token, JWT_SECRET) as AdminJwtPayload;
+
     if (decoded.role !== 'ADMIN') {
       return { error: 'Admin access required', status: 403 };
     }
+
     return { userId: decoded.userId, email: decoded.email, role: decoded.role };
-  } catch (error) {
+  } catch {
     return { error: 'Invalid or expired token', status: 401 };
   }
 }
@@ -27,7 +38,7 @@ export async function GET(request: NextRequest) {
   try {
     // Verify admin token
     const authResult = verifyAdminToken(request);
-    if (authResult.error) {
+    if ('error' in authResult) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }
@@ -76,12 +87,10 @@ export async function GET(request: NextRequest) {
       ordersByStatus,
       topProducts
     ] = await Promise.all([
-      // Total active products
       prisma.product.count({
         where: { isActive: true }
       }),
 
-      // Total users (from Supabase Auth)
       (async () => {
         const { data: supabaseUsers, error } = await (await import('@/lib/supabase-server')).supabaseAdmin.auth.admin.listUsers();
         if (error) {
@@ -91,43 +100,31 @@ export async function GET(request: NextRequest) {
         return supabaseUsers.users.filter(user => user.email).length;
       })(),
 
-      // Total orders
       prisma.order.count(),
 
-      // Orders today
       (async () => {
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-
         return prisma.order.count({
-          where: {
-            createdAt: {
-              gte: startOfDay,
-              lt: endOfDay
-            }
-          }
+          where: { createdAt: { gte: startOfDay, lt: endOfDay } }
         });
       })(),
 
-      // Pending orders
       prisma.order.count({
         where: { status: 'ORDERED' }
       }),
 
-      // Total revenue
       prisma.order.aggregate({
         _sum: { totalAmount: true },
         where: { status: { in: ['SHIPPED', 'DELIVERED'] } }
       }).then(result => result._sum.totalAmount || 0),
 
-      // Average order value
       prisma.order.aggregate({
         _avg: { totalAmount: true },
         where: { status: { in: ['SHIPPED', 'DELIVERED'] } }
       }).then(result => result._avg.totalAmount || 0),
 
-      // Orders in selected range
       prisma.order.count({
         where: {
           createdAt: { gte: startDate },
@@ -135,7 +132,6 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Revenue in selected range
       prisma.order.aggregate({
         _sum: { totalAmount: true },
         where: {
@@ -144,7 +140,6 @@ export async function GET(request: NextRequest) {
         }
       }).then(result => result._sum.totalAmount || 0),
 
-      // Previous period revenue (for comparison)
       (async () => {
         const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
         const previousEnd = startDate;
@@ -157,7 +152,6 @@ export async function GET(request: NextRequest) {
         }).then(result => result._sum.totalAmount || 0);
       })(),
 
-      // Previous period orders (for comparison)
       (async () => {
         const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
         const previousEnd = startDate;
@@ -169,34 +163,31 @@ export async function GET(request: NextRequest) {
         });
       })(),
 
-      // Revenue trend data (last 30 days) - Mock data for now
       (async () => {
         const trendData = [];
         for (let i = 29; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
           trendData.push({
             date: date.toISOString().split('T')[0],
-            revenue: Math.floor(Math.random() * 10000) + 5000, // Mock revenue
-            orders: Math.floor(Math.random() * 20) + 5 // Mock orders
+            revenue: Math.floor(Math.random() * 10000) + 5000,
+            orders: Math.floor(Math.random() * 20) + 5
           });
         }
         return trendData;
       })(),
 
-      // User growth data (last 30 days) - Mock data for now
       (async () => {
         const trendData = [];
         for (let i = 29; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
           trendData.push({
             date: date.toISOString().split('T')[0],
-            users: Math.floor(Math.random() * 10) + 5 // Mock data
+            users: Math.floor(Math.random() * 10) + 5
           });
         }
         return trendData;
       })(),
 
-      // Orders by status - Mock data for now
       (async () => {
         const mockStatusData = [
           { status: 'DELIVERED', count: 145, percentage: 65.3 },
@@ -208,7 +199,6 @@ export async function GET(request: NextRequest) {
         return mockStatusData;
       })(),
 
-      // Top products by sales - Mock data for now
       (async () => {
         const mockProducts = [
           { name: 'Premium Gold Ring', sales: 45, revenue: 22500, orders: 38 },
@@ -221,10 +211,7 @@ export async function GET(request: NextRequest) {
       })()
     ]);
 
-    // Calculate conversion rate (simplified - orders per 100 users)
     const conversionRate = totalUsers > 0 ? (totalOrders / totalUsers) * 100 : 0;
-
-    // Mock trends for demonstration
     const revenueChange = 12.5;
     const ordersChange = 8.3;
     const userChange = 15.2;
@@ -233,7 +220,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        // Basic stats
         totalProducts,
         totalUsers,
         totalOrders,
@@ -242,38 +228,35 @@ export async function GET(request: NextRequest) {
         totalRevenue,
         averageOrderValue,
         conversionRate,
-
-        // Time series data
         revenueTrend,
         userGrowth,
         ordersByStatus,
         topProducts,
-
-        // Trends
         trends: {
           revenue: {
             change: revenueChange,
-            direction: revenueChange > 0 ? 'up' : revenueChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
+            direction: revenueChange > 0 ? 'up' : revenueChange < 0 ? 'down' : 'neutral' as const
           },
           orders: {
             change: ordersChange,
-            direction: ordersChange > 0 ? 'up' : ordersChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
+            direction: ordersChange > 0 ? 'up' : ordersChange < 0 ? 'down' : 'neutral' as const
           },
           users: {
             change: userChange,
-            direction: userChange > 0 ? 'up' : userChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
+            direction: userChange > 0 ? 'up' : userChange < 0 ? 'down' : 'neutral' as const
           },
           aov: {
             change: aovChange,
-            direction: aovChange > 0 ? 'up' : aovChange < 0 ? 'down' : 'neutral' as 'up' | 'down' | 'neutral'
+            direction: aovChange > 0 ? 'up' : aovChange < 0 ? 'down' : 'neutral' as const
           }
         }
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching analytics:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: message },
       { status: 500 }
     );
   }
