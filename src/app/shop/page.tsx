@@ -45,10 +45,25 @@ interface CartItem {
 
 /** Reusable filter content so we can show it in both sidebar & mobile drawer */
 function FilterContent() {
+  const filterGroups = [
+    {
+      title: "For",
+      options: ["Women", "Men", "Kids"],
+    },
+    {
+      title: "CATEGORIES",
+      options: ["Necklaces", "Earrings", "Rings", "Bracelets", "Sterling Silver", "Platinum", "Diamond", "Pearl"],
+    },
+    {
+      title: "Fulfillment",
+      options: ["In stock", "Preorder", "Out of stock"],
+    },
+  ];
+
   return (
-    <>
+    <div className="space-y-6">
       {/* Search */}
-      <div className="relative mb-5">
+      <div className="relative mb-3">
         <FaSearch className="absolute left-3 top-3 text-brand-secondary" />
         <input
           type="text"
@@ -57,56 +72,36 @@ function FilterContent() {
         />
       </div>
 
-      <div className="space-y-5">
-        {/* For */}
-        <div>
-          <h4 className="text-sm font-medium mb-2 text-brand-primary">For</h4>
-          <div className="flex flex-wrap gap-2">
-            {["Women", "Men", "Kids"].map((t) => (
-              <button
+      {/* Filter sections */}
+      {filterGroups.map((group) => (
+        <div key={group.title}>
+          <h4 className="text-sm font-semibold mb-2 text-brand-primary uppercase tracking-wide">
+            {group.title}
+          </h4>
+          <div className="flex flex-col gap-2">
+            {group.options.map((t) => (
+              <label
                 key={t}
-                className="px-3 py-1 border border-brand-light rounded-full text-xs hover:bg-brand-light/70"
+                className="flex items-center gap-2 text-sm cursor-pointer"
               >
-                {t}
-              </button>
+                <input
+                  type="checkbox"
+                  className="accent-brand-primary w-4 h-4 rounded-full border border-brand-light"
+                />
+                <span className="text-brand-dark">{t}</span>
+              </label>
             ))}
           </div>
         </div>
+      ))}
 
-        {/* Material */}
-        <div>
-          <h4 className="text-sm font-medium mb-2 text-brand-primary">Material</h4>
-          <div className="flex flex-wrap gap-2">
-            {["Gold 14K", "Sterling Silver", "Platinum", "Diamond", "Pearl"].map((t) => (
-              <button
-                key={t}
-                className="px-3 py-1 border border-brand-light rounded-full text-xs hover:bg-brand-light/70"
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Fulfillment */}
-        <div>
-          <h4 className="text-sm font-medium mb-2 text-brand-primary">Fulfillment</h4>
-          <div className="flex flex-wrap gap-2">
-            {["In stock", "Preorder", "Out of stock"].map((t) => (
-              <button
-                key={t}
-                className="px-3 py-1 border border-brand-light rounded-full text-xs hover:bg-brand-light/70"
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Price */}
-        <div>
-          <h4 className="text-sm font-medium mb-2 text-brand-primary">Price range</h4>
-          <div className="flex items-center gap-2 mb-2">
+      {/* Price range */}
+      <div>
+        <h4 className="text-sm font-semibold mb-2 text-brand-primary uppercase tracking-wide">
+          Price range
+        </h4>
+        <div className="flex flex-col gap-2 mb-2">
+          <div className="flex items-center gap-2">
             <input
               type="number"
               placeholder="Min"
@@ -120,25 +115,26 @@ function FilterContent() {
             />
           </div>
           <div className="flex gap-2">
-            <button className="text-xs px-3 py-1.5 rounded-lg bg-brand-accent text-white font-semibold hover:opacity-90">
-              <MdFilterList className="inline size-4 " /> Apply
+            <button className="justify-center text-xs  w-1/2 py-1.5 rounded-lg bg-brand-accent text-white font-semibold hover:opacity-90 flex items-center gap-1">
+              <MdFilterList className="size-4" /> Apply
             </button>
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-brand-light hover:bg-brand-light/70">
-              <MdRefresh className="inline size-4 " /> Reset
+            <button className="justify-center text-xs font-semibold w-1/2 py-1.5 rounded-lg border border-brand-light hover:bg-brand-light/70 flex items-center gap-1">
+              <MdRefresh className="size-4" /> Reset
             </button>
           </div>
         </div>
-
-        {/* Ask AI */}
-        <div className="pt-4 border-t border-brand-light">
-          <button className="w-full text-center border border-brand-primary/30 text-brand-primary rounded-xl py-2 text-sm font-medium hover:bg-brand-primary/5">
-            Ask AI for help
-          </button>
-        </div>
       </div>
-    </>
+
+      {/* Ask AI */}
+      <div className="pt-4 border-t border-brand-light">
+        <button className="w-full text-center border border-brand-primary/30 text-brand-primary rounded-xl py-2 text-sm font-medium hover:bg-brand-primary/5">
+          Ask AI for help
+        </button>
+      </div>
+    </div>
   );
 }
+
 
 export default function ProductListPage() {
   const router = useRouter();
@@ -290,7 +286,7 @@ export default function ProductListPage() {
   }
 
   return (
-    <main className="min-h-screen bg-brand-light/40 text-brand-dark">
+    <main className="min-h-screen text-brand-dark">
       
 
       {/* Top actions on mobile */}
