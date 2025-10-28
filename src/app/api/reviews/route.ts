@@ -10,6 +10,13 @@ interface ReviewRating {
   rating: number
 }
 
+interface JwtPayload {
+  userId: string
+  email: string
+  role: string
+  type: string
+}
+
 interface ReviewWithUser {
   id: string
   userId: string
@@ -44,28 +51,28 @@ function verifyUserToken(request: NextRequest) {
   const token = authHeader.substring(7)
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload
     if (decoded.type !== 'access') {
       return { error: 'Invalid token type', status: 401 }
     }
     return { userId: decoded.userId, email: decoded.email, role: decoded.role }
-  } catch (error) {
+  } catch {
     return { error: 'Invalid or expired token', status: 401 }
   }
 }
 
 // Helper function to calculate and update product rating
 async function updateProductRating(productId: string) {
-  // Get all active reviews for this product
-  const reviews: ReviewRating[] = await (prisma as any).review?.findMany({
-    where: {
-      productId,
-      isActive: true
-    },
-    select: {
-      rating: true
-    }
-  }) || []
+   // Get all active reviews for this product
+   const reviews: ReviewRating[] = await prisma.review.findMany({
+     where: {
+       productId,
+       isActive: true
+     },
+     select: {
+       rating: true
+     }
+   })
 
   if (reviews.length === 0) {
     // No reviews, set rating to 0
@@ -99,16 +106,19 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit')
 
     // Build where clause - if no productId, get all active reviews
-    const whereClause: any = {
+    const whereClause: {
+      isActive: boolean
+      productId?: string
+    } = {
       isActive: true
     }
-    
+
     if (productId) {
       whereClause.productId = productId
     }
 
     // Get reviews with user information and product details
-    const reviews: any[] = await (prisma as any).review?.findMany({
+    const reviews = await prisma.review.findMany({
       where: whereClause,
       include: {
         user: {
@@ -130,10 +140,10 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
       take: limit ? parseInt(limit) : undefined
-    }) || []
+    })
 
     // Transform data for frontend
-    const transformedReviews = reviews.map((review: any) => ({
+    const transformedReviews = reviews.map((review) => ({
       id: review.id,
       rating: review.rating,
       comment: review.comment,
@@ -213,7 +223,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has a review for this product
-    const existingReview: ReviewBasic | null = await (prisma as any).review?.findFirst({
+    const existingReview: ReviewBasic | null = await prisma.review.findFirst({
       where: {
         productId,
         userId
@@ -221,7 +231,8 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         userId: true,
-        productId: true
+        productId: true,
+        isActive: true
       }
     })
 
@@ -233,7 +244,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new review
-    const review = await (prisma as any).review.create({
+    const review = await prisma.review.create({
       data: {
         productId,
         userId,
@@ -309,10 +320,10 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if review exists and belongs to user
-    const existingReview: ReviewWithUser | null = await (prisma as any).review?.findUnique({
+    const existingReview: ReviewWithUser | null = await prisma.review.findUnique({
       where: { id: reviewId },
       include: { user: true }
-    }) || null
+    })
 
     if (!existingReview) {
       return NextResponse.json(
@@ -344,7 +355,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update review
-    const review = await (prisma as any).review.update({
+    const review = await prisma.review.update({
       where: { id: reviewId },
       data: validationResult.data,
       include: {
@@ -414,7 +425,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if review exists and belongs to user
-    const existingReview: ReviewBasic | null = await (prisma as any).review?.findUnique({
+    const existingReview: ReviewBasic | null = await prisma.review.findUnique({
       where: { id: reviewId },
       select: {
         id: true,
@@ -422,7 +433,7 @@ export async function DELETE(request: NextRequest) {
         productId: true,
         isActive: true
       }
-    }) || null
+    })
 
     if (!existingReview) {
       return NextResponse.json(
@@ -441,7 +452,7 @@ export async function DELETE(request: NextRequest) {
     const productId = existingReview.productId
 
     // Hard delete review
-    await (prisma as any).review.delete({
+    await prisma.review.delete({
       where: { id: reviewId }
     })
 

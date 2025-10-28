@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, PaymentStatus } from "@prisma/client";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 const prisma = new PrismaClient();
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         userId: dbUser.id
       },
       data: {
-        status: status as any // PaymentStatus enum
+        status: status as PaymentStatus
       }
     });
 
@@ -75,21 +75,23 @@ export async function POST(req: Request) {
       message: 'Payment status updated successfully',
       updatedCount: updatedPayment.count
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating payment status:', error);
 
     // Provide more specific error messages
     let errorMessage = 'Internal server error';
     let statusCode = 500;
 
-    if (error.code === 'P2002') {
-      errorMessage = 'Payment already has this status';
-      statusCode = 400;
-    } else if (error.code === 'P2025') {
-      errorMessage = 'Payment record not found';
-      statusCode = 404;
-    } else if (error.message) {
-      errorMessage = error.message;
+    if (error instanceof Error) {
+      if ('code' in error && error.code === 'P2002') {
+        errorMessage = 'Payment already has this status';
+        statusCode = 400;
+      } else if ('code' in error && error.code === 'P2025') {
+        errorMessage = 'Payment record not found';
+        statusCode = 404;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
     }
 
     return NextResponse.json({

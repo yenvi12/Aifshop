@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { payos } from "@/lib/payos";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, OrderStatus } from "@prisma/client";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 const prisma = new PrismaClient();
@@ -89,11 +89,18 @@ export async function POST(req: Request) {
         console.log(`Calculated total amount: ${totalAmount} for ${cartItems.length} items`);
 
         // Create Order with shipping address snapshot (prefer custom address over profile default)
-        const orderData: any = {
+        const orderData: {
+          userId: string;
+          paymentId: number;
+          orderNumber: string;
+          status: OrderStatus;
+          totalAmount: number;
+          shippingAddress?: any;
+        } = {
           userId: dbUser.id,
           paymentId: dbPayment.id,
           orderNumber: generateOrderNumber(),
-          status: 'ORDERED',
+          status: OrderStatus.ORDERED,
           totalAmount
         };
 
@@ -158,8 +165,9 @@ export async function POST(req: Request) {
       checkoutUrl: payment.checkoutUrl,
       orderCode: orderCode.toString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
