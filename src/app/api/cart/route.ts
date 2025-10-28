@@ -4,6 +4,20 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789'
 
+// Define TypeScript interfaces
+interface JwtPayload {
+  userId: string
+  email: string
+  role: string
+  iat?: number
+  exp?: number
+}
+
+interface SizeInfo {
+  name: string
+  stock: number
+}
+
 // Helper function to verify user token
 function verifyUserToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -14,9 +28,9 @@ function verifyUserToken(request: NextRequest) {
   const token = authHeader.substring(7)
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload
     return { userId: decoded.userId, email: decoded.email, role: decoded.role }
-  } catch (error) {
+  } catch {
     return { error: 'Invalid or expired token', status: 401 }
   }
 }
@@ -63,8 +77,8 @@ export async function GET(request: NextRequest) {
       data: cartItems
     })
 
-  } catch (error) {
-    console.error('GET cart error:', error)
+  } catch (err) {
+    console.error('GET cart error:', err)
     return NextResponse.json(
       {
         success: false,
@@ -132,8 +146,8 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const sizes = product.sizes as any[]
-      const sizeInfo = sizes.find((s: any) => s.name === size)
+      const sizes = product.sizes as SizeInfo[]
+      const sizeInfo = sizes.find((s: SizeInfo) => s.name === size)
 
       if (!sizeInfo) {
         return NextResponse.json(
@@ -205,8 +219,8 @@ export async function POST(request: NextRequest) {
       data: cartItem
     })
 
-  } catch (error) {
-    console.error('POST cart error:', error)
+  } catch (err) {
+    console.error('POST cart error:', err)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -283,8 +297,8 @@ export async function DELETE(request: NextRequest) {
       message: 'Item removed from cart successfully'
     })
 
-  } catch (error) {
-    console.error('DELETE cart error:', error)
+  } catch (err) {
+    console.error('DELETE cart error:', err)
     return NextResponse.json(
       {
         success: false,
