@@ -2,22 +2,61 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { MdStar, MdLocalShipping, MdStraighten } from "react-icons/md";
+import { 
+  MdStar, 
+  MdLocalShipping, 
+  MdStraighten,
+  MdSmartToy,
+  MdAutoAwesome,
+  MdPeople,
+  MdVerified,
+  MdTrendingUp
+} from "react-icons/md";
+import { BiSupport } from "react-icons/bi";
+import { HiSparkles } from "react-icons/hi";
 import toast from "react-hot-toast";
 import ProductCard, { type Product } from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import HeroCarouselOverlay from "@/components/HeroCarouselOverlay";
 import Footer from "@/components/Footer";
 
+type Review = {
+  id: string;
+  rating: number;
+  comment: string;
+  images: string[];
+  videos: string[];
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  product: {
+    id: string;
+    name: string;
+    image: string;
+    slug: string;
+  } | null;
+};
+
 export default function HomePage() {
-   const router = useRouter();
-   const [products, setProducts] = useState<Product[]>([]);
-   const [loading, setLoading] = useState(true);
-   const [showAllReviews, setShowAllReviews] = useState(false);
-   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
-   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'new' | 'sale' | 'popular'>('all');
+  const [stats, setStats] = useState({
+    customers: 0,
+    rating: 0,
+    support: 0,
+    shipping: 0
+  });
+  
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -43,13 +82,22 @@ export default function HomePage() {
         }
       } catch (e) {
         console.error("Failed to fetch products:", e);
-        setProducts([
-          { id: "1", slug: "desert-pearl-drops", name: "Desert Pearl Drops", price: 129, compareAtPrice: 159, image: "/demo/dc10.jpg", badge: "New", rating: 4.8 },
-          { id: "2", slug: "scarfy-necklace", name: "Scarfy Necklace", price: 149, image: "/demo/dc3.jpg", rating: 4.5 },
-          { id: "3", slug: "classic-leather-jacket-ear", name: "Classic Diamond Ring", price: 99, compareAtPrice: 119, image: "/demo/ring1.jpg", badge: "Sale", rating: 4.7 },
-        ]);
       } finally {
         setLoading(false);
+      }
+    };
+
+    const fetchReviews = async () => {
+      try {
+        const response = await fetch("/api/reviews?limit=6");
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setReviews(result.data);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch reviews:", e);
       }
     };
 
@@ -73,12 +121,47 @@ export default function HomePage() {
     };
 
     fetchProducts();
+    fetchReviews();
     checkAuth();
   }, []);
 
+  // Animated counter effect
+  useEffect(() => {
+    const targetStats = {
+      customers: 10000,
+      rating: 4.8,
+      support: 24,
+      shipping: 100
+    };
+
+    const duration = 2000; // 2 seconds
+    const steps = 60;
+    const interval = duration / steps;
+
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const progress = step / steps;
+      
+      setStats({
+        customers: Math.floor(targetStats.customers * progress),
+        rating: Number((targetStats.rating * progress).toFixed(1)),
+        support: Math.floor(targetStats.support * progress),
+        shipping: Math.floor(targetStats.shipping * progress)
+      });
+
+      if (step >= steps) {
+        setStats(targetStats);
+        clearInterval(timer);
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, []);
+
+
   // Function to handle adding product to cart
   const handleAddToCart = async (product: Product) => {
-    // Nếu sản phẩm có sizes, redirect đến trang chi tiết để chọn size
     if (product.sizes && product.sizes.length > 0) {
       if (product.slug) {
         router.push(`/products/${product.slug}`);
@@ -94,7 +177,6 @@ export default function HomePage() {
     }
 
     try {
-      // Lấy thông tin giỏ hàng hiện tại để kiểm tra sản phẩm đã tồn tại chưa
       const cartResponse = await fetch('/api/cart', {
         method: 'GET',
         headers: {
@@ -110,14 +192,9 @@ export default function HomePage() {
         return;
       }
 
-      // Tìm sản phẩm trong giỏ hàng
       const existingItem = cartData.data?.find((item: any) => item.product.id === product.id);
-
-      // Nếu sản phẩm đã tồn tại, tăng số lượng hiện tại lên 1
-      // Nếu chưa tồn tại, thêm mới với số lượng 1
       const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
 
-      // Gọi API cập nhật giỏ hàng
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
@@ -133,9 +210,7 @@ export default function HomePage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success(result.message || "Sản phẩm đã được thêm vào giỏ hàng!");
-
-        // Send event to update cart count in Header and other components
+        toast.success(result.message || "Product added to cart!");
         window.dispatchEvent(new CustomEvent('cartUpdated'));
       } else {
         if (response.status === 401) {
@@ -152,6 +227,22 @@ export default function HomePage() {
     }
   };
 
+  // Filter products based on active filter
+  const getFilteredProducts = () => {
+    switch (activeFilter) {
+      case 'new':
+        return products.filter(p => p.badge === 'New');
+      case 'sale':
+        return products.filter(p => p.compareAtPrice && p.price && p.compareAtPrice > p.price);
+      case 'popular':
+        return products.filter(p => p.rating && p.rating >= 4.5);
+      default:
+        return products;
+    }
+  };
+
+  const filteredProducts = getFilteredProducts();
+
   if (loading) {
     return (
       <main className="min-h-screen" suppressHydrationWarning>
@@ -162,181 +253,361 @@ export default function HomePage() {
     );
   }
 
-  // mock reviews (có thể thay bằng dữ liệu thật từ API)
-  const reviews = [
-    { r: 5, t: "Love the quality. Will buy more!" },
-    { r: 4, t: "Easy to style. Fits most occasions." },
-    { r: 5, t: "Fast shipping and great price!" },
-    { r: 4, t: "Nice packaging, item as described." },
-    { r: 5, t: "Top-notch customer support." },
-  ];
-
   return (
     <main className="min-h-screen" suppressHydrationWarning={true}>
-
-      <HeroCarouselOverlay
-  className="py-6 md:py-8"
-  interval={3000}
-  slides={[
-    { title: "Khám phá những xu hướng thời trang mới nhất", caption: "Duyệt qua bộ sưu tập các phong cách độc đáo của chúng tôi và tìm ra phong cách phù hợp nhất với bạn", cta: { label: "Mua ngay", href: "/shop" }, src: "/demo/dan-tri-0603awo-pr07-1-crop-1709803508993.webp", position: "left" },
-    { title: "Trang sức tối giản, tác động tối đa", caption: "Những tác phẩm được tuyển chọn kỹ lưỡng với nét quyến rũ vượt thời gian", cta: { label: "Khám phá ngay", href: "/shop" }, src: "/demo/trang-suc-bac.avif", position: "center" },
-    { title: "Hàng mới về mùa mới", caption: "Màu sắc tươi mới và chất liệu vải thoáng khí", cta: { label: "Xem sản phẩm", href: "/shop" }, src: "/demo/20250925_QR7TJv03.jpg", position: "right" },
-    { title: "Trang sức bạc", caption: "Trẻ trung, đơn giản", cta: { label: "Xem ngay", href: "/shop" }, src: "/demo/trangsuc.jpg", position: "center" },
-    { title: "Giày cao gót", caption: "Vẻ đẹp được đo bằng từng bước hoàn hảo", cta: { label: "Tìm hiểu ngay", href: "/shop" }, src: "/demo/giay.jpg", position: "left" },
-    { title: "Túi xách tay", caption: "Một chiếc túi, muôn sắc thái của phong cách", cta: { label: "Khám phá ", href: "/shop" }, src: "/demo/tuixach.png", position: "center" },
-  ]}
-/>
-
-      {/* ===== FEATURED ===== */}
-      <section className="max-w-6xl mx-auto px-4 py-10">
-        <div className="text-center">
-          <h2 className="text-xl md:text-2xl font-semibold text-brand-dark">Featured Products</h2>
-          <p className="text-sm text-brand-secondary">quick picks for you</p>
-          <div className="mt-3 inline-block text-xs px-3 py-1 rounded-full bg-brand-accent text-brand-dark border border-brand-light">
-            new & hot
+      {/* ===== HERO CAROUSEL WITH AI BADGE ===== */}
+      <div className="relative max-w-7xl mx-auto px-4">
+        <HeroCarouselOverlay
+          className="py-6 md:py-8"
+          interval={3000}
+          slides={[
+            { title: "Khám phá những xu hướng thời trang mới nhất", caption: "Duyệt qua bộ sưu tập các phong cách độc đáo của chúng tôi và tìm ra phong cách phù hợp nhất với bạn", cta: { label: "Mua ngay", href: "/shop" }, src: "/demo/dan-tri-0603awo-pr07-1-crop-1709803508993.webp", position: "left" },
+            { title: "Trang sức tối giản, tác động tối đa", caption: "Những tác phẩm được tuyển chọn kỹ lưỡng với nét quyến rũ vượt thời gian", cta: { label: "Khám phá ngay", href: "/shop" }, src: "/demo/trang-suc-bac.avif", position: "center" },
+            { title: "Hàng mới về mùa mới", caption: "Màu sắc tươi mới và chất liệu vải thoáng khí", cta: { label: "Xem sản phẩm", href: "/shop" }, src: "/demo/20250925_QR7TJv03.jpg", position: "right" },
+            { title: "Trang sức bạc", caption: "Trẻ trung, đơn giản", cta: { label: "Xem ngay", href: "/shop" }, src: "/demo/trangsuc.jpg", position: "center" },
+            { title: "Giày cao gót", caption: "Vẻ đẹp được đo bằng từng bước hoàn hảo", cta: { label: "Tìm hiểu ngay", href: "/shop" }, src: "/demo/giay.jpg", position: "left" },
+            { title: "Túi xách tay", caption: "Một chiếc túi, muôn sắc thái của phong cách", cta: { label: "Khám phá ", href: "/shop" }, src: "/demo/tuixach.png", position: "center" },
+          ]}
+        />
+        
+        {/* AI-Powered Badge */}
+        <div className="absolute top-12 right-8 md:top-16 md:right-16 z-30 animate-float">
+          <div className="glass-card rounded-full px-4 py-2 shadow-premium flex items-center gap-2">
+            <HiSparkles className="w-5 h-5 text-brand-primary" />
+            <span className="text-sm font-semibold text-brand-dark">AI-Powered</span>
           </div>
         </div>
+      </div>
 
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-col-3 lg:grid-cols-4 gap-4 items-stretch">
-          {products.slice(0, 8).map((p) => (
-            <div key={p.id} className="h-full">
-            <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
+      {/* ===== AI FEATURES SHOWCASE ===== */}
+      <section className="max-w-6xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-4 pb-2 leading-tight">
+            Trải nghiệm AI thông minh
+          </h2>
+          <p className="text-brand-secondary text-lg">
+            Công nghệ tiên tiến giúp bạn mua sắm dễ dàng hơn
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* AI Chatbot */}
+          <div className="glass-card rounded-2xl p-8 premium-card glow-on-hover">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center mb-6 shadow-lg">
+              <MdSmartToy className="w-8 h-8 text-white" />
             </div>
-          ))}
+            <h3 className="text-xl font-bold text-brand-dark mb-3">AI Chatbot Assistant</h3>
+            <p className="text-brand-secondary leading-relaxed">
+              Trợ lý ảo thông minh hỗ trợ 24/7, trả lời mọi thắc mắc của bạn về sản phẩm, đặt hàng và chính sách
+            </p>
+          </div>
+
+          {/* Smart Size Advisor */}
+          <div className="glass-card rounded-2xl p-8 premium-card glow-on-hover">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-secondary to-brand-accent flex items-center justify-center mb-6 shadow-lg">
+              <MdStraighten className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-brand-dark mb-3">Smart Size Advisor</h3>
+            <p className="text-brand-secondary leading-relaxed">
+              AI phân tích số đo của bạn và đề xuất size phù hợp nhất, giảm thiểu tỷ lệ đổi trả sản phẩm
+            </p>
+          </div>
+
+          {/* Personalized Recommendations */}
+          <div className="glass-card rounded-2xl p-8 premium-card glow-on-hover">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-accent to-brand-primary flex items-center justify-center mb-6 shadow-lg">
+              <MdAutoAwesome className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-brand-dark mb-3">Personalized Recommendations</h3>
+            <p className="text-brand-secondary leading-relaxed">
+              Gợi ý sản phẩm thông minh dựa trên sở thích, lịch sử mua sắm và xu hướng thời trang
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* ===== REVIEWS ===== */}
-      <section className="max-w-6xl mx-auto px-4 pb-8">
-        <div className="rounded-2xl border border-brand-light bg-white shadow-sm">
-          <div className="flex items-center justify-between p-4 border-b border-brand-light">
-            <div>
-              <h3 className="font-semibold text-brand-dark">Customer Reviews</h3>
-              <p className="text-sm text-brand-secondary">See what our customers are saying</p>
-            </div>
+      {/* ===== FEATURED PRODUCTS ===== */}
+      <section className="max-w-6xl mx-auto px-4 py-10">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-3 pb-1 leading-tight">
+            Featured Products
+          </h2>
+          <p className="text-brand-secondary text-lg mb-8">
+            Khám phá bộ sưu tập được yêu thích nhất
+          </p>
+
+          {/* Filter Tabs */}
+          <div className="flex items-center justify-center gap-3 flex-wrap mb-2">
             <button
-              onClick={() => setShowAllReviews(true)}
-              className="text-sm font-medium text-brand-primary hover:underline"
+              onClick={() => setActiveFilter('all')}
+              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
+                activeFilter === 'all'
+                  ? 'bg-brand-primary text-white shadow-md'
+                  : 'bg-brand-light text-brand-dark hover:bg-brand-primary/10'
+              }`}
             >
-              See all
+              All Products
+            </button>
+            <button
+              onClick={() => setActiveFilter('new')}
+              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
+                activeFilter === 'new'
+                  ? 'bg-brand-primary text-white shadow-md'
+                  : 'bg-brand-light text-brand-dark hover:bg-brand-primary/10'
+              }`}
+            >
+              New Arrivals
+            </button>
+            <button
+              onClick={() => setActiveFilter('sale')}
+              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
+                activeFilter === 'sale'
+                  ? 'bg-brand-primary text-white shadow-md'
+                  : 'bg-brand-light text-brand-dark hover:bg-brand-primary/10'
+              }`}
+            >
+              On Sale
+            </button>
+            <button
+              onClick={() => setActiveFilter('popular')}
+              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
+                activeFilter === 'popular'
+                  ? 'bg-brand-primary text-white shadow-md'
+                  : 'bg-brand-light text-brand-dark hover:bg-brand-primary/10'
+              }`}
+            >
+              Popular
             </button>
           </div>
+        </div>
 
-          <div className="grid sm:grid-cols-3 gap-4 p-4">
-            {reviews.slice(0, 3).map((rv, i) => (
-              <div key={i} className="rounded-xl border border-brand-light bg-brand-light/40 p-3">
-                <div className="flex items-center gap-1 text-amber-400">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <MdStar key={j} className={`w-4 h-4 ${j < rv.r ? "" : "text-brand-light"}`} />
-                  ))}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-stretch">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.slice(0, 8).map((p) => (
+              <div key={p.id} className="h-full">
+                <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-brand-secondary">No products found in this category</p>
+            </div>
+          )}
+        </div>
+
+        {filteredProducts.length > 8 && (
+          <div className="mt-10 text-center">
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+            >
+              View All Products
+              <MdTrendingUp className="w-5 h-5" />
+            </Link>
+          </div>
+        )}
+      </section>
+
+      {/* ===== TRUST & STATS SECTION ===== */}
+      <section className="max-w-6xl mx-auto px-4 py-16">
+        <div className="stats-section-container relative rounded-3xl overflow-hidden shadow-premium-lg">
+          {/* Animated gradient background */}
+          <div className="stats-gradient-bg absolute inset-0 bg-gradient-to-br from-brand-primary via-brand-secondary to-brand-accent opacity-10" />
+          
+          <div className="stats-glass-panel relative grid md:grid-cols-4 gap-8 p-12">
+            {/* Happy Customers */}
+            <div className="stat-card text-center relative">
+              <div className="stat-icon w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg">
+                <MdPeople className="w-8 h-8 text-white" />
+              </div>
+              <div className="stat-number text-4xl font-bold mb-2">
+                {stats.customers.toLocaleString()}+
+              </div>
+              <p className="stat-label text-brand-secondary font-medium">Happy Customers</p>
+            </div>
+
+            {/* Average Rating */}
+            <div className="stat-card text-center relative">
+              <div className="stat-icon w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                <MdStar className="w-8 h-8 text-white" />
+              </div>
+              <div className="stat-number text-4xl font-bold mb-2">
+                {stats.rating}★
+              </div>
+              <p className="stat-label text-brand-secondary font-medium">Average Rating</p>
+            </div>
+
+            {/* AI Support */}
+            <div className="stat-card text-center relative">
+              <div className="stat-icon w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-brand-secondary to-brand-accent flex items-center justify-center shadow-lg">
+                <BiSupport className="w-8 h-8 text-white" />
+              </div>
+              <div className="stat-number text-4xl font-bold mb-2">
+                {stats.support}/7
+              </div>
+              <p className="stat-label text-brand-secondary font-medium">AI Support</p>
+            </div>
+
+            {/* Free Shipping */}
+            <div className="stat-card text-center relative">
+              <div className="stat-icon w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
+                <MdLocalShipping className="w-8 h-8 text-white" />
+              </div>
+              <div className="stat-number text-4xl font-bold mb-2">
+                {stats.shipping}%
+              </div>
+              <p className="stat-label text-brand-secondary font-medium">Free Shipping</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== CUSTOMER TESTIMONIALS ===== */}
+      <section className="max-w-6xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4 pb-1 leading-tight">
+            Customer Testimonials
+          </h2>
+          <p className="text-brand-secondary text-lg">
+            Khách hàng nói gì về trải nghiệm của họ
+          </p>
+        </div>
+
+        {reviews.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {reviews.map((review, index) => (
+              <div
+                key={review.id}
+                className="bg-white rounded-2xl border border-brand-light p-6 shadow-premium hover:shadow-premium-lg transition-all duration-300 hover:-translate-y-2"
+              >
+                {/* User Info */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-brand-light flex items-center justify-center overflow-hidden">
+                    {review.user.avatar ? (
+                      <Image
+                        src={review.user.avatar}
+                        alt={review.user.name}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-brand-primary font-bold text-lg">
+                        {review.user.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-brand-dark">{review.user.name}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <MdStar
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < review.rating ? "text-amber-400" : "text-brand-light"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <MdVerified className="w-5 h-5 text-green-500" />
                 </div>
-                <p className="mt-2 text-sm text-brand-dark">{rv.t}</p>
-                <button className="mt-3 text-xs rounded-lg px-2 py-1 bg-brand-light/60 hover:bg-brand-light text-brand-dark border border-brand-light">
-                  Read full review
-                </button>
+
+                {/* Review Content */}
+                <p className="text-brand-secondary leading-relaxed mb-4 line-clamp-3">
+                  {review.comment}
+                </p>
+
+                {/* Product Info */}
+                {review.product && (
+                  <Link 
+                    href={`/products/${review.product.slug}`}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-brand-light/50 hover:bg-brand-light transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white">
+                      <Image
+                        src={review.product.image}
+                        alt={review.product.name}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-brand-dark truncate">
+                        {review.product.name}
+                      </p>
+                      <p className="text-xs text-brand-secondary">
+                        {review.createdAt}
+                      </p>
+                    </div>
+                  </Link>
+                )}
               </div>
             ))}
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-12 bg-brand-light/30 rounded-2xl">
+            <MdStar className="w-16 h-16 text-brand-light mx-auto mb-4" />
+            <p className="text-brand-secondary">No reviews yet. Be the first to share your experience!</p>
+          </div>
+        )}
       </section>
 
-      {/* ===== FASHION TIPS ===== */}
-      <section className="max-w-6xl mx-auto px-4 pb-8">
-        <div className="rounded-2xl border border-brand-light bg-white shadow-sm">
-          <div className="p-4 border-b border-brand-light">
-            <h3 className="font-semibold text-brand-dark">Fashion Tips</h3>
-            <p className="text-sm text-brand-secondary">Get inspired with our fashion advice</p>
-          </div>
+      {/* ===== BRAND STORY SECTION ===== */}
+      <section className="max-w-7xl mx-auto px-4 py-16">
+        <div className="relative rounded-3xl overflow-hidden shadow-premium-lg">
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/20 via-brand-secondary/20 to-brand-accent/20 animated-gradient" />
+          
+          <div className="relative grid md:grid-cols-2 gap-8 items-center">
+            {/* Image Side */}
+            <div className="relative h-[400px] md:h-[500px]">
+              <Image
+                src="/demo/hero-jewelry.jpg"
+                alt="AIFShop Brand Story"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/80 md:to-white/60" />
+            </div>
 
-          <div className="grid md:grid-cols-2 gap-4 p-4">
-            <div className="rounded-xl border border-brand-light p-4 bg-brand-light/40">
-              <h4 className="font-semibold text-brand-dark">Style Guide</h4>
-              <p className="text-sm text-brand-secondary">
-                Find your perfect fit — learn how to pair jewelry for any outfit.
+            {/* Content Side */}
+            <div className="p-8 md:p-12">
+              <div className="inline-block px-4 py-2 rounded-full bg-brand-primary/10 text-brand-primary font-semibold text-sm mb-6">
+                Our Story
+              </div>
+              
+              <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-6 pb-1 leading-tight">
+                Nơi công nghệ AI gặp gỡ thời trang
+              </h2>
+              
+              <p className="text-brand-secondary text-lg leading-relaxed mb-6">
+                AIFShop ra đời từ niềm đam mê mang đến trải nghiệm mua sắm thời trang cá nhân hóa 
+                và thông minh. Chúng tôi tin rằng công nghệ AI có thể giúp mỗi người tìm được 
+                phong cách riêng của mình một cách dễ dàng và tự tin hơn.
               </p>
-              <button className="mt-3 text-xs rounded-lg px-3 py-1.5 bg-white border border-brand-light text-brand-dark hover:bg-brand-light/60">
-                Read more
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-brand-light p-4 bg-brand-light/40">
-              <h4 className="font-semibold text-brand-dark">How to Style a Denim Jacket</h4>
-              <p className="text-sm text-brand-secondary">
-                Elevate your casual looks by combining denim with subtle jewelry.
+              
+              <p className="text-brand-secondary leading-relaxed mb-8">
+                Với đội ngũ chuyên gia thời trang và công nghệ, chúng tôi không ngừng cải tiến 
+                để mang đến những sản phẩm chất lượng cao và dịch vụ hoàn hảo nhất.
               </p>
-              <button className="mt-3 text-xs rounded-lg px-3 py-1.5 bg-white border border-brand-light text-brand-dark hover:bg-brand-light/60">
-                Read more
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== QUICK LINKS ===== */}
-      <section className="max-w-6xl mx-auto px-4 pb-10">
-        <div className="rounded-2xl border border-brand-light bg-white shadow-sm p-4">
-          <h3 className="font-semibold text-brand-dark mb-3">Quick Links</h3>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-brand-light bg-brand-light/40 p-4 flex items-center gap-3">
-              <MdStraighten className="w-7 h-7 text-brand-primary" />
-              <div>
-                <h4 className="font-semibold text-brand-dark">Size Guide</h4>
-                <p className="text-sm text-brand-secondary">Find your perfect fit</p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-brand-light bg-brand-light/40 p-4 flex items-center gap-3">
-              <MdLocalShipping className="w-7 h-7 text-brand-primary" />
-              <div>
-                <h4 className="font-semibold text-brand-dark">Shipping Policy</h4>
-                <p className="text-sm text-brand-secondary">Learn about our shipping options</p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-brand-light bg-brand-light/40 p-4 flex items-center gap-3">
-              <Image src="/demo/login.jpg" alt="Gift" width={56} height={56} className="w-14 h-14 object-cover rounded-lg" />
-              <div>
-                <h4 className="font-semibold text-brand-dark">Gift Ideas</h4>
-                <p className="text-sm text-brand-secondary">Curated picks for someone special</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-  
-
-
-      {/* ===== SEE ALL REVIEWS MODAL ===== */}
-      {showAllReviews && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowAllReviews(false)} />
-          <div className="relative z-10 w-full max-w-2xl rounded-2xl bg-white shadow-xl border border-brand-light p-4">
-            <div className="flex items-center justify-between border-b border-brand-light pb-3">
-              <h3 className="font-semibold text-brand-dark">All Customer Reviews</h3>
-              <button
-                onClick={() => setShowAllReviews(false)}
-                className="text-sm px-2 py-1 rounded-md border border-brand-light hover:bg-brand-light/60"
+              
+              <Link
+                href="/about"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
               >
-                Close
-              </button>
-            </div>
-            <div className="max-h-[60vh] overflow-y-auto divide-y divide-brand-light">
-              {reviews.map((rv, idx) => (
-                <div key={idx} className="py-3">
-                  <div className="flex items-center gap-1 text-amber-400">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <MdStar key={j} className={`w-4 h-4 ${j < rv.r ? "" : "text-brand-light"}`} />
-                    ))}
-                  </div>
-                  <p className="mt-2 text-sm text-brand-dark">{rv.t}</p>
-                </div>
-              ))}
+                Discover Our Story
+                <MdAutoAwesome className="w-5 h-5" />
+              </Link>
             </div>
           </div>
         </div>
-      )}
+      </section>
+
+      {/* Spacing before footer */}
+      <div className="h-12" />
     </main>
   );
 }
