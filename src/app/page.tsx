@@ -21,6 +21,7 @@ import ProductCard, { type Product } from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import HeroCarouselOverlay from "@/components/HeroCarouselOverlay";
 import Footer from "@/components/Footer";
+import { FaBolt, FaChartLine, FaRegLightbulb, FaUsers } from "react-icons/fa";
 
 type Review = {
   id: string;
@@ -269,6 +270,48 @@ export default function HomePage() {
             { title: "Túi xách tay", caption: "Một chiếc túi, muôn sắc thái của phong cách", cta: { label: "Khám phá ", href: "/shop" }, src: "/demo/tuixach.png", position: "center" },
           ]}
         />
+
+        {/* ===== FEATURE SECTION ===== */}
+<section className="py-16 bg-white">
+<div className="max-w-6xl mx-auto px-4">
+<h3 className="text-3xl md:text-4xl font-bold text-brand-primary text-center mb-12 pb-2 leading-tight">
+<FaBolt className="inline mr-2 text-brand-accent" /> Vì sao chọn AIFShop?
+</h3>
+<div className="grid md:grid-cols-3 gap-6">
+<div className="glass-card rounded-2xl p-8 premium-card glow-on-hover text-center">
+<div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center mb-6 shadow-lg mx-auto">
+<FaChartLine className="w-7 h-7 text-white" />
+</div>
+<h4 className="text-xl font-bold text-brand-dark mb-2">Cá nhân hoá tối ưu</h4>
+<p className="text-brand-secondary text-sm leading-relaxed">
+Gợi ý sản phẩm phù hợp với bạn dựa trên hành vi và sở thích mua sắm.
+</p>
+</div>
+
+
+<div className="glass-card rounded-2xl p-8 premium-card glow-on-hover text-center">
+<div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-secondary to-brand-accent flex items-center justify-center mb-6 shadow-lg mx-auto">
+<FaRegLightbulb className="w-7 h-7 text-white" />
+</div>
+<h4 className="text-xl font-bold text-brand-dark mb-2">Trí tuệ nhân tạo tiên tiến</h4>
+<p className="text-brand-secondary text-sm leading-relaxed">
+Sử dụng AI để dự đoán xu hướng và nâng cao trải nghiệm người dùng.
+</p>
+</div>
+
+
+<div className="glass-card rounded-2xl p-8 premium-card glow-on-hover text-center">
+<div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-accent to-brand-primary flex items-center justify-center mb-6 shadow-lg mx-auto">
+<FaUsers className="w-7 h-7 text-white" />
+</div>
+<h4 className="text-xl font-bold text-brand-dark mb-2">Cộng đồng thân thiện</h4>
+<p className="text-brand-secondary text-sm leading-relaxed">
+Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ tiếp cận.
+</p>
+</div>
+</div>
+</div>
+</section>
         
         {/* AI-Powered Badge */}
         <div className="absolute top-12 right-8 md:top-16 md:right-16 z-30 animate-float">
@@ -564,7 +607,7 @@ export default function HomePage() {
             {/* Image Side */}
             <div className="relative h-[400px] md:h-[500px]">
               <Image
-                src="/demo/hero-jewelry.jpg"
+                src="/demo/about.png"
                 alt="AIFShop Brand Story"
                 fill
                 className="object-cover"
