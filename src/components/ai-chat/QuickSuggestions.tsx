@@ -22,8 +22,6 @@ export default function QuickSuggestions({
   hasHistory,
   onClearHistory
 }: QuickSuggestionsProps) {
-  if (!showSuggestions) return null;
-
   // Memoize the clear history handler
   const handleClearHistory = useCallback(() => {
     onClearHistory?.();
@@ -41,6 +39,8 @@ export default function QuickSuggestions({
     if (text.includes('bảo quản')) return '✨';
     return '💰';
   }, []);
+
+  if (!showSuggestions) return null;
 
   return (
     <div className="border-t border-brand-light bg-gradient-to-b from-brand-light/20 to-white p-3 flex-shrink-0">

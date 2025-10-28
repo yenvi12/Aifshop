@@ -3,6 +3,11 @@ import { payos } from "@/lib/payos";
 import { PrismaClient, OrderStatus } from "@prisma/client";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
+interface ShippingAddress {
+  shipping: string;
+  billing: string;
+}
+
 const prisma = new PrismaClient();
 
 // Generate unique order number
@@ -89,19 +94,13 @@ export async function POST(req: Request) {
         console.log(`Calculated total amount: ${totalAmount} for ${cartItems.length} items`);
 
         // Create Order with shipping address snapshot (prefer custom address over profile default)
-        const orderData: {
-          userId: string;
-          paymentId: number;
-          orderNumber: string;
-          status: OrderStatus;
-          totalAmount: number;
-          shippingAddress?: any;
-        } = {
+        const orderData: any = {
           userId: dbUser.id,
           paymentId: dbPayment.id,
           orderNumber: generateOrderNumber(),
           status: OrderStatus.ORDERED,
-          totalAmount
+          totalAmount,
+          shippingAddress: undefined
         };
 
         // Use custom shipping address if provided, otherwise fall back to profile default

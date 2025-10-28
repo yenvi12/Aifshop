@@ -29,7 +29,6 @@ type Conversation = {
 export default function MessengerIndexPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   useEffect(() => {
     const checkAuthAndFetchConversations = async () => {
@@ -57,12 +56,10 @@ export default function MessengerIndexPage() {
           router.replace(`/messenger/${mostRecentConversation.conversationId}`);
         } else {
           // No conversations - show empty state
-          setConversations([]);
           setLoading(false);
         }
       } catch (error) {
         console.error("Error fetching conversations:", error);
-        setConversations([]);
         setLoading(false);
       }
     };
@@ -121,7 +118,7 @@ export default function MessengerIndexPage() {
         {/* Helper text */}
         <div className="mt-8 p-4 bg-white rounded-lg border border-[#e1e5e9]">
           <p className="text-sm text-[#8e9297]">
-            💡 <span className="font-medium text-[#2c2d30]">Mẹo:</span> Khi xem chi tiết sản phẩm, bạn có thể nhấn nút "Nhắn tin" để bắt đầu trò chuyện với đội ngũ hỗ trợ của chúng tôi.
+            💡 <span className="font-medium text-[#2c2d30]">Mẹo:</span> Khi xem chi tiết sản phẩm, bạn có thể nhấn nút &ldquo;Nhắn tin&rdquo; để bắt đầu trò chuyện với đội ngũ hỗ trợ của chúng tôi.
           </p>
         </div>
       </div>

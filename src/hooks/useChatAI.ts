@@ -10,6 +10,13 @@ interface UseChatAIOptions {
   enablePersistence?: boolean;
 }
 
+interface StoredMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+}
+
 export function useChatAI(options: UseChatAIOptions = {}) {
   const {
     maxHistory = MAX_CHAT_HISTORY,
@@ -36,7 +43,7 @@ export function useChatAI(options: UseChatAIOptions = {}) {
       if (stored) {
         const parsedMessages = JSON.parse(stored);
         // Convert string timestamps back to Date objects
-        const messagesWithDates = parsedMessages.map((msg: any) => {
+        const messagesWithDates = parsedMessages.map((msg: StoredMessage) => {
           console.log('Loading message from storage:', msg);
           // Validate content when loading from storage
           if (!msg.content || msg.content.trim() === '') {

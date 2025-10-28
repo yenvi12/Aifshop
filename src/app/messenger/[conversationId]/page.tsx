@@ -73,9 +73,9 @@ export default function MessengerPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<string>(conversationId);
-  const [productInfo, setProductInfo] = useState<any>(null);
+  const [productInfo, setProductInfo] = useState<Message['product'] | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [conversationPartner, setConversationPartner] = useState<any>(null);
+  const [conversationPartner, setConversationPartner] = useState<Message['sender'] | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

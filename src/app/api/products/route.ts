@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createProductSchema, updateProductSchema } from '@/lib/validation'
+import { createProductSchema, updateProductSchema, CreateProductInput, UpdateProductInput } from '@/lib/validation'
 import { Prisma } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 
@@ -21,7 +21,7 @@ function verifyAdminToken(request: NextRequest) {
       return { error: 'Admin access required', status: 403 }
     }
     return { userId: decoded.userId, email: decoded.email, role: decoded.role }
-  } catch (error) {
+  } catch {
     return { error: 'Invalid or expired token', status: 401 }
   }
 }
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       const status = searchParams.get('status') || ''
       const skip = (page - 1) * limit
 
-      const whereClause: Record<string, any> = isAdminRequest ? {} : { isActive: true }
+      const whereClause: Prisma.ProductWhereInput = isAdminRequest ? {} : { isActive: true }
 
       if (search) {
         whereClause.OR = [
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
         { status: authResult.status }
       )
     }
-    let data: Record<string, any> = {}
+    let data: Partial<UpdateProductInput> = {}
 
     const contentType = request.headers.get('content-type') || ''
 
@@ -192,14 +192,14 @@ export async function POST(request: NextRequest) {
 
       // Extract text fields
       data.name = formData.get('name') as string
-      data.description = (formData.get('description') as string) || null
-      data.price = formData.get('price') ? parseFloat(formData.get('price') as string) : null
-      data.compareAtPrice = formData.get('compareAtPrice') ? parseFloat(formData.get('compareAtPrice') as string) : null
+      data.description = (formData.get('description') as string) || undefined
+      data.price = formData.get('price') ? parseFloat(formData.get('price') as string) : undefined
+      data.compareAtPrice = formData.get('compareAtPrice') ? parseFloat(formData.get('compareAtPrice') as string) : undefined
       data.category = formData.get('category') as string
       data.stock = parseInt(formData.get('stock') as string) || 0
       data.sizes = formData.get('sizes') ? JSON.parse(formData.get('sizes') as string) : []
       // Rating is now calculated from reviews, not set manually
-      data.badge = (formData.get('badge') as string) || null
+      data.badge = (formData.get('badge') as string) || undefined
       data.isActive = formData.get('isActive') === 'true'
 
       // Handle main image
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Handle JSON
       data = await request.json()
-      data.description = data.description ?? null
+      data.description = data.description ?? undefined
       data.image = data.image ?? null
       data.images = data.images ?? []
     }
@@ -393,7 +393,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    let data: Record<string, any> = {}
+    let data: Partial<CreateProductInput> = {}
 
     const contentType = request.headers.get('content-type') || ''
 
@@ -434,7 +434,7 @@ export async function PUT(request: NextRequest) {
       if (sizesStr) {
         try {
           data.sizes = JSON.parse(sizesStr)
-        } catch (e) {
+        } catch {
           data.sizes = []
         }
       }
@@ -506,7 +506,10 @@ export async function PUT(request: NextRequest) {
     } else {
       // Handle JSON
       data = await request.json()
-      data.description = data.description ?? null
+      data.description = data.description ?? undefined
+      data.price = data.price ?? undefined
+      data.compareAtPrice = data.compareAtPrice ?? undefined
+      data.badge = data.badge ?? undefined
       // For JSON updates, if image is not provided or is null, don't include it to keep existing
       if (!data.image) {
         delete data.image
@@ -529,16 +532,17 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updateData: Record<string, any> = validationResult.data
+    const updateData: UpdateProductInput = validationResult.data
 
     // Generate new slug if name is being updated
     if (updateData.name && updateData.name !== existingProduct.name) {
-      updateData.slug = generateSlug(updateData.name)
+      const slug = generateSlug(updateData.name)
+      ;(updateData as any).slug = slug
 
       // Check if new slug conflicts with another product
       const slugConflict = await prisma.product.findFirst({
         where: {
-          slug: updateData.slug,
+          slug,
           id: { not: id }
         }
       })

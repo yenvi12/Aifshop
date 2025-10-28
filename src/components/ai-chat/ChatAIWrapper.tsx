@@ -6,6 +6,11 @@ import ChatModal from "./ChatModal";
 import ChatButton from "./ChatButton";
 import { useChat } from "@/contexts/ChatContext";
 
+type SizeOption = {
+  name: string;
+  stock: number;
+};
+
 interface ChatAIWrapperProps {
   productContext?: {
     productId: string;
@@ -15,7 +20,7 @@ interface ChatAIWrapperProps {
     productCategory: string;
     productImage?: string;
     productDescription?: string;
-    productSizes?: any[];
+    productSizes?: SizeOption[];
   };
 }
 

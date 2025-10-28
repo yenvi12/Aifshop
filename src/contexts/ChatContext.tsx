@@ -2,6 +2,11 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 
+type SizeOption = {
+  name: string;
+  stock: number;
+};
+
 interface ProductContext {
   productId: string;
   productName: string;
@@ -10,7 +15,7 @@ interface ProductContext {
   productCategory: string;
   productImage?: string;
   productDescription?: string;
-  productSizes?: any[];
+  productSizes?: SizeOption[];
 }
 
 interface ChatContextType {

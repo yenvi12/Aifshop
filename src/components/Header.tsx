@@ -14,6 +14,57 @@ import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { isTokenExpired } from "@/lib/tokenManager";
 
+// Define TypeScript interfaces
+interface ConversationData {
+  conversationId: string;
+  product: {
+    id: string;
+    name: string;
+    image: string | null;
+    slug: string;
+  } | null;
+  lastMessage: {
+    content: string;
+    timestamp: Date;
+    sender: {
+      id?: string;
+      firstName: string | null;
+      lastName: string | null;
+      supabaseUserId: string | null;
+      role?: string;
+    };
+    senderId: string;
+    receiverId: string;
+  };
+  unreadCount: number;
+  messageCount: number;
+}
+
+interface CartItem {
+  id: string;
+  userId: string;
+  productId: string;
+  quantity: number;
+  size: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    compareAtPrice: number | null;
+    image: string | null;
+    images: string[];
+    stock: number;
+    sizes: {
+      name: string;
+      stock: number;
+    }[] | null;
+    badge: string | null;
+    slug: string;
+  };
+}
+
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
@@ -25,7 +76,7 @@ export default function Header() {
   const [cartItemCount, setCartItemCount] = useState<number>(0);
   const [messageDropdownOpen, setMessageDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [recentConversations, setRecentConversations] = useState<any[]>([]);
+  const [recentConversations, setRecentConversations] = useState<ConversationData[]>([]);
   const authRequestIdRef = useRef(0);
 
   // ====== Highlight active link ======
@@ -164,7 +215,7 @@ export default function Header() {
 
       if (data.success && data.data) {
         const total = data.data.reduce(
-          (sum: number, item: any) => sum + item.quantity,
+          (sum: number, item: CartItem) => sum + item.quantity,
           0
         );
         setCartItemCount(total);
@@ -274,7 +325,7 @@ export default function Header() {
   };
 
   // ====== Format time helper ======
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: string | Date) => {
     const now = new Date();
     const msgTime = new Date(timestamp);
     const diffMin = Math.floor(

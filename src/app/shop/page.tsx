@@ -8,6 +8,41 @@ import { FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import ProductCard, { type Product } from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
+interface ApiProduct {
+  id: string;
+  slug?: string;
+  name: string;
+  price: number | null;
+  compareAtPrice: number | null;
+  image: string | null;
+  images: string[];
+  badge: string | null;
+  rating: number | null;
+  sizes: { name: string; stock: number }[] | null;
+}
+
+interface CartItem {
+  id: string;
+  userId: string;
+  productId: string;
+  quantity: number;
+  size: string | null;
+  createdAt: string;
+  updatedAt: string;
+  product: {
+    id: string;
+    name: string;
+    price: number | null;
+    compareAtPrice: number | null;
+    image: string | null;
+    images: string[];
+    stock: number;
+    sizes: { name: string; stock: number }[] | null;
+    badge: string | null;
+    slug: string;
+  };
+}
+
 /** Reusable filter content so we can show it in both sidebar & mobile drawer */
 function FilterContent() {
   return (
@@ -134,7 +169,7 @@ export default function ProductListPage() {
         if (res.ok) {
           const result = await res.json();
           if (result.success && result.data) {
-            const transformed: Product[] = result.data.map((p: any) => ({
+            const transformed: Product[] = result.data.map((p: ApiProduct) => ({
               id: p.id,
               slug: p.slug,
               name: p.name,
@@ -204,7 +239,7 @@ export default function ProductListPage() {
       }
 
       // Tìm sản phẩm trong giỏ hàng
-      const existingItem = cartData.data?.find((item: any) => item.product.id === product.id);
+      const existingItem = cartData.data?.find((item: CartItem) => item.product.id === product.id);
 
       // Nếu sản phẩm đã tồn tại, tăng số lượng hiện tại lên 1
       // Nếu chưa tồn tại, thêm mới với số lượng 1

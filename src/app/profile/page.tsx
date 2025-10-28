@@ -18,6 +18,7 @@ import {
 } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
 import EditProfileModal, { ProfileForm } from "@/components/profile/EditProfileModal";
+import type { Session } from "@supabase/supabase-js";
 import Header from "@/components/Header";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import toast from "react-hot-toast";
@@ -37,7 +38,7 @@ export default function ProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<ProfileForm | null>(null);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     const getSession = async () => {

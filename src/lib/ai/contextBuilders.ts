@@ -1,5 +1,30 @@
 import { prisma } from '@/lib/prisma'
 
+export interface Size {
+  name: string
+  stock: number
+}
+
+export interface Review {
+  rating: number
+  comment: string
+  user: {
+    firstName: string
+    lastName: string
+  }
+}
+
+export interface RelatedProduct {
+  id: string
+  name: string
+  price: number | null
+  compareAtPrice: number | null
+  image: string | null
+  rating: number | null
+  badge: string | null
+  slug: string
+}
+
 export interface ProductContext {
   id: string
   name: string
@@ -8,12 +33,45 @@ export interface ProductContext {
   description: string | null
   category: string
   images: string[]
-  sizes: any[]
+  sizes: Size[]
   rating: number | null
   stock: number
   badge: string | null
-  reviews: any[]
-  relatedProducts: any[]
+  reviews: Review[]
+  relatedProducts: RelatedProduct[]
+}
+
+export interface OrderItem {
+  product: {
+    name: string
+    image: string | null
+    slug: string
+  }
+  size: string | null
+  quantity: number
+}
+
+export type ShippingAddress = any;
+
+export interface OrderData {
+  id: string
+  orderNumber: string
+  status: string
+  totalAmount: number
+  trackingNumber: string | null
+  estimatedDelivery: Date | null
+  orderItems: OrderItem[]
+  shippingAddress: ShippingAddress
+  createdAt: Date
+  payment: {
+    id: number
+    createdAt: Date
+    productId: string | null
+    userId: string
+    orderCode: string
+    amount: number
+    status: string
+  }
 }
 
 export interface OrderContext {
@@ -23,8 +81,8 @@ export interface OrderContext {
   totalAmount: number
   trackingNumber: string | null
   estimatedDelivery: Date | null
-  orderItems: any[]
-  shippingAddress: any
+  orderItems: OrderItem[]
+  shippingAddress: ShippingAddress
   createdAt: Date
 }
 
@@ -88,7 +146,7 @@ export class ProductContextBuilder {
     }
   }
 
-  private static async getRelatedProducts(category: string, currentProductId: string): Promise<any[]> {
+  private static async getRelatedProducts(category: string, currentProductId: string): Promise<RelatedProduct[]> {
     try {
       const relatedProducts = await prisma.product.findMany({
         where: {
@@ -117,7 +175,7 @@ export class ProductContextBuilder {
     }
   }
 
-  private static formatProductContext(product: any, relatedProducts: any[]): string {
+  private static formatProductContext(product: any, relatedProducts: RelatedProduct[]): string {
     const discount = product.compareAtPrice && product.price 
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
       : 0
@@ -163,29 +221,29 @@ ${this.formatRelatedProducts(relatedProducts)}
     return context
   }
 
-  private static formatSizes(sizes: any[]): string {
+  private static formatSizes(sizes: Size[]): string {
     if (!sizes || sizes.length === 0) {
       return '- Không có thông tin size cụ thể'
     }
 
-    return sizes.map((size: any) => {
-      const status = size.stock > 0 
-        ? `Còn ${size.stock} sản phẩm` 
+    return sizes.map((size: Size) => {
+      const status = size.stock > 0
+        ? `Còn ${size.stock} sản phẩm`
         : 'Hết hàng'
       return `- Size ${size.name}: ${status}`
     }).join('\n')
   }
 
-  private static formatRecentReviews(reviews: any[]): string {
-    return reviews.slice(0, 3).map((review: any) => {
+  private static formatRecentReviews(reviews: Review[]): string {
+    return reviews.slice(0, 3).map((review: Review) => {
       const userName = `${review.user.firstName} ${review.user.lastName}`
       const rating = '⭐'.repeat(review.rating)
       return `- ${userName} (${rating}): "${review.comment}"`
     }).join('\n')
   }
 
-  private static formatRelatedProducts(relatedProducts: any[]): string {
-    return relatedProducts.map((product: any, index: number) => {
+  private static formatRelatedProducts(relatedProducts: RelatedProduct[]): string {
+    return relatedProducts.map((product: RelatedProduct, index: number) => {
       const price = product.price ? `${product.price.toLocaleString('vi-VN')}₫` : 'Liên hệ'
       const rating = product.rating ? `${product.rating.toFixed(1)}/5` : 'Chưa có đánh giá'
       return `${index + 1}. ${product.name} - ${price} (Rating: ${rating})`
@@ -259,13 +317,13 @@ export class OrderContextBuilder {
     }
   }
 
-  private static formatOrderContext(orders: any[]): string {
+  private static formatOrderContext(orders: OrderData[]): string {
     let context = `
 📋 **THÔNG TIN ĐƠN HÀNG CỦA BẠN:**
 
 `
 
-    orders.forEach((order: any, index: number) => {
+    orders.forEach((order: OrderData, index: number) => {
       const statusEmoji = this.getStatusEmoji(order.status)
       const statusText = this.getStatusText(order.status)
       
@@ -278,7 +336,7 @@ ${index + 1}. **Đơn hàng #${order.orderNumber}**
    ${order.estimatedDelivery ? `- Dự kiến giao: ${order.estimatedDelivery.toLocaleDateString('vi-VN')}` : ''}
    
    **Sản phẩm trong đơn:**
-   ${order.orderItems.map((item: any) => 
+   ${order.orderItems.map((item: OrderItem) =>
      `• ${item.product.name} ${item.size ? `(Size ${item.size})` : ''} - SL: ${item.quantity}`
    ).join('\n   ')}
 `

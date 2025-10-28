@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { updateUserSchema } from '@/lib/validation'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import jwt from 'jsonwebtoken'
+import { Prisma } from '@prisma/client'
 
 interface DecodedToken {
   userId: string
@@ -213,7 +214,7 @@ export async function GET(request: NextRequest) {
     const isVerified = searchParams.get('isVerified') || ''
     const skip = (page - 1) * limit
 
-    const whereClause: Record<string, any> = {}
+    const whereClause: Partial<Prisma.UserWhereInput> = {}
 
     if (search) {
       whereClause.OR = [
@@ -224,7 +225,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (role) {
-      whereClause.role = role
+      whereClause.role = role as 'USER' | 'ADMIN'
     }
 
     if (isVerified !== '') {

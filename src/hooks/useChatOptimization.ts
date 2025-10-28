@@ -72,20 +72,23 @@ export function useChatOptimization(options: ChatOptimizationOptions = {}) {
   }, []);
 
   // Debounced function
-  const debounce = useCallback(<T extends (...args: any[]) => any>(
-    func: T,
-    wait: number
-  ) => {
-    return (...args: Parameters<T>) => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      
-      debounceTimeoutRef.current = setTimeout(() => {
-        func(...args);
-      }, wait);
-    };
-  }, []);
+  const debounce = useCallback(
+    <T extends (...args: readonly unknown[]) => unknown>(
+      func: T,
+      wait: number
+    ): ((...args: Parameters<T>) => void) => {
+      return (...args: Parameters<T>) => {
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+
+        debounceTimeoutRef.current = setTimeout(() => {
+          func(...args);
+        }, wait);
+      };
+    },
+    []
+  );
 
   // Optimized chat API call with caching and retry logic
   const optimizedChatCall = useCallback(async (
@@ -259,7 +262,7 @@ export function useChatOptimization(options: ChatOptimizationOptions = {}) {
       
       return data.response;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`[${currentRequestId}] Chat API call failed (retry ${retryCount}/${maxRetries}):`, error);
       
       // Handle AbortController timeout and other abort errors
@@ -325,7 +328,9 @@ export function useChatOptimization(options: ChatOptimizationOptions = {}) {
 
   // Debounced chat call
   const debouncedChatCall = useCallback(
-    debounce(async (message: string, context?: string) => {
+    debounce(async (...args: readonly unknown[]) => {
+      const message = args[0] as string;
+      const context = args[1] as string | undefined;
       console.log('debouncedChatCall executing with:', { message, context });
       const result = await optimizedChatCall(message, context || '');
       console.log('debouncedChatCall result:', result);
