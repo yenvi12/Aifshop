@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {/* Breadcrumb */}
               <Breadcrumb
                 labelMap={LABELS}
-                hideOn={["/", "/login", "/register"]} // ẩn ở các trang không cần
+                hideOn={["/", "/login", "/register", "/messenger"]} // ẩn ở các trang không cần
                 className="hidden sm:flex max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-6 md:pt-8"
               />
               

@@ -318,16 +318,16 @@ export default function MessengerPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#f8f9fa]">
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)] bg-[#f8f9fa]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0088cc]"></div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex bg-[#f8f9fa]" onClick={() => setSidebarOpen(false)}>
+    <div className="h-[calc(100vh-4rem)] flex bg-[#f8f9fa] overflow-hidden" onClick={() => setSidebarOpen(false)}>
       {/* Sidebar - Conversations */}
-      <div className={`w-80 bg-white border-r border-[#e1e5e9] flex flex-col shadow-sm md:relative fixed md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:z-auto z-50 transition-transform duration-300`} onClick={(e) => e.stopPropagation()}>
+      <div className={`w-80 bg-white border-r border-[#e1e5e9] flex flex-col h-full shadow-sm md:relative fixed md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:z-auto z-50 transition-transform duration-300`} onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-[#e1e5e9] bg-white">
           <h1 className="text-xl font-semibold text-[#2c2d30]">
             Tin nhắn
@@ -349,7 +349,7 @@ export default function MessengerPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white md:ml-0" onClick={() => setSidebarOpen(false)}>
+      <div className="flex-1 flex flex-col bg-white md:ml-0 h-full overflow-hidden" onClick={() => setSidebarOpen(false)}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
