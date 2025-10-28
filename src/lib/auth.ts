@@ -2,19 +2,6 @@ import argon2 from 'argon2'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 
-interface AccessTokenPayload {
-  userId: string
-  email: string
-  role: string
-  supabaseUserId?: string
-  type: 'access'
-}
-
-interface RefreshTokenPayload {
-  userId: string
-  type: 'refresh'
-}
-
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789'
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key-change-in-production-987654321'
 
