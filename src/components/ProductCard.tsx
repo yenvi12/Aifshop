@@ -143,19 +143,18 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
         {/* Price + Buttons */}
         <div className="mt-3 flex items-center justify-between">
           {/* Cụm giá */}
-          <div className="flex items-baseline gap-2">
-            <span className="tabular-nums tracking-tight text-brand-dark font-bold text-lg md:text-xl">
-              {p.price
-                ? `${p.price.toLocaleString("vi-VN")}₫`
-                : p.compareAtPrice
-                ? `${p.compareAtPrice.toLocaleString("vi-VN")}₫`
-                : "Price TBA"}
-            </span>
+          <div className="flex flex-col justify-center items-start leading-tight">
+            {/* Giá gốc (trên) */}
             {p.compareAtPrice && p.price && p.compareAtPrice > p.price && (
-              <span className="tabular-nums text-sm md:text-[13px] text-brand-secondary line-through">
+              <span className="tabular-nums text-sm md:text-[13px] text-brand-secondary line-through mb-[2px]">
                 {p.compareAtPrice.toLocaleString("vi-VN")}₫
               </span>
             )}
+          
+            {/* Giá hiện tại (dưới, in đậm) */}
+            <span className="tabular-nums tracking-tight text-brand-dark font-bold text-lg md:text-xl leading-none">
+              {p.price ? `${p.price.toLocaleString("vi-VN")}₫` : "Price TBA"}
+            </span>
           </div>
 
           {/* Nút hành động */}
