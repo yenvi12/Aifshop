@@ -191,7 +191,7 @@ export default function PaymentCancelPage() {
         </h1>
         <p className="text-gray-600 mb-8 leading-relaxed">
           Your payment was cancelled. No charges were made to your account.
-          You can try again whenever you're ready.
+          You can try again whenever you&apos;re ready.
         </p>
 
         {/* Actions */}
