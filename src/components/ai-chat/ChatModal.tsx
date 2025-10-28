@@ -10,6 +10,11 @@ import QuickSuggestions from "./QuickSuggestions";
 import toast from "react-hot-toast";
 import { useChatAI } from "@/hooks/useChatAI";
 
+type SizeOption = {
+  name: string;
+  stock: number;
+};
+
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -21,7 +26,7 @@ interface ChatModalProps {
     productCategory: string;
     productImage?: string;
     productDescription?: string;
-    productSizes?: any[];
+    productSizes?: SizeOption[];
   };
 }
 

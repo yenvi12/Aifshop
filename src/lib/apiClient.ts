@@ -41,7 +41,7 @@ export const apiClient = {
   get: (url: string, options: RequestInit = {}) =>
     apiRequest(url, { ...options, method: 'GET' }),
 
-  post: (url: string, data?: any, options: RequestInit = {}) =>
+  post: (url: string, data?: unknown, options: RequestInit = {}) =>
     apiRequest(url, {
       ...options,
       method: 'POST',
@@ -52,7 +52,7 @@ export const apiClient = {
       body: data ? JSON.stringify(data) : undefined
     }),
 
-  put: (url: string, data?: any, options: RequestInit = {}) =>
+  put: (url: string, data?: unknown, options: RequestInit = {}) =>
     apiRequest(url, {
       ...options,
       method: 'PUT',

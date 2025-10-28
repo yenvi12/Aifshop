@@ -28,6 +28,40 @@ type Review = {
   };
 };
 
+type ReviewData = {
+  id?: string;
+  rating: number;
+  comment: string;
+  images?: string[];
+  videos?: string[];
+  productId?: string;
+};
+
+type CartItem = {
+  id: string;
+  userId: string;
+  productId: string;
+  quantity: number;
+  size: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    compareAtPrice: number | null;
+    image: string | null;
+    images: string[];
+    stock: number;
+    sizes: {
+      name: string;
+      stock: number;
+    }[] | null;
+    badge: string | null;
+    slug: string;
+  };
+};
+
 type Product = {
   id: string;
   name: string;
@@ -182,7 +216,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     }
   };
 
-  const handleSubmitReview = async (reviewData: any) => {
+  const handleSubmitReview = async (reviewData: ReviewData) => {
     setIsSubmittingReview(true);
     try {
       const isEdit = !!reviewData.id;
@@ -246,7 +280,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
         return;
       }
 
-      const existingItem = cartData.data?.find((item: any) => item.product.id === product.id && item.size === (selectedSize?.name || null));
+      const existingItem = cartData.data?.find((item: CartItem) => item.product.id === product.id && item.size === (selectedSize?.name || null));
       const newQuantity = existingItem ? existingItem.quantity + quantity : quantity;
 
       const response = await fetch("/api/cart", {

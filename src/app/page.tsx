@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   MdStar, 
@@ -20,7 +20,6 @@ import toast from "react-hot-toast";
 import ProductCard, { type Product } from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import HeroCarouselOverlay from "@/components/HeroCarouselOverlay";
-import Footer from "@/components/Footer";
 import { FaBolt, FaChartLine, FaRegLightbulb, FaUsers } from "react-icons/fa";
 
 type Review = {
@@ -42,6 +41,24 @@ type Review = {
     slug: string;
   } | null;
 };
+
+interface ApiProduct {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  compareAtPrice?: number;
+  image?: string;
+  images?: string[];
+  badge?: string;
+  rating?: number;
+  sizes?: string[];
+}
+
+interface CartItem {
+  product: { id: string };
+  quantity: number;
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -66,7 +83,7 @@ export default function HomePage() {
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
-            const transformed: Product[] = result.data.map((p: any) => ({
+            const transformed: Product[] = result.data.map((p: ApiProduct) => ({
               id: p.id,
               slug: p.slug,
               name: p.name,
@@ -193,7 +210,7 @@ export default function HomePage() {
         return;
       }
 
-      const existingItem = cartData.data?.find((item: any) => item.product.id === product.id);
+      const existingItem = cartData.data?.find((item: CartItem) => item.product.id === product.id);
       const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
 
       const response = await fetch('/api/cart', {
@@ -518,7 +535,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
 
         {reviews.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reviews.map((review, index) => (
+            {reviews.map((review) => (
               <div
                 key={review.id}
                 className="bg-white rounded-2xl border border-brand-light p-6 shadow-premium hover:shadow-premium-lg transition-all duration-300 hover:-translate-y-2"

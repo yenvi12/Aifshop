@@ -16,9 +16,9 @@ interface CartItem {
     price: number;
     compareAtPrice: number | null;
     image: string | null;
-    images: any;
+    images: string[];
     stock: number;
-    sizes: any;
+    sizes: string[];
     badge: string | null;
     slug: string;
   };

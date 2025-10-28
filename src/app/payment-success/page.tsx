@@ -173,7 +173,7 @@ export default function PaymentSuccessPage() {
         <p className="text-sm text-gray-500 mt-6">
           Questions about your order?{" "}
           <a href="/support" className="text-green-600 hover:text-green-700 font-semibold">
-            We're here to help
+            We`&apos;re here to help
           </a>
         </p>
       </div>
