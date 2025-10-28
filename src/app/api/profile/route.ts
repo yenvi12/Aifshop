@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
 // GET /api/profile - Get current user profile
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
             dateOfBirth: new Date('2000-01-01'), // Default birthday
             password: '', // No password for OAuth users
             avatar: avatar || null
-          } as any
+          }
         })
       } else {
         return NextResponse.json({ error: 'User not found and no email available' }, { status: 404 })
@@ -54,10 +55,10 @@ export async function GET(request: NextRequest) {
       email: dbUser.email,
       phone: dbUser.phoneNumber,
       birthday: dbUser.dateOfBirth.toISOString().split('T')[0], // YYYY-MM-DD
-      bio: (dbUser as any).bio || '',
-      avatar: (dbUser as any).avatar || '',
-      stylePreferences: (dbUser as any).stylePreferences || [],
-      defaultAddress: (dbUser as any).defaultAddress || { shipping: '', billing: '' }
+      bio: dbUser.bio || '',
+      avatar: dbUser.avatar || '',
+      stylePreferences: dbUser.stylePreferences || [],
+      defaultAddress: dbUser.defaultAddress || { shipping: '', billing: '' }
     })
 
   } catch (error) {
@@ -105,7 +106,7 @@ export async function PUT(request: NextRequest) {
             password: '', // No password for OAuth users
             isVerified: true,
             avatar: avatar || null
-          } as any
+          }
         })
       } else {
         return NextResponse.json({ error: 'User not found and no email available' }, { status: 404 })
@@ -133,7 +134,7 @@ export async function PUT(request: NextRequest) {
         avatar: avatar || null,
         stylePreferences: stylePreferences || [],
         defaultAddress: defaultAddress || null
-      } as any
+      }
     })
 
     return NextResponse.json({
@@ -145,10 +146,10 @@ export async function PUT(request: NextRequest) {
         email: updatedUser.email,
         phone: updatedUser.phoneNumber,
         birthday: updatedUser.dateOfBirth.toISOString().split('T')[0],
-        bio: (updatedUser as any).bio || '',
-        avatar: (updatedUser as any).avatar || '',
-        stylePreferences: (updatedUser as any).stylePreferences || [],
-        defaultAddress: (updatedUser as any).defaultAddress || { shipping: '', billing: '' }
+        bio: updatedUser.bio || '',
+        avatar: updatedUser.avatar || '',
+        stylePreferences: updatedUser.stylePreferences || [],
+        defaultAddress: updatedUser.defaultAddress || { shipping: '', billing: '' }
       }
     })
 

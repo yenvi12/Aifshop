@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createProductSchema, updateProductSchema } from '@/lib/validation'
+import { Prisma } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789'
@@ -15,7 +16,7 @@ function verifyAdminToken(request: NextRequest) {
   const token = authHeader.substring(7)
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
     if (decoded.role !== 'ADMIN') {
       return { error: 'Admin access required', status: 403 }
     }
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
       const status = searchParams.get('status') || ''
       const skip = (page - 1) * limit
 
-      const whereClause: any = isAdminRequest ? {} : { isActive: true }
+      const whereClause: Record<string, any> = isAdminRequest ? {} : { isActive: true }
 
       if (search) {
         whereClause.OR = [
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
         { status: authResult.status }
       )
     }
-    let data: any = {}
+    let data: Record<string, any> = {}
 
     const contentType = request.headers.get('content-type') || ''
 
@@ -280,7 +281,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (sizes && Array.isArray(sizes) && sizes.length > 0) {
-      const totalSizeStock = sizes.reduce((sum: number, size: any) => sum + (size.stock || 0), 0);
+      const totalSizeStock = sizes.reduce((sum: number, size: { stock?: number }) => sum + (size.stock || 0), 0);
       if (totalSizeStock > stock) {
         return NextResponse.json(
           {
@@ -326,7 +327,7 @@ export async function POST(request: NextRequest) {
         badge,
         isActive,
         slug,
-      } as any
+      }
     })
 
     return NextResponse.json(
@@ -337,13 +338,13 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
 
-  } catch (error: any) {
+  } catch (error: unknown) {
   console.error('POST product error:', error)
   return NextResponse.json(
     {
       success: false,
       error: 'Internal server error',
-      details: error.message || error
+      details: error instanceof Error ? error.message : error
     },
     { status: 500 }
   )
@@ -392,7 +393,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    let data: any = {}
+    let data: Record<string, any> = {}
 
     const contentType = request.headers.get('content-type') || ''
 
@@ -528,7 +529,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    let updateData: any = validationResult.data
+    const updateData: Record<string, any> = validationResult.data
 
     // Generate new slug if name is being updated
     if (updateData.name && updateData.name !== existingProduct.name) {

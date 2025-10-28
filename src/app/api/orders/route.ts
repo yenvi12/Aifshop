@@ -112,9 +112,10 @@ export async function GET(request: NextRequest) {
       success: true,
       data: orders
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching orders:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -248,8 +249,9 @@ export async function POST(request: NextRequest) {
         payment: finalOrder!.payment
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating order:', error);
-    return NextResponse.json({ error: error.message || 'Không thể tạo đơn hàng' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Không thể tạo đơn hàng';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

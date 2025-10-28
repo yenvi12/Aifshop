@@ -4,6 +4,12 @@ import { updateUserSchema } from '@/lib/validation'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import jwt from 'jsonwebtoken'
 
+interface DecodedToken {
+  userId: string
+  email: string
+  role: string
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789'
 
 // Helper function to verify admin token
@@ -16,12 +22,12 @@ function verifyAdminToken(request: NextRequest) {
   const token = authHeader.substring(7)
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken
     if (decoded.role !== 'ADMIN') {
       return { error: 'Admin access required', status: 403 }
     }
     return { userId: decoded.userId, email: decoded.email, role: decoded.role }
-  } catch (error) {
+  } catch {
     return { error: 'Invalid or expired token', status: 401 }
   }
 }
@@ -36,9 +42,9 @@ function verifyUserToken(request: NextRequest) {
   const token = authHeader.substring(7)
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken
     return { userId: decoded.userId, email: decoded.email, role: decoded.role }
-  } catch (error) {
+  } catch {
     return { error: 'Invalid or expired token', status: 401 }
   }
 }
@@ -207,7 +213,7 @@ export async function GET(request: NextRequest) {
     const isVerified = searchParams.get('isVerified') || ''
     const skip = (page - 1) * limit
 
-    const whereClause: any = {}
+    const whereClause: Record<string, any> = {}
 
     if (search) {
       whereClause.OR = [
@@ -426,7 +432,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    let updateData = validationResult.data
+    const updateData = validationResult.data
 
     // Security: Prevent modifying own role
     if (updateData.role && id === authResult.userId) {

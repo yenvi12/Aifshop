@@ -7,22 +7,22 @@ import toast from "react-hot-toast";
 
 // Interface for cart item from API
 interface CartItem {
-  id: string;
-  quantity: number;
-  size: string | null;
-  product: {
-    id: string;
-    name: string;
-    price: number;
-    compareAtPrice: number | null;
-    image: string | null;
-    images: any;
-    stock: number;
-    sizes: any;
-    badge: string | null;
-    slug: string;
-  };
-}
+   id: string;
+   quantity: number;
+   size: string | null;
+   product: {
+     id: string;
+     name: string;
+     price: number | null;
+     compareAtPrice: number | null;
+     image: string | null;
+     images: string[];
+     stock: number;
+     sizes: Array<{name: string; stock: number}> | null;
+     badge: string | null;
+     slug: string;
+   };
+ }
 
 interface ApiResponse {
   success: boolean;
@@ -35,7 +35,6 @@ const CartPage = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [recommendedProducts, setRecommendedProducts] = useState<any[]>([]);
   const [recommendedLoading, setRecommendedLoading] = useState(false);
 
   // Fetch cart items from API
@@ -186,25 +185,26 @@ const CartPage = () => {
     }
   };
 
-  // Fetch recommended products from API
-  const fetchRecommendedProducts = async () => {
-    try {
-      setRecommendedLoading(true);
-      const response = await fetch("/api/products?limit=4");
+  // Fetch recommended products from API (currently unused)
+   const fetchRecommendedProducts = async () => {
+     try {
+       setRecommendedLoading(true);
+       const response = await fetch("/api/products?limit=4");
 
-      const data = await response.json();
+       const data = await response.json();
 
-      if (data.success && data.data) {
-        setRecommendedProducts(data.data);
-      } else {
-        console.error("Failed to fetch recommended products");
-      }
-    } catch (err) {
-      console.error("Error fetching recommended products:", err);
-    } finally {
-      setRecommendedLoading(false);
-    }
-  };
+       if (data.success && data.data) {
+         // Recommended products functionality could be implemented later
+         console.log("Recommended products fetched:", data.data);
+       } else {
+         console.error("Failed to fetch recommended products");
+       }
+     } catch (err) {
+       console.error("Error fetching recommended products:", err);
+     } finally {
+       setRecommendedLoading(false);
+     }
+   };
 
   // Load cart items on component mount
   useEffect(() => {
