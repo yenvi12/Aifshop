@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ClientWrapper from "@/components/ClientWrapper";
 import HeaderWrapper from "@/components/HeaderWrapper";
+import ContentWrapper from "@/components/ContentWrapper";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Footer from "@/components/Footer";
 import ChatAI from "@/components/ai-chat/ChatAIWrapper";
@@ -37,15 +38,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {/* Header cố định toàn site */}
               <HeaderWrapper />
 
-              {/* Content container + Breadcrumb dùng chung */}
-              <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
-                <Breadcrumb
-                  labelMap={LABELS}
-                  hideOn={["/", "/login", "/register"]} // ẩn ở các trang không cần
-                  className="hidden sm:flex"           // hiện từ sm trở lên (tuỳ bạn)
-                />
+              {/* Breadcrumb */}
+              <Breadcrumb
+                labelMap={LABELS}
+                hideOn={["/", "/login", "/register"]} // ẩn ở các trang không cần
+                className="hidden sm:flex max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-6 md:pt-8"
+              />
+              
+              {/* Content with conditional wrapper */}
+              <ContentWrapper>
                 {children}
-              </div>
+              </ContentWrapper>
               <Footer></Footer>
             </div>
             <ChatAI />

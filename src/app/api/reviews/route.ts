@@ -91,25 +91,25 @@ async function updateProductRating(productId: string) {
   return roundedRating
 }
 
-// GET - List reviews for a product
+// GET - List reviews for a product or get recent reviews for homepage
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const productId = searchParams.get('productId')
+    const limit = searchParams.get('limit')
 
-    if (!productId) {
-      return NextResponse.json(
-        { success: false, error: 'Product ID is required' },
-        { status: 400 }
-      )
+    // Build where clause - if no productId, get all active reviews
+    const whereClause: any = {
+      isActive: true
+    }
+    
+    if (productId) {
+      whereClause.productId = productId
     }
 
-    // Get reviews with user information
-    const reviews: ReviewWithUser[] = await (prisma as any).review?.findMany({
-      where: {
-        productId,
-        isActive: true
-      },
+    // Get reviews with user information and product details
+    const reviews: any[] = await (prisma as any).review?.findMany({
+      where: whereClause,
       include: {
         user: {
           select: {
@@ -118,13 +118,22 @@ export async function GET(request: NextRequest) {
             lastName: true,
             avatar: true
           }
+        },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            slug: true
+          }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take: limit ? parseInt(limit) : undefined
     }) || []
 
     // Transform data for frontend
-    const transformedReviews = reviews.map((review: ReviewWithUser) => ({
+    const transformedReviews = reviews.map((review: any) => ({
       id: review.id,
       rating: review.rating,
       comment: review.comment,
@@ -135,7 +144,13 @@ export async function GET(request: NextRequest) {
         id: review.user.id,
         name: `${review.user.firstName} ${review.user.lastName}`,
         avatar: review.user.avatar
-      }
+      },
+      product: review.product ? {
+        id: review.product.id,
+        name: review.product.name,
+        image: review.product.image,
+        slug: review.product.slug
+      } : null
     }))
 
     return NextResponse.json({
