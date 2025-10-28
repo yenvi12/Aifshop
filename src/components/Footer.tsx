@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 export default function Footer() {
   const pathname = usePathname();
 
-  // Ẩn footer ở trang login và register
-  if (pathname === "/login" || pathname === "/register") {
+  // Ẩn footer ở trang login, register và messenger
+  if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/messenger")) {
     return null;
   }
 

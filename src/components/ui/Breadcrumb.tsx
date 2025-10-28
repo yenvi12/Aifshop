@@ -37,8 +37,21 @@ export default function Breadcrumb({
 }: BreadcrumbProps) {
   const pathname = usePathname();
 
-  // Ẩn nếu path nằm trong danh sách
-  if (hideOn.includes(pathname)) return null;
+  // Ẩn nếu path nằm trong danh sách (hỗ trợ exact match và startsWith)
+  const shouldHide = hideOn.some(path => {
+    if (path.endsWith('*')) {
+      // Support wildcard pattern like "/messenger*"
+      return pathname.startsWith(path.slice(0, -1));
+    }
+    if (path.includes('/') && path !== '/') {
+      // For paths like "/messenger", check if pathname starts with it
+      return pathname === path || pathname.startsWith(path + '/');
+    }
+    // Exact match for root and other paths
+    return pathname === path;
+  });
+  
+  if (shouldHide) return null;
 
   const parts = pathname.split("/").filter(Boolean); // raw segments
   const displayParts = parts.map((p) => decodeURIComponent(p)); // dùng cho label

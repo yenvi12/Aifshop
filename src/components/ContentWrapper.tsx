@@ -8,8 +8,8 @@ export default function ContentWrapper({ children }: { children: React.ReactNode
   // Pages that manage their own spacing/layout (full-width pages)
   const fullWidthPages = ['/', '/shop', '/about'];
   
-  // If it's a full-width page, render children directly
-  if (fullWidthPages.includes(pathname)) {
+  // If it's a full-width page or messenger page, render children directly
+  if (fullWidthPages.includes(pathname) || pathname.startsWith('/messenger')) {
     return <>{children}</>;
   }
   

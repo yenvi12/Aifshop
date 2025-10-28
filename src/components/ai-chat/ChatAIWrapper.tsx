@@ -26,7 +26,7 @@ export default function ChatAIWrapper({ productContext: propProductContext }: Ch
 
   // Hide chat on certain pages
   const hideChatPaths = ['/login', '/register'];
-  const shouldHideChat = hideChatPaths.includes(pathname);
+  const shouldHideChat = hideChatPaths.includes(pathname) || pathname.startsWith('/messenger');
 
   const toggleChat = () => {
     if (!isOpen) {
