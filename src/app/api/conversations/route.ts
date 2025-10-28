@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { decodeToken, isTokenExpired } from "@/lib/tokenManager";
 
+// Define TypeScript interfaces
+interface ConversationData {
+  conversationId: string;
+  product: {
+    id: string;
+    name: string;
+    image: string | null;
+    slug: string;
+  } | null;
+  lastMessage: {
+    content: string;
+    timestamp: Date;
+    sender: {
+      id?: string;
+      firstName: string | null;
+      lastName: string | null;
+      supabaseUserId: string | null;
+      role?: string;
+    };
+    senderId: string;
+    receiverId: string;
+  };
+  unreadCount: number;
+  messageCount: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -42,7 +68,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "User not properly configured" }, { status: 400 });
     }
 
-    let conversations: any[] = [];
+    const conversations: ConversationData[] = [];
 
     if (dbUser.role === "USER") {
       // For USER: Get conversations they've started (as sender)
@@ -83,7 +109,7 @@ export async function GET(request: NextRequest) {
               receiverId: lastMessage.receiverId
             },
             unreadCount,
-            messageCount: (conv._count as any).id
+            messageCount: conv._count.id
           });
         }
       }
@@ -144,7 +170,7 @@ export async function GET(request: NextRequest) {
               receiverId: lastMessage.receiverId
             },
             unreadCount,
-            messageCount: (conv._count as any).id
+            messageCount: conv._count.id
           });
         }
       }
@@ -158,8 +184,8 @@ export async function GET(request: NextRequest) {
       data: conversations
     });
 
-  } catch (error) {
-    console.error("Get conversations error:", error);
+  } catch (err) {
+    console.error("Get conversations error:", err);
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
