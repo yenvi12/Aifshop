@@ -118,9 +118,9 @@ async function getRelatedProducts(currentProductId: string) {
 }
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default async function ProductPage({ params }: PageProps) {
