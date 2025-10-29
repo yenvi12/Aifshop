@@ -8,6 +8,20 @@ const MAX_CHAT_HISTORY = 50;
 interface UseChatAIOptions {
   maxHistory?: number;
   enablePersistence?: boolean;
+  productContext?: {
+    productId: string;
+    productName: string;
+    productCategory: string;
+  };
+}
+
+export interface Suggestion {
+  id: string;
+  text: string;
+  action: () => void;
+  icon?: string;
+  category?: 'product' | 'conversation' | 'general';
+  priority?: number; // Lower number = higher priority (1 = product, 2 = conversation, 3 = general)
 }
 
 interface StoredMessage {
@@ -207,146 +221,277 @@ export function useChatAI(options: UseChatAIOptions = {}) {
     }
   }, [messages, addMessage]);
 
-  // Get predefined jewelry-specific suggestions
-  const getJewelrySuggestions = useCallback(() => {
+  // Get product-specific suggestions when productContext is available
+  const getProductSuggestions = useCallback((): Suggestion[] => {
+    if (!options.productContext) return [];
+    
+    const { productName, productCategory } = options.productContext;
     return [
       {
-        id: 'product-listing',
-        text: 'Xem tất cả sản phẩm',
-        action: () => sendMessage('Cho tôi xem danh sách tất cả sản phẩm đang có.')
+        id: 'product-detail',
+        text: `Chi tiết ${productName}`,
+        action: () => sendMessage(`Tư vấn chi tiết về ${productName}`),
+        icon: '💎',
+        category: 'product',
+        priority: 1
       },
       {
-        id: 'order-history',
-        text: 'Xem lịch sử đơn hàng',
-        action: () => sendMessage('Tôi muốn xem lịch sử đơn hàng của mình.')
+        id: 'product-size',
+        text: 'Tư vấn size phù hợp',
+        action: () => sendMessage(`Tư vấn size phù hợp cho ${productName}`),
+        icon: '📏',
+        category: 'product',
+        priority: 1
       },
       {
-        id: 'order-status',
-        text: 'Kiểm tra trạng thái đơn hàng',
-        action: () => sendMessage('Kiểm tra giúp tôi trạng thái đơn hàng gần nhất.')
+        id: 'product-compare',
+        text: 'So sánh sản phẩm tương tự',
+        action: () => sendMessage(`Cho tôi xem các sản phẩm tương tự với ${productName}`),
+        icon: '🔍',
+        category: 'product',
+        priority: 1
       },
       {
-        id: 'ring-sizing',
-        text: 'Tư vấn size nhẫn',
-        action: () => sendMessage('Tư vấn size nhẫn cho tôi. Tôi không biết size nhẫn của mình.')
+        id: 'product-care',
+        text: 'Cách bảo quản',
+        action: () => sendMessage(`Hướng dẫn cách bảo quản ${productName}`),
+        icon: '✨',
+        category: 'product',
+        priority: 1
       },
       {
-        id: 'necklace-guide',
-        text: 'Chọn dây chuyền',
-        action: () => sendMessage('Giúp tôi chọn dây chuyền phù hợp với phong cách của tôi.')
-      },
-      {
-        id: 'diamond-advice',
-        text: 'Tư vấn kim cương',
-        action: () => sendMessage('Tôi muốn tìm hiểu về kim cương và cách chọn kim cương tốt.')
-      },
-      {
-        id: 'gift-ideas',
-        text: 'Quà tặng trang sức',
-        action: () => sendMessage('Tôi cần tư vấn quà tặng trang sức cho người thân.')
-      },
-      {
-        id: 'care-tips',
-        text: 'Bảo quản trang sức',
-        action: () => sendMessage('Hướng dẫn tôi cách bảo quản trang sức đúng cách.')
-      },
-      {
-        id: 'price-guide',
-        text: 'Tư vấn giá cả',
-        action: () => sendMessage('Tư vấn cho tôi về giá cả các loại trang sức.')
+        id: 'product-styling',
+        text: 'Cách phối đồ',
+        action: () => sendMessage(`Tư vấn cách phối đồ với ${productName}`),
+        icon: '👗',
+        category: 'product',
+        priority: 1
       }
     ];
-  }, [sendMessage]);
+  }, [options.productContext, sendMessage]);
 
-  // Get contextual suggestions based on current conversation
-  const getContextualSuggestions = useCallback(() => {
+  // Get conversation-aware suggestions based on recent messages
+  const getConversationSuggestions = useCallback((): Suggestion[] => {
+    if (messages.length === 0) return [];
+    
     const lastMessage = messages[messages.length - 1];
-    
-    // Debug logging
-    console.log('getContextualSuggestions - lastMessage:', lastMessage);
-    console.log('getContextualSuggestions - messages length:', messages.length);
-    
-    if (!lastMessage || lastMessage.role !== 'assistant') {
-      console.log('Returning default jewelry suggestions');
-      return getJewelrySuggestions();
+    if (!lastMessage || lastMessage.role !== 'assistant' || !lastMessage.content) {
+      return [];
     }
 
-    // Check if content exists before trying to call toLowerCase()
-    if (!lastMessage.content || lastMessage.content.trim() === '') {
-      console.error('Last message has no content:', lastMessage);
-      // Try to fix the message by adding default content
-      if (lastMessage.content === '' || lastMessage.content === undefined) {
-        setMessages(prev => {
-          const updated = [...prev];
-          const lastIdx = updated.length - 1;
-          if (lastIdx >= 0 && updated[lastIdx].id === lastMessage.id) {
-            updated[lastIdx] = {
-              ...lastMessage,
-              content: 'Tin nhắn trống. Vui lòng thử lại.'
-            };
-            saveChatHistory(updated);
-          }
-          return updated;
-        });
-      }
-      return getJewelrySuggestions();
-    }
+    const content = lastMessage.content.toLowerCase();
+    const suggestions: Suggestion[] = [];
 
-    const lastAIResponse = lastMessage.content.toLowerCase();
-    
-    // Analyze AI response to provide relevant follow-up suggestions
-    if (lastAIResponse.includes('danh sách sản phẩm') || lastAIResponse.includes('sản phẩm đang có') || lastAIResponse.includes('hiện tại shop đang có')) {
-      return [
-        {
-          id: 'category-products',
-          text: 'Xem theo danh mục',
-          action: () => sendMessage('Cho tôi xem sản phẩm theo từng danh mục riêng')
-        },
-        {
-          id: 'product-details',
-          text: 'Chi tiết sản phẩm',
-          action: () => sendMessage('Tôi muốn xem chi tiết một sản phẩm cụ thể')
-        },
-        {
-          id: 'price-range',
-          text: 'Theo khoảng giá',
-          action: () => sendMessage('Tôi muốn tìm sản phẩm trong khoảng giá cụ thể')
-        }
-      ];
-    }
-
-    if (lastAIResponse.includes('nhẫn') || lastAIResponse.includes('size')) {
-      return [
+    // Size/ring related
+    if (content.includes('nhẫn') || content.includes('size')) {
+      suggestions.push(
         {
           id: 'measure-ring',
           text: 'Cách đo size nhẫn',
-          action: () => sendMessage('Hướng dẫn chi tiết cách đo size nhẫn tại nhà')
+          action: () => sendMessage('Hướng dẫn chi tiết cách đo size nhẫn tại nhà'),
+          icon: '📐',
+          category: 'conversation',
+          priority: 2
         },
         {
           id: 'ring-materials',
           text: 'Chất liệu nhẫn',
-          action: () => sendMessage('Các chất liệu làm nhẫn phổ biến và ưu nhược điểm')
+          action: () => sendMessage('Các chất liệu làm nhẫn phổ biến và ưu nhược điểm'),
+          icon: '💍',
+          category: 'conversation',
+          priority: 2
+        },
+        {
+          id: 'size-conversion',
+          text: 'Bảng quy đổi size',
+          action: () => sendMessage('Cho tôi xem bảng quy đổi size nhẫn quốc tế'),
+          icon: '📊',
+          category: 'conversation',
+          priority: 2
         }
-      ];
+      );
     }
 
-    if (lastAIResponse.includes('dây chuyền') || lastAIResponse.includes('necklace')) {
-      return [
+    // Necklace related
+    if (content.includes('dây chuyền') || content.includes('necklace')) {
+      suggestions.push(
         {
           id: 'necklace-length',
           text: 'Độ dài dây chuyền',
-          action: () => sendMessage('Tư vấn chọn độ dài dây chuyền phù hợp')
+          action: () => sendMessage('Tư vấn chọn độ dài dây chuyền phù hợp'),
+          icon: '📿',
+          category: 'conversation',
+          priority: 2
         },
         {
           id: 'necklace-style',
           text: 'Phong cách dây chuyền',
-          action: () => sendMessage('Các phong cách dây chuyền đang thịnh hành')
+          action: () => sendMessage('Các phong cách dây chuyền đang thịnh hành'),
+          icon: '✨',
+          category: 'conversation',
+          priority: 2
         }
-      ];
+      );
     }
 
-    return getJewelrySuggestions();
-  }, [messages, getJewelrySuggestions]);
+    // Product listing related
+    if (content.includes('danh sách sản phẩm') || content.includes('sản phẩm đang có')) {
+      suggestions.push(
+        {
+          id: 'category-products',
+          text: 'Xem theo danh mục',
+          action: () => sendMessage('Cho tôi xem sản phẩm theo từng danh mục riêng'),
+          icon: '📂',
+          category: 'conversation',
+          priority: 2
+        },
+        {
+          id: 'price-range',
+          text: 'Theo khoảng giá',
+          action: () => sendMessage('Tôi muốn tìm sản phẩm trong khoảng giá cụ thể'),
+          icon: '💰',
+          category: 'conversation',
+          priority: 2
+        },
+        {
+          id: 'new-products',
+          text: 'Sản phẩm mới',
+          action: () => sendMessage('Cho tôi xem các sản phẩm mới nhất'),
+          icon: '🆕',
+          category: 'conversation',
+          priority: 2
+        }
+      );
+    }
+
+    // Price related
+    if (content.includes('giá') || content.includes('giá cả')) {
+      suggestions.push(
+        {
+          id: 'payment-methods',
+          text: 'Phương thức thanh toán',
+          action: () => sendMessage('Cho tôi biết các phương thức thanh toán'),
+          icon: '💳',
+          category: 'conversation',
+          priority: 2
+        },
+        {
+          id: 'discount-policy',
+          text: 'Chính sách giảm giá',
+          action: () => sendMessage('Cho tôi biết chính sách giảm giá hiện tại'),
+          icon: '🎁',
+          category: 'conversation',
+          priority: 2
+        }
+      );
+    }
+
+    return suggestions;
+  }, [messages, sendMessage]);
+
+  // Get default/general suggestions
+  const getDefaultSuggestions = useCallback((): Suggestion[] => {
+    return [
+      {
+        id: 'product-listing',
+        text: 'Xem tất cả sản phẩm',
+        action: () => sendMessage('Cho tôi xem danh sách tất cả sản phẩm đang có.'),
+        icon: '🛍️',
+        category: 'general',
+        priority: 3
+      },
+      {
+        id: 'ring-sizing',
+        text: 'Tư vấn size nhẫn',
+        action: () => sendMessage('Tư vấn size nhẫn cho tôi. Tôi không biết size nhẫn của mình.'),
+        icon: '💍',
+        category: 'general',
+        priority: 3
+      },
+      {
+        id: 'necklace-guide',
+        text: 'Chọn dây chuyền',
+        action: () => sendMessage('Giúp tôi chọn dây chuyền phù hợp với phong cách của tôi.'),
+        icon: '📿',
+        category: 'general',
+        priority: 3
+      },
+      {
+        id: 'order-history',
+        text: 'Lịch sử đơn hàng',
+        action: () => sendMessage('Tôi muốn xem lịch sử đơn hàng của mình.'),
+        icon: '📦',
+        category: 'general',
+        priority: 3
+      },
+      {
+        id: 'care-tips',
+        text: 'Bảo quản trang sức',
+        action: () => sendMessage('Hướng dẫn tôi cách bảo quản trang sức đúng cách.'),
+        icon: '✨',
+        category: 'general',
+        priority: 3
+      },
+      {
+        id: 'gift-ideas',
+        text: 'Quà tặng trang sức',
+        action: () => sendMessage('Tôi cần tư vấn quà tặng trang sức cho người thân.'),
+        icon: '🎁',
+        category: 'general',
+        priority: 3
+      }
+    ];
+  }, [sendMessage]);
+
+  // Smart suggestions generator - combines product context, conversation context, and defaults
+  // Always returns 4-6 suggestions sorted by priority to ensure consistent UI
+  const getSmartSuggestions = useCallback((): Suggestion[] => {
+    const allSuggestions: Suggestion[] = [];
+    const usedIds = new Set<string>();
+
+    // Priority 1: Product-specific suggestions (if available)
+    const productSuggestions = getProductSuggestions();
+    if (productSuggestions.length > 0) {
+      // Take 2-3 product suggestions
+      productSuggestions.slice(0, 3).forEach(suggestion => {
+        if (!usedIds.has(suggestion.id)) {
+          allSuggestions.push(suggestion);
+          usedIds.add(suggestion.id);
+        }
+      });
+    }
+
+    // Priority 2: Conversation-aware suggestions (if there's conversation)
+    const conversationSuggestions = getConversationSuggestions();
+    if (conversationSuggestions.length > 0) {
+      // Take 2-3 conversation suggestions
+      conversationSuggestions.slice(0, 3).forEach(suggestion => {
+        if (!usedIds.has(suggestion.id) && allSuggestions.length < 6) {
+          allSuggestions.push(suggestion);
+          usedIds.add(suggestion.id);
+        }
+      });
+    }
+
+    // Priority 3: Fill with default suggestions to ensure minimum 4 suggestions
+    const defaultSuggestions = getDefaultSuggestions();
+    defaultSuggestions.forEach(suggestion => {
+      if (!usedIds.has(suggestion.id) && allSuggestions.length < 6) {
+        allSuggestions.push(suggestion);
+        usedIds.add(suggestion.id);
+      }
+    });
+
+    // Sort by priority (lower number = higher priority), then take top 6
+    const sorted = allSuggestions.sort((a, b) => {
+      const priorityA = a.priority ?? 999;
+      const priorityB = b.priority ?? 999;
+      return priorityA - priorityB;
+    });
+
+    // Always return at least 4 suggestions, maximum 6
+    return sorted.slice(0, 6);
+  }, [getProductSuggestions, getConversationSuggestions, getDefaultSuggestions]);
 
   return {
     messages,
@@ -355,7 +500,7 @@ export function useChatAI(options: UseChatAIOptions = {}) {
     sendMessage,
     addMessage,
     clearChatHistory,
-    suggestions: getContextualSuggestions(),
+    suggestions: getSmartSuggestions(),
     hasHistory: messages.length > 1
   };
 }
