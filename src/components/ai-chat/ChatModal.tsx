@@ -37,13 +37,19 @@ export default function ChatModal({ isOpen, onClose, productContext }: ChatModal
     hasHistory
   } = useChatAI({
     maxHistory: 50,
-    enablePersistence: true
+    enablePersistence: true,
+    productContext: productContext ? {
+      productId: productContext.productId,
+      productName: productContext.productName,
+      productCategory: productContext.productCategory
+    } : undefined
   });
 
   const [isMinimized, setIsMinimized] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasInitialized = useRef(false);
 
   // Memoize welcome message to prevent recreation
   const welcomeMessage = useMemo(() => {
@@ -72,13 +78,44 @@ Bạn muốn biết gì về sản phẩm này?`,
     };
   }, [productContext]);
 
-  // Initialize with welcome message if no history
+  // Initialize welcome message - check localStorage directly to avoid race condition
   useEffect(() => {
-    // Only add welcome message if there's no history and modal is open
-    if (messages.length === 0 && isOpen) {
-      addMessage(welcomeMessage);
+    // Only run once per mount
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+    
+    // Check localStorage synchronously to avoid race condition
+    const CHAT_STORAGE_KEY = 'aifshop_chat_history';
+    let hasStoredMessages = false;
+    
+    try {
+      const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (stored) {
+        const parsedMessages = JSON.parse(stored);
+        hasStoredMessages = Array.isArray(parsedMessages) && parsedMessages.length > 0;
+      }
+    } catch (error) {
+      console.error('Error checking localStorage:', error);
     }
-  }, [messages.length, addMessage, isOpen, welcomeMessage]);
+    
+    // If there's stored history, don't add welcome message
+    if (hasStoredMessages) {
+      console.log('Found stored messages, skipping welcome message');
+      return;
+    }
+    
+    // Also check current messages state (might be loaded already)
+    if (messages.length > 0) {
+      console.log('Messages already loaded, skipping welcome message');
+      return;
+    }
+    
+    // Only add welcome if no localStorage data and no messages
+    console.log('No history found, adding welcome message');
+    addMessage(welcomeMessage);
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   // Optimized scroll to bottom with requestAnimationFrame
   useEffect(() => {
@@ -112,15 +149,32 @@ Bạn muốn biết gì về sản phẩm này?`,
     };
   }, [isOpen]);
 
+  // Smart suggestions visibility logic
+  useEffect(() => {
+    // Show suggestions when:
+    // 1. AI finished responding (isLoading becomes false)
+    // 2. Not too many messages (keep UI clean after long conversation)
+    if (!isLoading && messages.length > 0 && messages.length < 20) {
+      const lastMessage = messages[messages.length - 1];
+      // Only show if last message is from AI (assistant)
+      if (lastMessage && lastMessage.role === 'assistant') {
+        setShowSuggestions(true);
+      }
+    }
+  }, [isLoading, messages.length, messages]);
+
   // Memoized event handlers
   const handleSendMessage = useCallback(async (content: string) => {
     try {
+      // Hide suggestions while sending (will show again after AI responds)
+      setShowSuggestions(false);
       // Pass product context to sendMessage if available
       await sendMessage(content, productContext?.productId);
-      setShowSuggestions(false); // Hide suggestions after sending a message
     } catch (error) {
       // Error is handled by the hook
       toast.error('Không thể gửi tin nhắn. Vui lòng thử lại.');
+      // Show suggestions again on error
+      setShowSuggestions(true);
     }
   }, [sendMessage, productContext?.productId]);
 
@@ -128,7 +182,12 @@ Bạn muốn biết gì về sản phẩm này?`,
     clearChatHistory();
     setShowSuggestions(true);
     toast.success('Đã xóa lịch sử trò chuyện');
-  }, [clearChatHistory]);
+    
+    // After clearing, add welcome message again (with delay to let state update)
+    setTimeout(() => {
+      addMessage(welcomeMessage);
+    }, 100);
+  }, [clearChatHistory, addMessage, welcomeMessage]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -151,6 +210,7 @@ Bạn muốn biết gì về sản phẩm này?`,
       <div className={`
         fixed z-50 bg-white shadow-2xl
         border border-brand-light
+        rounded-lg overflow-hidden
         transition-all duration-300 ease-out
         chat-modal-container
         ${isMinimized
@@ -187,7 +247,7 @@ Bạn muốn biết gì về sản phẩm này?`,
           <div className="flex items-center gap-2">
             <button
               onClick={handleMinimize}
-              className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
               aria-label={isMinimized ? "Expand" : "Minimize"}
             >
               {isMinimized ? (
@@ -199,7 +259,7 @@ Bạn muốn biết gì về sản phẩm này?`,
             
             <button
               onClick={handleClose}
-              className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
               aria-label="Close"
             >
               <MdClose className="w-5 h-5" />

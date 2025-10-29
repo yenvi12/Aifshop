@@ -346,6 +346,190 @@ textarea:focus {
   }
 }
 
+/* Enhanced Quick Suggestions Styling */
+.quick-suggestions-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-suggestions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Suggestion chip animation */
+.quick-suggestion-chip {
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  user-select: none;
+}
+
+.quick-suggestion-chip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
+}
+
+.quick-suggestion-chip:hover::before {
+  left: 100%;
+}
+
+/* Enter animation for individual chips */
+.quick-suggestion-enter {
+  animation: chipFadeIn 0.4s ease-out both;
+}
+
+@keyframes chipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Smooth transitions when suggestions change */
+.quick-suggestions-container {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Better visual hierarchy */
+.quick-suggestion-chip {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.quick-suggestion-chip:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.quick-suggestion-chip:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .quick-suggestions-grid {
+    gap: 0.375rem;
+  }
+  
+  .quick-suggestion-chip {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Category-based color schemes */
+.quick-suggestion-chip[class*="product"] {
+  border-width: 1.5px;
+}
+
+.quick-suggestion-chip[class*="conversation"] {
+  border-width: 1.5px;
+}
+
+/* Compact mode styles */
+.quick-suggestions-compact {
+  height: auto;
+  min-height: 80px;
+}
+
+.quick-suggestions-compact-grid {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Popover styles - Fixed positioning to escape overflow context */
+.quick-suggestions-popover {
+  animation: popoverFadeIn 0.2s ease-out;
+  pointer-events: auto;
+  margin-bottom: 8px; /* Space between button and popover */
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.quick-suggestions-popover-content {
+  animation: popoverSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@keyframes popoverSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth rotation transition */
+.quick-suggestion-enter {
+  animation: chipFadeIn 0.3s ease-out both;
+}
+
+/* Custom scrollbar for popover */
+.quick-suggestions-popover-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.quick-suggestions-popover-content::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.quick-suggestions-popover-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.quick-suggestions-popover-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .quick-suggestions-compact {
+    min-height: 70px;
+    padding: 0.5rem;
+  }
+  
+  .quick-suggestions-popover {
+    right: -0.5rem !important;
+    left: -0.5rem !important;
+    width: calc(100% + 1rem);
+  }
+  
+  .quick-suggestions-popover-content {
+    min-width: 100%;
+    max-width: 100%;
+  }
+}
+
 /* Improved input field focus */
 .input-improved {
   transition: all 0.2s ease;
@@ -402,6 +586,31 @@ textarea:focus {
 
 .chat-messages-improved::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+/* Improved textarea scrollbar in chat input */
+.input-improved::-webkit-scrollbar {
+  width: 4px;
+}
+
+.input-improved::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.input-improved::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+.input-improved::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Ensure stable textarea sizing */
+.input-improved {
+  line-height: 1.25rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 /* Reduce motion for users who prefer it */

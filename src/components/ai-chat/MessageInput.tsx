@@ -9,6 +9,9 @@ interface MessageInputProps {
   placeholder?: string;
 }
 
+const MIN_HEIGHT = 40; // Minimum height in pixels
+const MAX_HEIGHT = 96; // Maximum height in pixels
+
 export default function MessageInput({ 
   onSendMessage, 
   disabled = false, 
@@ -16,28 +19,34 @@ export default function MessageInput({
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debounced auto-resize textarea
-  useEffect(() => {
-    if (resizeTimeoutRef.current) {
-      clearTimeout(resizeTimeoutRef.current);
-    }
+  // Auto-resize textarea based on content
+  const adjustHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Reset to min height to get accurate scrollHeight
+    textarea.style.height = `${MIN_HEIGHT}px`;
     
-    resizeTimeoutRef.current = setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        const scrollHeight = textareaRef.current.scrollHeight;
-        textareaRef.current.style.height = `${Math.min(scrollHeight, 96)}px`; // Reduced max height
-      }
-    }, 16); // ~60fps
+    // Get the scroll height
+    const scrollHeight = textarea.scrollHeight;
+    
+    // Set new height within bounds
+    const newHeight = Math.min(Math.max(scrollHeight, MIN_HEIGHT), MAX_HEIGHT);
+    textarea.style.height = `${newHeight}px`;
+    
+    // Control overflow
+    if (scrollHeight > MAX_HEIGHT) {
+      textarea.style.overflowY = 'auto';
+    } else {
+      textarea.style.overflowY = 'hidden';
+    }
+  }, []);
 
-    return () => {
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-    };
-  }, [message]);
+  // Adjust height when message changes
+  useEffect(() => {
+    adjustHeight();
+  }, [message, adjustHeight]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +56,10 @@ export default function MessageInput({
     onSendMessage(message.trim());
     setMessage("");
     
-    // Reset textarea height
+    // Reset textarea height to minimum
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${MIN_HEIGHT}px`;
+      textareaRef.current.style.overflowY = 'hidden';
     }
   }, [message, disabled, onSendMessage]);
 
@@ -77,18 +87,19 @@ export default function MessageInput({
             placeholder={placeholder}
             disabled={disabled}
             rows={1}
+            style={{ minHeight: `${MIN_HEIGHT}px` }}
             className={`
               w-full px-3 py-2.5 pr-10
               bg-gray-50 border border-gray-200
               rounded-xl resize-none
               focus:outline-none focus:ring-2 focus:ring-brand-primary/30
               focus:border-brand-primary focus:bg-white
-              transition-all duration-200 text-sm placeholder-gray-400 input-improved
+              transition-colors duration-200 text-sm placeholder-gray-400 input-improved
+              leading-5
               ${disabled
                 ? 'opacity-50 cursor-not-allowed'
                 : 'hover:bg-white hover:border-gray-300'
               }
-              max-h-24
             `}
             aria-label="Message input"
           />
