@@ -97,45 +97,45 @@ function MessageRenderer({ item, onProductClick, onButtonClick }: MessageRendere
   switch (item.type) {
     case 'header':
       return (
-        <HeaderRenderer level={item.props?.level || 1}>
+        <HeaderRenderer level={Math.min(Math.max((item.props?.level as number) || 1, 1), 3) as 1 | 2 | 3}>
           {item.content}
         </HeaderRenderer>
       );
     
     case 'list':
       return (
-        <ListRenderer type={item.props?.type || 'unordered'}>
-          {item.props?.items?.map((listItem: string, index: number) => (
+        <ListRenderer type={(item.props?.type as string) === 'ordered' ? 'ordered' : 'unordered'}>
+          {(item.props?.items as string[])?.map((listItem: string, index: number) => (
             <li key={index}>{listItem}</li>
           ))}
         </ListRenderer>
       );
-    
+
     case 'table':
       return (
-        <TableRenderer headers={item.props?.headers} rows={item.props?.rows} />
+        <TableRenderer headers={item.props?.headers as string[]} rows={item.props?.rows as string[][]} />
       );
-    
+
     case 'product':
       return (
-        <ProductRenderer 
-          productId={item.props?.productId}
+        <ProductRenderer
+          productId={item.props?.productId as string}
           onClick={onProductClick}
         />
       );
-    
+
     case 'button':
       return (
-        <ButtonRenderer 
+        <ButtonRenderer
           text={item.content}
-          variant={item.props?.variant || 'primary'}
+          variant={(item.props?.variant as string) === 'primary' ? 'primary' : (item.props?.variant as string) === 'secondary' ? 'secondary' : (item.props?.variant as string) === 'outline' ? 'outline' : (item.props?.variant as string) === 'ghost' ? 'ghost' : 'primary'}
           onClick={onButtonClick}
         />
       );
-    
+
     case 'emphasis':
       return (
-        <TextRenderer strong={item.props?.strong} italic={item.props?.italic}>
+        <TextRenderer strong={item.props?.strong as boolean} italic={item.props?.italic as boolean}>
           {item.content}
         </TextRenderer>
       );

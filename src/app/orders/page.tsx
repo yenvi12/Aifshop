@@ -1,3 +1,4 @@
+import Image from "next/image";
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Section from "@/components/ui/Section";
 import { supabase } from "@/lib/supabase";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { MdShoppingBag, MdPayment, MdHistory, MdKeyboardArrowRight, MdCheckCircle, MdSchedule, MdLocalShipping, MdDone, MdDownload, MdRefresh, MdSupport, MdLocationOn } from "react-icons/md";
+import { MdShoppingBag, MdPayment, MdKeyboardArrowRight, MdCheckCircle, MdSchedule, MdLocalShipping, MdDone, MdRefresh } from "react-icons/md";
 
 // Types
 interface OrderItem {
@@ -73,12 +74,10 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
       if (session?.access_token) {
         await fetchData(session.access_token);
       } else {
@@ -666,7 +665,7 @@ function OrderCard({ order }: { order: Order }) {
                 <div>
                   <p className="text-sm text-brand-secondary font-medium mb-1">Delivery Address</p>
                   <p className="text-sm text-brand-dark font-medium break-words leading-relaxed">
-                    {(order as any)?.shippingAddress?.shipping || order.user?.defaultAddress?.shipping || 'No shipping address provided'}
+                    {order.shippingAddress?.shipping || order.user?.defaultAddress?.shipping || 'No shipping address provided'}
                   </p>
                 </div>
               </div>

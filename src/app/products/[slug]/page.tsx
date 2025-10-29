@@ -2,6 +2,20 @@ import { notFound } from "next/navigation";
 import ProductDetail from "@/components/ProductDetail";
 import { type Product } from "@/components/ProductCard";
 
+interface RawProduct {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  compareAtPrice?: number;
+  image?: string;
+  images?: string[];
+  badge?: string;
+  rating?: number;
+  description?: string;
+  sizes?: string[];
+}
+
 // Fetch product from API
 async function getProduct(slug: string) {
   try {
@@ -85,9 +99,9 @@ async function getRelatedProducts(currentProductId: string) {
 
     // Get related products (excluding current product)
     return result.data
-      .filter((p: any) => p.id !== currentProductId)
+      .filter((p: RawProduct) => p.id !== currentProductId)
       .slice(0, 4)
-      .map((p: any) => ({
+      .map((p: RawProduct) => ({
         id: p.id,
         slug: p.slug,
         name: p.name,
@@ -104,9 +118,9 @@ async function getRelatedProducts(currentProductId: string) {
 }
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default async function ProductPage({ params }: PageProps) {

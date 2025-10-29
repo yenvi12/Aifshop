@@ -97,7 +97,7 @@ export default function RegisterPage() {
         if (data.details) {
           const errorMessages = Object.values(data.details)
             .filter(detail => detail && typeof detail === 'object' && '_errors' in detail)
-            .map(detail => (detail as any)._errors?.[0])
+            .map(detail => (detail as { _errors: string[] })._errors?.[0])
             .filter(Boolean)
             .join(', ');
           errorMessage = errorMessages || errorMessage;

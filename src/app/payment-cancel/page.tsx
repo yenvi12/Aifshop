@@ -7,6 +7,7 @@ export default function PaymentCancelPage() {
   const [updateAttempts, setUpdateAttempts] = useState(0);
   const [showRetryButton, setShowRetryButton] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Update payment status to CANCELLED in database
     updatePaymentStatus();
@@ -190,7 +191,7 @@ export default function PaymentCancelPage() {
         </h1>
         <p className="text-gray-600 mb-8 leading-relaxed">
           Your payment was cancelled. No charges were made to your account.
-          You can try again whenever you're ready.
+          You can try again whenever you&apos;re ready.
         </p>
 
         {/* Actions */}

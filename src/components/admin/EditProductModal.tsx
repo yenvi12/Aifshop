@@ -515,7 +515,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
               </div>
 
               {formData.sizes.length === 0 ? (
-                <p className="text-brand-secondary text-sm">No size options added. Click "Add Size" to add custom sizes.</p>
+                <p className="text-brand-secondary text-sm">No size options added. Click &quot;Add Size&quot; to add custom sizes.</p>
               ) : (
                 <div className="space-y-3">
                   {formData.sizes.map((size, index) => (

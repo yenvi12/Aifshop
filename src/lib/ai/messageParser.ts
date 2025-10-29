@@ -1,7 +1,7 @@
 export interface ParsedMessage {
   type: 'text' | 'header' | 'list' | 'table' | 'product' | 'button' | 'link' | 'emphasis' | 'code';
   content: string;
-  props?: Record<string, any>;
+  props?: Record<string, unknown>;
   children?: ParsedMessage[];
 }
 

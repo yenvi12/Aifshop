@@ -19,19 +19,19 @@ interface SizeInfo {
 }
 
 // Helper function to verify user token
-function verifyUserToken(request: NextRequest) {
+function verifyUserToken(request: NextRequest): { success: true, userId: string, email: string, role: string } | { success: false, error: string, status: number } {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { error: 'Authorization header missing', status: 401 }
+    return { success: false, error: 'Authorization header missing', status: 401 }
   }
 
   const token = authHeader.substring(7)
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload
-    return { userId: decoded.userId, email: decoded.email, role: decoded.role }
+    return { success: true, userId: decoded.userId, email: decoded.email, role: decoded.role }
   } catch {
-    return { error: 'Invalid or expired token', status: 401 }
+    return { success: false, error: 'Invalid or expired token', status: 401 }
   }
 }
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   try {
     // Verify user token
     const authResult = verifyUserToken(request)
-    if (authResult.error) {
+    if (!authResult.success) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
   try {
     // ✅ Verify user token
     const authResult = verifyUserToken(request)
-    if (authResult.error) {
+    if (!authResult.success) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const sizes = product.sizes as SizeInfo[]
+      const sizes = product.sizes as unknown as SizeInfo[]
       const sizeInfo = sizes.find((s: SizeInfo) => s.name === size)
 
       if (!sizeInfo) {
@@ -235,7 +235,7 @@ export async function DELETE(request: NextRequest) {
   try {
     // Verify user token
     const authResult = verifyUserToken(request)
-    if (authResult.error) {
+    if (!authResult.success) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }

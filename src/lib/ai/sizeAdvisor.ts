@@ -16,6 +16,37 @@ export interface UserMeasurement {
   weight?: number // kg
 }
 
+interface ProductInfo {
+  name: string;
+  category: string;
+  sizes: unknown;
+  description: string | null;
+}
+
+interface OrderItemInfo {
+  product: ProductInfo | null;
+  size: string | null;
+}
+
+interface UserSizeHistory {
+  size: string;
+  productName: string;
+  orderDate: Date;
+}
+
+interface SizeChartItem {
+  size: string;
+  circumference: number;
+}
+
+interface RingSize extends SizeChartItem {
+  diameter: number;
+}
+
+interface BraceletSize extends SizeChartItem {
+  wristRange: string;
+}
+
 export class SizeAdvisor {
   // Standard ring size chart (Vietnam/International)
   private static readonly RING_SIZE_CHART = [
@@ -70,13 +101,13 @@ export class SizeAdvisor {
       // Get product information
       const product = await prisma.product.findUnique({
         where: { id: productId },
-        select: { 
-          name: true, 
-          category: true, 
+        select: {
+          name: true,
+          category: true,
           sizes: true,
-          description: true 
+          description: true
         }
-      })
+      }) as ProductInfo | null
 
       if (!product) {
         throw new Error('Product not found')
@@ -105,8 +136,8 @@ export class SizeAdvisor {
       const userHistory = await this.getUserBraceletHistory(userId)
       const product = await prisma.product.findUnique({
         where: { id: productId },
-        select: { name: true, category: true, sizes: true }
-      })
+        select: { name: true, category: true, sizes: true, description: true }
+      }) as ProductInfo | null
 
       if (!product) {
         throw new Error('Product not found')
@@ -125,7 +156,7 @@ export class SizeAdvisor {
     }
   }
 
-  private static async getUserRingHistory(userId: string): Promise<any[]> {
+  private static async getUserRingHistory(userId: string): Promise<UserSizeHistory[]> {
     try {
       const orders = await prisma.order.findMany({
         where: { userId },
@@ -138,16 +169,16 @@ export class SizeAdvisor {
         }
       })
 
-      const ringItems = orders.flatMap(order =>
+      const ringItems: UserSizeHistory[] = orders.flatMap(order =>
         order.orderItems
-          .filter((item: any) =>
+          .filter((item: OrderItemInfo) =>
             item.product &&
             item.size &&
             item.product.category.toLowerCase().includes('nhẫn')
           )
-          .map((item: any) => ({
-            size: item.size,
-            productName: item.product.name,
+          .map((item: OrderItemInfo): UserSizeHistory => ({
+            size: item.size!,
+            productName: item.product!.name,
             orderDate: order.createdAt
           }))
       )
@@ -159,7 +190,7 @@ export class SizeAdvisor {
     }
   }
 
-  private static async getUserBraceletHistory(userId: string): Promise<any[]> {
+  private static async getUserBraceletHistory(userId: string): Promise<UserSizeHistory[]> {
     try {
       const orders = await prisma.order.findMany({
         where: { userId },
@@ -172,16 +203,16 @@ export class SizeAdvisor {
         }
       })
 
-      const braceletItems = orders.flatMap(order =>
+      const braceletItems: UserSizeHistory[] = orders.flatMap(order =>
         order.orderItems
-          .filter((item: any) =>
+          .filter((item: OrderItemInfo) =>
             item.product &&
             item.size &&
             item.product.category.toLowerCase().includes('vòng')
           )
-          .map((item: any) => ({
-            size: item.size,
-            productName: item.product.name,
+          .map((item: OrderItemInfo): UserSizeHistory => ({
+            size: item.size!,
+            productName: item.product!.name,
             orderDate: order.createdAt
           }))
       )
@@ -219,7 +250,7 @@ export class SizeAdvisor {
     }
   }
 
-  private static recommendByHistory(history: any[], product: any): SizeRecommendation {
+  private static recommendByHistory(history: UserSizeHistory[], product: ProductInfo): SizeRecommendation {
     // Find most frequently purchased size
     const sizeFrequency: Record<string, number> = {}
     history.forEach(item => {
@@ -238,7 +269,7 @@ export class SizeAdvisor {
     }
   }
 
-  private static recommendByGeneralInfo(product: any, measurements?: UserMeasurement): SizeRecommendation {
+  private static recommendByGeneralInfo(product: ProductInfo, measurements?: UserMeasurement): SizeRecommendation {
     // Use height/weight to estimate size
     let estimatedSize = '17' // default ring size
     let reasoning = 'Đây là size phổ biến nhất phù hợp với đa số người dùng.'
@@ -276,7 +307,7 @@ export class SizeAdvisor {
     }
   }
 
-  private static getAlternativeSizes(currentSize: string, chart: any[]): string[] {
+  private static getAlternativeSizes(currentSize: string, chart: SizeChartItem[]): string[] {
     const currentIndex = chart.findIndex(size => size.size === currentSize)
     const alternatives: string[] = []
     
