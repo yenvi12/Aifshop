@@ -219,28 +219,13 @@ export default function SearchBar({
 
       {/* Search Suggestions - Conditional rendering */}
       {showSuggestions && (
-        <>
-          {/* Hero variant: use direct rendering (like EnhancedSearchBar) */}
-          {variant === "hero" && (
-            <SearchSuggestions
-              query={query}
-              isOpen={isSuggestionsOpen}
-              onSelect={handleSuggestionSelect}
-              onClose={() => setIsSuggestionsOpen(false)}
-            />
-          )}
-          
-          {/* Navbar variant: use Portal to avoid z-index issues */}
-          {variant === "navbar" && (
-            <SearchSuggestionsPortal
-              query={query}
-              isOpen={isSuggestionsOpen}
-              onSelect={handleSuggestionSelect}
-              onClose={() => setIsSuggestionsOpen(false)}
-              sourceRef={inputRef}
-            />
-          )}
-        </>
+        <SearchSuggestionsPortal
+          query={query}
+          isOpen={isSuggestionsOpen}
+          onSelect={handleSuggestionSelect}
+          onClose={() => setIsSuggestionsOpen(false)}
+          sourceRef={inputRef}
+        />
       )}
 
       {/* Quick Filter Chips */}

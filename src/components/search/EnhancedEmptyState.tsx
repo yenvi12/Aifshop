@@ -65,7 +65,7 @@ export default function EnhancedEmptyState({
           </h2>
           {hasSearched ? (
             <p className="text-brand-secondary mb-4">
-              Không có sản phẩm nào khớp với từ khóa "{query}"
+              Không có sản phẩm nào khớp với từ khóa &quot;{query}&quot;
             </p>
           ) : (
             <p className="text-brand-secondary mb-4">
