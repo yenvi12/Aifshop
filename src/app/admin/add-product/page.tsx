@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MdCloudUpload, MdAdd, MdImage } from "react-icons/md";
@@ -29,6 +29,8 @@ export default function AddProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<string[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     description: "",
@@ -241,7 +243,33 @@ export default function AddProductPage() {
     }
   };
 
-  const categories = [
+  // Load categories từ API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await fetch('/api/categories');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setCategories(result.data);
+        } else {
+          // Fallback categories nếu API fails
+          setCategories(['Necklaces', 'Earrings', 'Bracelets', 'Rings', 'Jewelry Sets', 'Other']);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        // Fallback categories nếu API fails
+        setCategories(['Necklaces', 'Earrings', 'Bracelets', 'Rings', 'Jewelry Sets', 'Other']);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const fallbackCategories = [
     'Necklaces',
     'Earrings',
     'Bracelets',
@@ -249,6 +277,9 @@ export default function AddProductPage() {
     'Jewelry Sets',
     'Other'
   ];
+
+  // Sử dụng categories từ API hoặc fallback nếu đang loading
+  const categoriesList = categoriesLoading ? fallbackCategories : categories;
 
   return (
     <main className="min-h-screen bg-brand-light/30">
@@ -313,7 +344,7 @@ export default function AddProductPage() {
                     }`}
                   >
                     <option value="">Select category</option>
-                    {categories.map(cat => (
+                    {categoriesList.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>

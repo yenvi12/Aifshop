@@ -347,9 +347,9 @@ export default function ProductListPage() {
               No products found.
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
               {products.map((p) => (
-                <div key={p.id} className="relative z-0">
+                <div key={p.id} className="relative z-0 h-full">
                   <ProductCard p={p} onAdd={handleAddToCart} />
                 </div>
               ))}
