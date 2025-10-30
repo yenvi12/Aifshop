@@ -69,7 +69,7 @@ function SearchContent() {
   // Filter state
   const [filters, setFilters] = useState<SearchFilters>({
     category: [],
-    priceRange: [0, 1000000],
+    priceRange: [0, 100000000],
     rating: 0,
     inStock: false
   });
@@ -394,13 +394,13 @@ function SearchContent() {
                     Tìm thấy <span className="font-semibold text-brand-primary">{filteredProducts.length}</span>{" "}
                     {filteredProducts.length === 1 ? "sản phẩm" : "sản phẩm"}
                     {query && (
-                      <span className="ml-1">cho &ldquo;{query}&ldquo;</span>
+                      <span className="ml-1">cho &quot;{query}&quot;</span>
                     )}
                   </p>
                   
                   {/* Active Filters Count */}
                   {(filters.category.length > 0 || filters.rating > 0 || filters.inStock ||
-                    filters.priceRange[0] > 0 || filters.priceRange[1] < 1000000) && (
+                    filters.priceRange[0] > 0 || filters.priceRange[1] < 100000000) && (
                     <span className="text-xs bg-brand-primary/10 text-brand-primary px-2 py-1 rounded-full">
                       Đã lọc
                     </span>

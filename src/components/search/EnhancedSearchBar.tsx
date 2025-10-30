@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { MdSearch, MdClose } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import SearchSuggestions from "./SearchSuggestions";
+import SearchSuggestionsPortal from "./SearchSuggestionsPortal";
 
 interface EnhancedSearchBarProps {
   onSearch?: (query: string) => void;
@@ -11,6 +12,7 @@ interface EnhancedSearchBarProps {
   placeholder?: string;
   className?: string;
   showSuggestions?: boolean;
+  usePortal?: boolean;
 }
 
 export default function EnhancedSearchBar({
@@ -18,7 +20,8 @@ export default function EnhancedSearchBar({
   initialValue = "",
   placeholder = "Search for products...",
   className = "",
-  showSuggestions = true
+  showSuggestions = true,
+  usePortal = false
 }: EnhancedSearchBarProps) {
   const router = useRouter();
   const [query, setQuery] = useState(initialValue);
@@ -133,12 +136,22 @@ export default function EnhancedSearchBar({
 
       {/* Search Suggestions */}
       {showSuggestions && (
-        <SearchSuggestions
-          query={query}
-          isOpen={isSuggestionsOpen}
-          onSelect={handleSuggestionSelect}
-          onClose={() => setIsSuggestionsOpen(false)}
-        />
+        usePortal ? (
+          <SearchSuggestionsPortal
+            query={query}
+            isOpen={isSuggestionsOpen}
+            onSelect={handleSuggestionSelect}
+            onClose={() => setIsSuggestionsOpen(false)}
+            sourceRef={inputRef}
+          />
+        ) : (
+          <SearchSuggestions
+            query={query}
+            isOpen={isSuggestionsOpen}
+            onSelect={handleSuggestionSelect}
+            onClose={() => setIsSuggestionsOpen(false)}
+          />
+        )
       )}
 
       {/* Quick Filter Chips (when no query) */}
