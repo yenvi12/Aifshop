@@ -80,10 +80,15 @@ body {
 
 /* Smooth focus transitions */
 button:focus,
-input:focus,
 textarea:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(0, 136, 204, 0.2);
+}
+
+/* Hero search bar - no blue outline on focus */
+.hero-search-container input:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Telegram-inspired scrollbar */
