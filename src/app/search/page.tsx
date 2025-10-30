@@ -394,7 +394,7 @@ function SearchContent() {
                     Tìm thấy <span className="font-semibold text-brand-primary">{filteredProducts.length}</span>{" "}
                     {filteredProducts.length === 1 ? "sản phẩm" : "sản phẩm"}
                     {query && (
-                      <span className="ml-1">cho "{query}"</span>
+                      <span className="ml-1">cho &ldquo;{query}&ldquo;</span>
                     )}
                   </p>
                   
