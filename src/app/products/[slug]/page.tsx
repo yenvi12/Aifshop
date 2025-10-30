@@ -19,14 +19,17 @@ interface RawProduct {
 // Fetch product from API
 async function getProduct(slug: string) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products?slug=${slug}`, {
-      cache: 'no-store' // Always fetch fresh data
+    // ✅ xác định base URL theo môi trường
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000");
+
+    // ✅ gọi API với URL đúng
+    const response = await fetch(`${baseUrl}/api/products?slug=${slug}`, {
+      cache: "no-store", // luôn lấy dữ liệu mới
     });
-
-    if (!response.ok) {
-      return null;
-    }
-
     const result = await response.json();
 
     if (!result.success || !result.data) {
