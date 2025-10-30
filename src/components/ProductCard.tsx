@@ -24,6 +24,8 @@ export type Product = {
   colors?: string[];
   sizes?: { name: string; stock: number }[];
   description?: string; // 👈 thêm mô tả sản phẩm
+  category?: string; // Thêm category field
+  createdAt?: string; // Thêm createdAt field
 };
 
 type Props = {
@@ -42,7 +44,7 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
 
   return (
     <div
-      className={`group rounded-2xl border border-brand-light bg-white overflow-hidden transition
+      className={`group h-full flex flex-col rounded-2xl border border-brand-light bg-white overflow-hidden transition
       ${compact ? "hover:shadow-md" : "hover:shadow-smooth"} hover:-translate-y-[2px]`}
     >
       {/* Image */}
@@ -91,7 +93,7 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         {/* Tên sản phẩm */}
         <Link
           href={p.slug ? `/products/${p.slug}` : "#"}
@@ -141,19 +143,27 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
         ) : null}
 
         {/* Price + Buttons */}
-        <div className="mt-3 flex items-center justify-between">
-          {/* Cụm giá */}
-          <div className="flex flex-col justify-center items-start leading-tight">
-            {/* Giá gốc (trên) */}
-            {p.compareAtPrice && p.price && p.compareAtPrice > p.price && (
-              <span className="tabular-nums text-sm md:text-[13px] text-brand-secondary line-through mb-[2px]">
-                {p.compareAtPrice.toLocaleString("vi-VN")}₫
-              </span>
-            )}
+        <div className="mt-auto pt-3 flex items-center justify-between">
+          {/* Cụm giá - có min-height để đồng đều chiều cao */}
+          <div className="flex flex-col justify-center items-start leading-tight min-h-[3rem]">
+            {/* Giá gốc (trên) - luôn dành chỗ, ẩn khi không có sale */}
+            <span 
+              className={`tabular-nums text-sm md:text-[13px] text-brand-secondary line-through mb-[2px] ${
+                p.compareAtPrice && p.price && p.compareAtPrice > p.price 
+                  ? "opacity-100" 
+                  : "opacity-0 h-[1.25rem]"
+              }`}
+            >
+              {p.compareAtPrice ? `${p.compareAtPrice.toLocaleString("vi-VN")}₫` : "\u00A0"}
+            </span>
           
             {/* Giá hiện tại (dưới, in đậm) */}
             <span className="tabular-nums tracking-tight text-brand-dark font-bold text-lg md:text-xl leading-none">
-              {p.price ? `${p.price.toLocaleString("vi-VN")}₫` : "Price TBA"}
+              {p.price
+                ? `${p.price.toLocaleString("vi-VN")}₫`
+                : p.compareAtPrice
+                ? `${p.compareAtPrice.toLocaleString("vi-VN")}₫`
+                : "Price TBA"}
             </span>
           </div>
 

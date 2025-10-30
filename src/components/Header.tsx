@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
-  MdSearch,
   MdShoppingCart,
   MdPerson,
   MdLogout,
@@ -13,6 +12,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { isTokenExpired } from "@/lib/tokenManager";
+import SearchBar from "@/components/SearchBar";
 
 // Define TypeScript interfaces
 interface ConversationData {
@@ -397,15 +397,12 @@ export default function Header() {
 
         {/* ====== Search + Auth ====== */}
         <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="relative hidden sm:block">
-            <input
-              type="text"
-              placeholder="Search in site"
-              className="w-52 rounded-lg border border-brand-secondary/40 px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-primary/40"
-            />
-            <MdSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-secondary w-4 h-4" />
-          </div>
+          {/* Search - Hide on Home and Search pages */}
+          {pathname !== "/" && pathname !== "/search" && (
+            <div className="hidden sm:block">
+              <SearchBar variant="navbar" />
+            </div>
+          )}
 
           {/* Messages */}
           {mounted && user && (
