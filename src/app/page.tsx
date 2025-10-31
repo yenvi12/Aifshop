@@ -275,7 +275,21 @@ export default function HomePage() {
   return (
     <main className="min-h-screen" suppressHydrationWarning={true}>
       {/* ===== HERO SEARCH BAR with elevated z-index context ===== */}
-      <div className="relative z-10">
+
+      {/* ===== HERO CAROUSEL WITH AI BADGE ===== */}
+      <div className="relative max-w-7xl mx-auto px-4">
+        <HeroCarouselOverlay
+          className="py-6 md:py-8"
+          interval={3000}
+          slides={[
+            { title: "Khám phá những xu hướng thời trang mới nhất", caption: "Duyệt qua bộ sưu tập các phong cách độc đáo của chúng tôi và tìm ra phong cách phù hợp nhất với bạn", cta: { label: "Mua ngay", href: "/shop" }, src: "/demo/dan-tri-0603awo-pr07-1-crop-1709803508993.webp", position: "left" },
+            { title: "Trang sức tối giản, tác động tối đa", caption: "Những tác phẩm được tuyển chọn kỹ lưỡng với nét quyến rũ vượt thời gian", cta: { label: "Khám phá ngay", href: "/shop" }, src: "/demo/trang-suc-bac.avif", position: "center" },
+            { title: "Trang sức bạc", caption: "Trẻ trung, đơn giản", cta: { label: "Xem ngay", href: "/shop" }, src: "/demo/trangsuc.jpg", position: "center" },
+            { title: "Giày cao gót", caption: "Vẻ đẹp được đo bằng từng bước hoàn hảo", cta: { label: "Tìm hiểu ngay", href: "/shop" }, src: "/demo/giay.jpg", position: "left" },
+            { title: "Túi xách tay", caption: "Một chiếc túi, muôn sắc thái của phong cách", cta: { label: "Khám phá ", href: "/shop" }, src: "/demo/tuixach.png", position: "center" },
+          ]}
+        />
+       <div className="relative z-10">
         <div className="relative max-w-7xl mx-auto px-4 pt-6 pb-4">
           {/* Search container - Compact & Prominent */}
           <div className="relative flex flex-col items-center gap-3 animate-fade-in-up-slow">
@@ -297,21 +311,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* ===== HERO CAROUSEL WITH AI BADGE ===== */}
-      <div className="relative max-w-7xl mx-auto px-4">
-        <HeroCarouselOverlay
-          className="py-6 md:py-8"
-          interval={3000}
-          slides={[
-            { title: "Khám phá những xu hướng thời trang mới nhất", caption: "Duyệt qua bộ sưu tập các phong cách độc đáo của chúng tôi và tìm ra phong cách phù hợp nhất với bạn", cta: { label: "Mua ngay", href: "/shop" }, src: "/demo/dan-tri-0603awo-pr07-1-crop-1709803508993.webp", position: "left" },
-            { title: "Trang sức tối giản, tác động tối đa", caption: "Những tác phẩm được tuyển chọn kỹ lưỡng với nét quyến rũ vượt thời gian", cta: { label: "Khám phá ngay", href: "/shop" }, src: "/demo/trang-suc-bac.avif", position: "center" },
-            { title: "Trang sức bạc", caption: "Trẻ trung, đơn giản", cta: { label: "Xem ngay", href: "/shop" }, src: "/demo/trangsuc.jpg", position: "center" },
-            { title: "Giày cao gót", caption: "Vẻ đẹp được đo bằng từng bước hoàn hảo", cta: { label: "Tìm hiểu ngay", href: "/shop" }, src: "/demo/giay.jpg", position: "left" },
-            { title: "Túi xách tay", caption: "Một chiếc túi, muôn sắc thái của phong cách", cta: { label: "Khám phá ", href: "/shop" }, src: "/demo/tuixach.png", position: "center" },
-          ]}
-        />
+        </div>
 
         {/* ===== FEATURE SECTION ===== */}
 <section className="py-16 bg-white">
@@ -381,7 +381,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center mb-6 shadow-lg">
               <MdSmartToy className="w-8 h-8 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-brand-dark mb-3">AI Chatbot Assistant</h3>
+            <h3 className="text-xl font-bold text-brand-dark mb-3">Trợ lý ảo Chatbot AI</h3>
             <p className="text-brand-secondary leading-relaxed">
               Trợ lý ảo thông minh hỗ trợ 24/7, trả lời mọi thắc mắc của bạn về sản phẩm, đặt hàng và chính sách
             </p>
@@ -392,7 +392,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-secondary to-brand-accent flex items-center justify-center mb-6 shadow-lg">
               <MdStraighten className="w-8 h-8 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-brand-dark mb-3">Smart Size Advisor</h3>
+            <h3 className="text-xl font-bold text-brand-dark mb-3">Tư vấn chọn kích thước thông minh</h3>
             <p className="text-brand-secondary leading-relaxed">
               AI phân tích số đo của bạn và đề xuất size phù hợp nhất, giảm thiểu tỷ lệ đổi trả sản phẩm
             </p>
@@ -403,7 +403,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-accent to-brand-primary flex items-center justify-center mb-6 shadow-lg">
               <MdAutoAwesome className="w-8 h-8 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-brand-dark mb-3">Personalized Recommendations</h3>
+            <h3 className="text-xl font-bold text-brand-dark mb-3"> Gợi ý cá nhân hóa </h3>
             <p className="text-brand-secondary leading-relaxed">
               Gợi ý sản phẩm thông minh dựa trên sở thích, lịch sử mua sắm và xu hướng thời trang
             </p>
@@ -415,7 +415,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-3 pb-1 leading-tight">
-            Featured Products
+            Sản phẩm nổi bật
           </h2>
           <p className="text-brand-secondary text-lg mb-8">
             Khám phá bộ sưu tập được yêu thích nhất
@@ -431,7 +431,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
                   : 'bg-brand-light text-brand-dark hover:bg-brand-primary/10'
               }`}
             >
-              All Products
+              Tất cả sản phẩm 
             </button>
             <button
               onClick={() => setActiveFilter('new')}
@@ -441,7 +441,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
                   : 'bg-brand-light text-brand-dark hover:bg-brand-primary/10'
               }`}
             >
-              New Arrivals
+              Hàng mới về
             </button>
             <button
               onClick={() => setActiveFilter('sale')}
@@ -461,7 +461,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
                   : 'bg-brand-light text-brand-dark hover:bg-brand-primary/10'
               }`}
             >
-              Popular
+              Phổ  biến
             </button>
           </div>
         </div>
@@ -475,7 +475,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
             ))
           ) : (
             <div className="col-span-full text-center py-12">
-              <p className="text-brand-secondary">No products found in this category</p>
+              <p className="text-brand-secondary">Không tìm thấy sản phẩm nào trong danh mục này</p>
             </div>
           )}
         </div>
@@ -486,7 +486,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
               href="/shop"
               className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
             >
-              View All Products
+              Xem tất cả sản phẩm
               <MdTrendingUp className="w-5 h-5" />
             </Link>
           </div>
@@ -508,7 +508,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
               <div className="stat-number text-4xl font-bold mb-2">
                 {stats.customers.toLocaleString()}+
               </div>
-              <p className="stat-label text-brand-secondary font-medium">Happy Customers</p>
+              <p className="stat-label text-brand-secondary font-medium">Đánh giá của khách hàng</p>
             </div>
 
             {/* Average Rating */}
@@ -519,7 +519,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
               <div className="stat-number text-4xl font-bold mb-2">
                 {stats.rating}★
               </div>
-              <p className="stat-label text-brand-secondary font-medium">Average Rating</p>
+              <p className="stat-label text-brand-secondary font-medium">Đánh giá trung bình</p>
             </div>
 
             {/* AI Support */}
@@ -530,7 +530,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
               <div className="stat-number text-4xl font-bold mb-2">
                 {stats.support}/7
               </div>
-              <p className="stat-label text-brand-secondary font-medium">AI Support</p>
+              <p className="stat-label text-brand-secondary font-medium">AI hỗ trợ</p>
             </div>
 
             {/* Free Shipping */}
@@ -541,7 +541,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
               <div className="stat-number text-4xl font-bold mb-2">
                 {stats.shipping}%
               </div>
-              <p className="stat-label text-brand-secondary font-medium">Free Shipping</p>
+              <p className="stat-label text-brand-secondary font-medium">Miễn phí vận chuyển</p>
             </div>
           </div>
         </div>
@@ -551,7 +551,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
       <section className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4 pb-1 leading-tight">
-            Customer Testimonials
+            Trải nghiệm của khách hàng
           </h2>
           <p className="text-brand-secondary text-lg">
             Khách hàng nói gì về trải nghiệm của họ
@@ -634,7 +634,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
         ) : (
           <div className="text-center py-12 bg-brand-light/30 rounded-2xl">
             <MdStar className="w-16 h-16 text-brand-light mx-auto mb-4" />
-            <p className="text-brand-secondary">No reviews yet. Be the first to share your experience!</p>
+            <p className="text-brand-secondary">Chưa có đánh giá nào. Hãy là người đầu tiên chia sẻ trải nghiệm của bạn!</p>
           </div>
         )}
       </section>
@@ -661,7 +661,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
             {/* Content Side */}
             <div className="p-8 md:p-12">
               <div className="inline-block px-4 py-2 rounded-full bg-brand-primary/10 text-brand-primary font-semibold text-sm mb-6">
-                Our Story
+                Câu chuyện của chúng tôi
               </div>
               
               <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-6 pb-1 leading-tight">
@@ -683,7 +683,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
                 href="/about"
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
               >
-                Discover Our Story
+                Khám phá câu chuyện của chúng tôi
                 <MdAutoAwesome className="w-5 h-5" />
               </Link>
             </div>
