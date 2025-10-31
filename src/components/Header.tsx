@@ -361,7 +361,7 @@ export default function Header() {
             className={`${baseCls} ${isActive("/") ? activeCls : ""}`}
             aria-current={isActive("/") ? "page" : undefined}
           >
-            Home
+            Trang chủ
           </Link>
 
           <Link
@@ -369,7 +369,7 @@ export default function Header() {
             className={`${baseCls} ${isActive("/shop") ? activeCls : ""}`}
             aria-current={isActive("/shop") ? "page" : undefined}
           >
-            Shop
+            Sản phẩm
           </Link>
 
           <Link
@@ -377,7 +377,7 @@ export default function Header() {
             className={`${baseCls} ${isActive("/about") ? activeCls : ""}`}
             aria-current={isActive("/about") ? "page" : undefined}
           >
-            About Us
+            Thông tin
           </Link>
 
           <Link
@@ -386,7 +386,7 @@ export default function Header() {
             aria-current={isActive("/cart") ? "page" : undefined}
           >
             <MdShoppingCart className="w-4 h-4" />
-            Cart
+            Giỏ hàng
             {cartItemCount > 0 && (
               <span className="absolute -top-2 -right-5 bg-brand-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                 {cartItemCount > 99 ? "99+" : cartItemCount}
@@ -423,7 +423,7 @@ export default function Header() {
                 <div className="absolute right-0 mt-2 w-80 bg-white border border-brand-light rounded-lg shadow-lg z-50 message-menu max-h-96 overflow-y-auto">
                   <div className="p-4 border-b border-brand-light">
                     <h3 className="text-sm font-medium text-brand-dark">
-                      Messages
+                      Tin nhắn
                     </h3>
                   </div>
 
@@ -474,7 +474,7 @@ export default function Header() {
                       ))
                     ) : (
                       <div className="px-4 py-2 text-sm text-brand-secondary text-center">
-                        No recent messages
+                        Không có tin nhắn gần đây
                       </div>
                     )}
                   </div>
@@ -485,7 +485,7 @@ export default function Header() {
                       className="flex items-center justify-center w-full px-4 py-3 text-sm text-brand-primary hover:bg-brand-light/50"
                       onClick={() => setMessageDropdownOpen(false)}
                     >
-                      View All Messages
+                      Xem tất cả tin nhắn
                     </Link>
                   </div>
                 </div>
@@ -513,7 +513,7 @@ export default function Header() {
                         onClick={() => setDropdownOpen(false)}
                       >
                         <MdPerson className="w-4 h-4" />
-                        Profile
+                        Thông tin cá nhân
                       </Link>
                       <Link
                         href="/orders"
@@ -521,7 +521,7 @@ export default function Header() {
                         onClick={() => setDropdownOpen(false)}
                       >
                         <MdShoppingCart className="w-4 h-4" />
-                        Orders
+                        Đơn hàng
                       </Link>
                       {userRole === "ADMIN" && (
                         <Link
@@ -530,7 +530,7 @@ export default function Header() {
                           onClick={() => setDropdownOpen(false)}
                         >
                           <MdPerson className="w-4 h-4" />
-                          Admin Panel
+                          Quản lý 
                         </Link>
                       )}
                       <button
@@ -538,7 +538,7 @@ export default function Header() {
                         className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-brand-dark hover:bg-brand-light/50"
                       >
                         <MdLogout className="w-4 h-4" />
-                        Logout
+                        Đăng xuất
                       </button>
                     </div>
                   )}
@@ -549,13 +549,13 @@ export default function Header() {
                     href="/login"
                     className="text-brand-dark hover:text-brand-primary"
                   >
-                    Sign in
+                    Đăng nhập
                   </Link>
                   <Link
                     href="/register"
                     className="rounded-lg px-3 py-1.5 bg-brand-primary text-white hover:opacity-90"
                   >
-                    Sign up
+                    Đăng kí
                   </Link>
                 </>
               )}

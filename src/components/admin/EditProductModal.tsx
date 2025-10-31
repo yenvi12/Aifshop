@@ -339,7 +339,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
       <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-brand-light">
-          <h2 className="text-xl font-semibold text-brand-dark">Edit Product</h2>
+          <h2 className="text-xl font-bold text-brand-accent">Chỉnh sửa sản phẩm</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-brand-light/50 rounded-lg"
@@ -353,18 +353,21 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-brand-dark">Basic Information</h3>
+              <h3 className="text-lg font-semibold text-brand-dark">Thông tin cơ bản</h3>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Product Name *</label>
-                  <input
+                    <label className="block text-sm font-medium mb-1">
+                    Tên sản phẩm 
+                    <span className="text-red-500">*</span>
+                    </label>                  
+                    <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
+                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent ${
                       errors.name ? 'border-red-500' : 'border-brand-light'
                     }`}
                     placeholder="Enter product name"
@@ -375,17 +378,19 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category *</label>
+                  <label className="block text-sm font-medium mb-1">Danh mục 
+                    <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
                     required
-                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
+                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent ${
                       errors.category ? 'border-red-500' : 'border-brand-light'
                     }`}
                   >
-                    <option value="">Select category</option>
+                    <option value="">Lựa chọn danh mục</option>
                     {categories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -397,20 +402,20 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">Mô tả </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
+                  className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent"
                   placeholder="Describe your product"
                 />
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price ($)</label>
+                  <label className="block text-sm font-medium mb-1">Giá ($)</label>
                   <input
                     type="number"
                     name="price"
@@ -418,7 +423,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                     onChange={handleInputChange}
                     min="0"
                     step="0.01"
-                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
+                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent ${
                       errors.price ? 'border-red-500' : 'border-brand-light'
                     }`}
                     placeholder="0.00"
@@ -429,7 +434,9 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Original Price (Sale) *</label>
+                  <label className="block text-sm font-medium mb-1">Giá gốc (Sale) 
+                    <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     name="compareAtPrice"
@@ -451,7 +458,9 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Stock Quantity *</label>
+                  <label className="block text-sm font-medium mb-1">Số lượng tồn kho 
+                    <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     name="stock"
@@ -459,7 +468,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                     onChange={handleInputChange}
                     required
                     min="0"
-                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
+                    className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent ${
                       errors.stock ? 'border-red-500' : 'border-brand-light'
                     }`}
                     placeholder="0"
@@ -471,7 +480,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Badge</label>
+                <label className="block text-sm font-medium mb-1">Nhãn</label>
                 <select
                   name="badge"
                   value={formData.badge}
@@ -495,7 +504,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                   className="w-4 h-4 text-brand-primary bg-gray-100 border-gray-300 rounded focus:ring-brand-primary focus:ring-2"
                 />
                 <label htmlFor="isActive" className="ml-2 text-sm font-medium text-brand-dark">
-                  Active (Product will be visible to customers)
+                  Active (Sản phẩm sẽ được hiển thị với khách hàng)
                 </label>
               </div>
             </div>
@@ -503,19 +512,19 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
             {/* Size Options */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-brand-dark">Size Options</h3>
+                <h3 className="text-lg font-semibold text-brand-dark">Chọn size</h3>
                 <button
                   type="button"
                   onClick={addSize}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-primary text-white hover:opacity-90 text-sm"
                 >
                   <MdAdd className="w-4 h-4" />
-                  Add Size
+                  Add size
                 </button>
               </div>
 
               {formData.sizes.length === 0 ? (
-                <p className="text-brand-secondary text-sm">No size options added. Click &quot;Add Size&quot; to add custom sizes.</p>
+                <p className="text-brand-secondary text-sm">Không có tùy chọn kích thước nào được thêm vào. Nhấn &quot;Add Size&quot; để thêm kích thước cho sản phẩm.</p>
               ) : (
                 <div className="space-y-3">
                   {formData.sizes.map((size, index) => (
@@ -536,7 +545,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                         )}
                       </div>
                       <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">Stock</label>
+                        <label className="block text-sm font-medium mb-1">Số lượng</label>
                         <input
                           type="number"
                           value={size.stock}
@@ -556,7 +565,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                         onClick={() => removeSize(index)}
                         className="mt-6 px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg"
                       >
-                        Remove
+                        Xóa
                       </button>
                     </div>
                   ))}
@@ -574,11 +583,11 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
 
             {/* Images */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-brand-dark">Manage Images</h3>
+              <h3 className="text-lg font-semibold text-brand-dark">Quản lý hình ảnh</h3>
 
               {/* Main Image */}
               <div>
-                <label className="block text-sm font-medium mb-2">Main Image</label>
+                <label className="block text-sm font-medium mb-2">Ảnh chính</label>
 
                 {/* Current main image */}
                 {product.image && !formData.image && !formData.removeMainImage && (
@@ -639,7 +648,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
 
               {/* Additional Images */}
               <div>
-                <label className="block text-sm font-medium mb-2">Additional Images</label>
+                <label className="block text-sm font-medium mb-2">Thêm hình ảnh</label>
 
                 {/* Current additional images */}
                 {product.images && product.images.length > 0 && (
