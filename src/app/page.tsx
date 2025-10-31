@@ -20,7 +20,7 @@ import toast from "react-hot-toast";
 import ProductCard, { type Product } from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import HeroCarouselOverlay from "@/components/HeroCarouselOverlay";
-import SearchBar from "@/components/SearchBar";
+import EnhancedSearchBar from "@/components/search/EnhancedSearchBar";
 import { FaBolt, FaChartLine, FaRegLightbulb, FaUsers } from "react-icons/fa";
 
 type Review = {
@@ -275,7 +275,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen" suppressHydrationWarning={true}>
       {/* ===== HERO SEARCH BAR with elevated z-index context ===== */}
-      <div className="relative z-[99998]">
+      <div className="relative z-10">
         <div className="relative max-w-7xl mx-auto px-4 pt-6 pb-4">
           {/* Search container - Compact & Prominent */}
           <div className="relative flex flex-col items-center gap-3 animate-fade-in-up-slow">
@@ -288,7 +288,12 @@ export default function HomePage() {
               </p>
             </div>
             <div className="w-full max-w-2xl">
-              <SearchBar variant="hero" />
+              <EnhancedSearchBar
+                placeholder="Tìm kiếm sản phẩm, thương hiệu..."
+                className=""
+                showSuggestions={true}
+                usePortal={true}
+              />
             </div>
           </div>
         </div>
