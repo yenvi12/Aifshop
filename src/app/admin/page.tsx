@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import { MdAdd, MdInventory, MdPeople, MdAnalytics, MdLocalShipping } from "react-icons/md";
-import Breadcrumb from "@/components/ui/Breadcrumb";
 
 interface User {
   id: string;
@@ -99,7 +98,6 @@ export default function AdminPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-brand.light/60 to-white">
-        <Breadcrumb />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-brand.primary border-t-transparent mx-auto mb-4"></div>

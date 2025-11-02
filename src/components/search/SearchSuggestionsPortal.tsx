@@ -26,19 +26,41 @@ export default function SearchSuggestionsPortal({
     setMounted(true);
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
     if (isOpen && sourceRef?.current) {
-      const rect = sourceRef.current.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+      const updatePosition = () => {
+        if (!sourceRef?.current) return;
+        
+        // Use requestAnimationFrame to ensure DOM has updated
+        requestAnimationFrame(() => {
+          if (!sourceRef?.current) return;
+          const rect = sourceRef.current.getBoundingClientRect();
+          // Use viewport coordinates directly since we use position: fixed
+          // Add 8px margin (mt-2 equivalent) for spacing between input and suggestions
+          setPosition({
+            top: rect.bottom + 8,
+            left: rect.left,
+            width: rect.width
+          });
+        });
+      };
 
-      setPosition({
-        top: rect.bottom + scrollTop,
-        left: rect.left + scrollLeft,
-        width: rect.width
-      });
+      // Initial position update
+      updatePosition();
+
+      // Update position on scroll/resize
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    } else {
+      // Reset position when closed
+      setPosition({ top: 0, left: 0, width: 0 });
     }
-  }, [isOpen, sourceRef]);
+  }, [isOpen, sourceRef, query]);
 
   if (!mounted || !isOpen) {
     return null;
@@ -46,13 +68,15 @@ useEffect(() => {
 
   const suggestionsElement = (
     <div
+      data-search-suggestions-portal
       style={{
         position: 'fixed',
-        top: position.top,
-        left: position.left,
-        width: position.width,
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        width: `${position.width}px`,
         zIndex: 99999,
-        pointerEvents: 'auto'
+        pointerEvents: 'auto',
+        maxWidth: '100vw'
       }}
     >
       <SearchSuggestions
@@ -60,6 +84,7 @@ useEffect(() => {
         isOpen={isOpen}
         onSelect={onSelect}
         onClose={onClose}
+        viaPortal={true}
       />
     </div>
   );

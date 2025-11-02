@@ -16,13 +16,15 @@ interface SearchSuggestionsProps {
   isOpen: boolean;
   onSelect: (suggestion: string) => void;
   onClose: () => void;
+  viaPortal?: boolean;
 }
 
 export default function SearchSuggestions({ 
   query, 
   isOpen, 
   onSelect, 
-  onClose 
+  onClose,
+  viaPortal = false
 }: SearchSuggestionsProps) {
   const router = useRouter();
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
@@ -139,8 +141,11 @@ export default function SearchSuggestions({
     setSearchHistory(updatedHistory);
     localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
     
-    onSelect(suggestion);
-    onClose();
+    // Use setTimeout to ensure click event is processed before closing
+    setTimeout(() => {
+      onSelect(suggestion);
+      onClose();
+    }, 0);
   };
 
   const getSuggestionIcon = (type: string) => {
@@ -168,12 +173,21 @@ export default function SearchSuggestions({
   return (
     <div
       ref={suggestionsRef}
-      className="absolute top-full left-0 right-0 mt-2 bg-white border border-brand-light rounded-xl shadow-lg z-[99999] max-h-96 overflow-y-auto"
+      className={`${viaPortal ? 'relative' : 'absolute top-full left-0 right-0 mt-2'} bg-white border border-brand-light rounded-xl shadow-lg z-[99999] max-h-96 overflow-y-auto`}
     >
       {suggestions.map((suggestion, index) => (
         <button
           key={`${suggestion.type}-${suggestion.text}-${index}`}
-          onClick={() => handleSelect(suggestion.text)}
+          onMouseDown={(e) => {
+            // Prevent default to stop blur, but allow click to proceed
+            e.preventDefault();
+            handleSelect(suggestion.text);
+          }}
+          onClick={(e) => {
+            // Fallback in case mousedown doesn't fire
+            e.preventDefault();
+            handleSelect(suggestion.text);
+          }}
           className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${getSuggestionStyle(index)}`}
         >
           {getSuggestionIcon(suggestion.type)}
@@ -203,7 +217,14 @@ export default function SearchSuggestions({
           {searchHistory.slice(0, 3).map((item, index) => (
             <button
               key={`history-${item}-${index}`}
-              onClick={() => handleSelect(item)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSelect(item);
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                handleSelect(item);
+              }}
               className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${getSuggestionStyle(index + suggestions.length)}`}
             >
               <MdHistory className="w-4 h-4 text-brand-secondary" />

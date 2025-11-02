@@ -102,20 +102,6 @@ export default function SearchBar({
     handleSearch(suggestion);
   };
 
-  // Handle click outside suggestions
-  const handleClickOutside = (event: MouseEvent) => {
-    if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-      setIsSuggestionsOpen(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isSuggestionsOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isSuggestionsOpen]);
-
   const handleIconClick = () => {
     handleSearch();
   };
@@ -182,10 +168,24 @@ export default function SearchBar({
               target.style.boxShadow = 'none';
             }
           }}
-          onBlur={() => {
+          onBlur={(e) => {
             setIsFocused(false);
+            // Check if the blur is caused by clicking on suggestions
+            const relatedTarget = e.relatedTarget as Node;
+            if (relatedTarget) {
+              const suggestionsElement = (relatedTarget as Element)?.closest?.('[data-search-suggestions-portal]');
+              if (suggestionsElement) {
+                // Don't close if blurring to focus on suggestions
+                return;
+              }
+            }
             // Delay closing suggestions to allow for clicks
-            setTimeout(() => setIsSuggestionsOpen(false), 150);
+            setTimeout(() => {
+              // Double check suggestions are still supposed to be open
+              if (!document.querySelector('[data-search-suggestions-portal]:hover')) {
+                setIsSuggestionsOpen(false);
+              }
+            }, 200);
           }}
           placeholder={placeholder || defaultPlaceholder}
           className={`w-full outline-none !outline-none focus:outline-none focus:ring-0 focus:ring-offset-0 bg-transparent text-brand-dark placeholder-brand-secondary/50 ${inputPaddingClass}`}
