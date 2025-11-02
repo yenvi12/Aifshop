@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import Breadcrumb from "@/components/ui/Breadcrumb";
 import {
   MdRefresh,
   MdTrendingUp,
