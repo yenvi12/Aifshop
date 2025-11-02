@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
-import { MdStar, MdPhoto, MdVideocam, MdDelete, MdClose } from "react-icons/md";
+import { MdStar, MdPhoto, MdVideocam, MdDelete, MdClose, MdCloudUpload } from "react-icons/md";
+import StarRating from "./reviews/StarRating";
 
 type Review = {
   id?: string;
@@ -20,13 +21,20 @@ type Props = {
   isLoading?: boolean;
 };
 
-export default function ReviewForm({ productId, initialReview, onSubmit, onCancel, isLoading = false }: Props) {
+export default function ReviewForm({
+  productId,
+  initialReview,
+  onSubmit,
+  onCancel,
+  isLoading = false
+}: Props) {
   const [rating, setRating] = useState(initialReview?.rating || 0);
   const [comment, setComment] = useState(initialReview?.comment || "");
   const [images, setImages] = useState<string[]>(initialReview?.images || []);
   const [videos, setVideos] = useState<string[]>(initialReview?.videos || []);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isUploading, setIsUploading] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -35,21 +43,21 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     const newErrors: Record<string, string> = {};
 
     if (rating < 1 || rating > 5) {
-      newErrors.rating = "Please select a rating from 1-5 stars";
+      newErrors.rating = "Vui lòng chọn đánh giá từ 1-5 sao";
     }
 
     if (!comment.trim()) {
-      newErrors.comment = "Please enter your review content";
+      newErrors.comment = "Vui lòng nhập nội dung đánh giá";
     } else if (comment.length > 500) {
-      newErrors.comment = "Review content must not exceed 500 characters";
+      newErrors.comment = "Nội dung đánh giá không được vượt quá 500 ký tự";
     }
 
     if (images.length > 5) {
-      newErrors.images = "Maximum 5 photos allowed";
+      newErrors.images = "Tối đa 5 hình ảnh";
     }
 
     if (videos.length > 2) {
-      newErrors.videos = "Maximum 2 videos allowed";
+      newErrors.videos = "Tối đa 2 video";
     }
 
     setErrors(newErrors);
@@ -90,13 +98,13 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     // Validate file types
     const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
     if (invalidFiles.length > 0) {
-      setErrors({ ...errors, images: "Only image files are allowed (JPEG, PNG, GIF, WebP)" });
+      setErrors({ ...errors, images: "Chỉ chấp nhận file hình ảnh (JPEG, PNG, GIF, WebP)" });
       return;
     }
 
     // Check total images limit
     if (images.length + files.length > 5) {
-      setErrors({ ...errors, images: "Maximum 5 photos per review" });
+      setErrors({ ...errors, images: "Tối đa 5 hình ảnh cho mỗi đánh giá" });
       return;
     }
 
@@ -104,15 +112,17 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     const maxSize = 10 * 1024 * 1024; // 10MB
     const oversizedFiles = files.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
-      setErrors({ ...errors, images: `Images must not exceed 10MB. Please select smaller files.` });
+      setErrors({ ...errors, images: `Hình ảnh không được vượt quá 10MB. Vui lòng chọn file nhỏ hơn.` });
       return;
     }
 
     try {
+      setIsUploading(true);
       // Get auth token
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setErrors({ ...errors, images: "You need to login to upload photos" });
+        setErrors({ ...errors, images: "Bạn cần đăng nhập để tải lên hình ảnh" });
+        setIsUploading(false);
         return;
       }
 
@@ -132,25 +142,27 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
       const result = await response.json();
 
       if (!result.success) {
-        // Provide user-friendly error messages
-        let errorMessage = 'Failed to upload images. Please try again.';
+        let errorMessage = 'Tải lên hình ảnh thất bại. Vui lòng thử lại.';
         if (result.error?.includes('File size must be less than')) {
-          errorMessage = 'Image file too large. Please select files smaller than 5MB.';
+          errorMessage = 'File hình ảnh quá lớn. Vui lòng chọn file nhỏ hơn 5MB.';
         } else if (result.error?.includes('Only image and video files are allowed')) {
-          errorMessage = 'Only valid image files are allowed.';
+          errorMessage = 'Chỉ chấp nhận file hình ảnh hợp lệ.';
         } else if (result.error?.includes('Invalid Supabase token')) {
-          errorMessage = 'Session expired. Please log in again.';
+          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
         }
         setErrors({ ...errors, images: errorMessage });
+        setIsUploading(false);
         return;
       }
 
       // Add uploaded URLs to images
       setImages([...images, ...result.data.urls]);
       setErrors({ ...errors, images: "" });
+      setIsUploading(false);
     } catch (error) {
       console.error('Image upload error:', error);
-      setErrors({ ...errors, images: "An error occurred while uploading photos. Please check your connection and try again." });
+      setErrors({ ...errors, images: "Đã xảy ra lỗi khi tải lên hình ảnh. Vui lòng kiểm tra kết nối và thử lại." });
+      setIsUploading(false);
     }
 
     // Reset input
@@ -166,13 +178,13 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     // Validate file types
     const invalidFiles = files.filter(file => !file.type.startsWith('video/'));
     if (invalidFiles.length > 0) {
-      setErrors({ ...errors, videos: "Only video files are allowed (MP4, MOV, AVI, WebM)" });
+      setErrors({ ...errors, videos: "Chỉ chấp nhận file video (MP4, MOV, AVI, WebM)" });
       return;
     }
 
     // Check total videos limit
     if (videos.length + files.length > 2) {
-      setErrors({ ...errors, videos: "Maximum 2 videos per review" });
+      setErrors({ ...errors, videos: "Tối đa 2 video cho mỗi đánh giá" });
       return;
     }
 
@@ -180,15 +192,17 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
     const maxSize = 50 * 1024 * 1024; // 50MB
     const oversizedFiles = files.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
-      setErrors({ ...errors, videos: `Videos must not exceed 50MB. Please select smaller files.` });
+      setErrors({ ...errors, videos: `Video không được vượt quá 50MB. Vui lòng chọn file nhỏ hơn.` });
       return;
     }
 
     try {
+      setIsUploading(true);
       // Get auth token
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setErrors({ ...errors, videos: "You need to login to upload videos" });
+        setErrors({ ...errors, videos: "Bạn cần đăng nhập để tải lên video" });
+        setIsUploading(false);
         return;
       }
 
@@ -208,25 +222,27 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
       const result = await response.json();
 
       if (!result.success) {
-        // Provide user-friendly error messages
-        let errorMessage = 'Failed to upload videos. Please try again.';
+        let errorMessage = 'Tải lên video thất bại. Vui lòng thử lại.';
         if (result.error?.includes('File size must be less than')) {
-          errorMessage = 'Video file too large. Please select files smaller than 10MB.';
+          errorMessage = 'File video quá lớn. Vui lòng chọn file nhỏ hơn 10MB.';
         } else if (result.error?.includes('Only image and video files are allowed')) {
-          errorMessage = 'Only valid video files are allowed.';
+          errorMessage = 'Chỉ chấp nhận file video hợp lệ.';
         } else if (result.error?.includes('Invalid Supabase token')) {
-          errorMessage = 'Session expired. Please log in again.';
+          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
         }
         setErrors({ ...errors, videos: errorMessage });
+        setIsUploading(false);
         return;
       }
 
       // Add uploaded URLs to videos
       setVideos([...videos, ...result.data.urls]);
       setErrors({ ...errors, videos: "" });
+      setIsUploading(false);
     } catch (error) {
       console.error('Video upload error:', error);
-      setErrors({ ...errors, videos: "An error occurred while uploading videos. Please check your connection and try again." });
+      setErrors({ ...errors, videos: "Đã xảy ra lỗi khi tải lên video. Vui lòng kiểm tra kết nối và thử lại." });
+      setIsUploading(false);
     }
 
     // Reset input
@@ -244,17 +260,18 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
+    <div className="review-form-card rounded-2xl p-6 md:p-8 mb-8 animate-fade-in-scale">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold">
-          {initialReview ? "Edit Review" : "Write Review"}
+        <h3 className="text-2xl font-bold text-gray-900">
+          {initialReview ? "Chỉnh sửa đánh giá" : "Viết đánh giá của bạn"}
         </h3>
         {onCancel && (
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition"
+            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 hover:bg-gray-100 rounded-full"
+            aria-label="Đóng"
           >
-            <MdClose className="w-5 h-5" />
+            <MdClose className="w-6 h-6" />
           </button>
         )}
       </div>
@@ -262,79 +279,107 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Star Rating */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Star Rating
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Đánh giá sản phẩm *
           </label>
-          <div className="flex items-center gap-1">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setRating(i + 1)}
-                onMouseEnter={() => setHoveredRating(i + 1)}
-                onMouseLeave={() => setHoveredRating(0)}
-                className="text-2xl transition"
-              >
-                <MdStar
-                  className={`${
-                    i < (hoveredRating || rating)
-                      ? "text-yellow-400 fill-current"
-                      : "text-gray-300"
-                  }`}
-                />
-              </button>
-            ))}
-            <span className="ml-2 text-sm text-gray-600">
-              {rating > 0 && `${rating}/5 stars`}
-            </span>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-4">
+              {Array.from({ length: 5 }).map((_, i) => {
+                const starValue = i + 1;
+                const isFilled = starValue <= (hoveredRating || rating);
+                
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setRating(starValue)}
+                    onMouseEnter={() => setHoveredRating(starValue)}
+                    onMouseLeave={() => setHoveredRating(0)}
+                    className="transition-all duration-200 star-hover"
+                  >
+                    <MdStar
+                      className={`
+                        w-10 h-10 transition-all duration-200
+                        ${isFilled
+                          ? "text-yellow-400 fill-current star-filled"
+                          : "text-gray-300"
+                        }
+                      `}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              {rating > 0 && (
+                <span className="text-lg font-semibold text-gray-700">
+                  {rating} / 5 sao
+                </span>
+              )}
+              <span className="text-sm text-gray-500">
+                {rating === 0 && "Nhấp vào sao để đánh giá"}
+              </span>
+            </div>
           </div>
-          {errors.rating && <p className="text-red-500 text-sm mt-1">{errors.rating}</p>}
+          {errors.rating && (
+            <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+              <span>⚠️</span>
+              {errors.rating}
+            </p>
+          )}
         </div>
 
         {/* Comment */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Review Content
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Nội dung đánh giá *
           </label>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Share your experience with this product..."
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            placeholder="Chia sẻ trải nghiệm của bạn với sản phẩm này... Hãy mô tả chi tiết về chất lượng, thiết kế, giá trị và mọi điều bạn muốn người khác biết."
+            rows={6}
+            className="review-textarea w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8794C0] focus:border-transparent resize-none text-gray-700 text-base"
             maxLength={500}
           />
-          <div className="flex justify-between mt-1">
-            {errors.comment && <p className="text-red-500 text-sm">{errors.comment}</p>}
-            <p className="text-sm text-gray-500 ml-auto">{comment.length}/500</p>
+          <div className="flex justify-between items-center mt-2">
+            {errors.comment && (
+              <p className="text-red-500 text-sm flex items-center gap-1">
+                <span>⚠️</span>
+                {errors.comment}
+              </p>
+            )}
+            <p className={`text-sm ml-auto ${comment.length > 450 ? "text-orange-500" : "text-gray-500"}`}>
+              {comment.length} / 500 ký tự
+            </p>
           </div>
         </div>
 
         {/* Media Upload */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Photos and Videos (optional)
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Hình ảnh và Video (tùy chọn)
           </label>
 
           {/* Upload Buttons */}
-          <div className="flex gap-3 mb-4">
+          <div className="flex flex-wrap gap-3 mb-4">
             <button
               type="button"
               onClick={() => imageInputRef.current?.click()}
-              disabled={images.length >= 5}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={images.length >= 5 || isUploading}
+              className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 border border-gray-300 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-gray-700"
             >
-              <MdPhoto className="w-4 h-4" />
-              Add Photos ({images.length}/5)
+              <MdPhoto className="w-5 h-5" />
+              {isUploading ? "Đang tải lên..." : `Thêm ảnh (${images.length}/5)`}
             </button>
             <button
               type="button"
               onClick={() => videoInputRef.current?.click()}
-              disabled={videos.length >= 2}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={videos.length >= 2 || isUploading}
+              className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 border border-gray-300 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-gray-700"
             >
-              <MdVideocam className="w-4 h-4" />
-              Add Videos ({videos.length}/2)
+              <MdVideocam className="w-5 h-5" />
+              {isUploading ? "Đang tải lên..." : `Thêm video (${videos.length}/2)`}
             </button>
           </div>
 
@@ -358,12 +403,15 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
 
           {/* Media Preview */}
           {(images.length > 0 || videos.length > 0) && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
               {images.map((image, index) => (
-                <div key={`image-${index}`} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <div
+                  key={`image-${index}`}
+                  className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group"
+                >
                   <Image
                     src={image}
-                    alt={`Upload preview ${index + 1}`}
+                    alt={`Preview ${index + 1}`}
                     width={200}
                     height={200}
                     className="w-full h-full object-cover"
@@ -371,14 +419,18 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                    aria-label="Xóa ảnh"
                   >
-                    <MdDelete className="w-3 h-3" />
+                    <MdDelete className="w-4 h-4" />
                   </button>
                 </div>
               ))}
               {videos.map((video, index) => (
-                <div key={`video-${index}`} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <div
+                  key={`video-${index}`}
+                  className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group"
+                >
                   <video
                     src={video}
                     className="w-full h-full object-cover"
@@ -387,9 +439,10 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
                   <button
                     type="button"
                     onClick={() => removeVideo(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                    aria-label="Xóa video"
                   >
-                    <MdDelete className="w-3 h-3" />
+                    <MdDelete className="w-4 h-4" />
                   </button>
                 </div>
               ))}
@@ -397,29 +450,39 @@ export default function ReviewForm({ productId, initialReview, onSubmit, onCance
           )}
 
           {(errors.images || errors.videos) && (
-            <p className="text-red-500 text-sm mt-1">
+            <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+              <span>⚠️</span>
               {errors.images || errors.videos}
             </p>
           )}
         </div>
 
         {/* Submit Buttons */}
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
           {onCancel && (
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+              className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 font-medium"
             >
-              Cancel
+              Hủy
             </button>
           )}
           <button
             type="submit"
-            disabled={isLoading}
-            className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading || isUploading}
+            className="submit-button-gradient px-8 py-3 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base flex items-center gap-2"
           >
-            {isLoading ? "Processing..." : initialReview ? "Update" : "Submit Review"}
+            {isLoading ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                Đang xử lý...
+              </>
+            ) : initialReview ? (
+              "Cập nhật đánh giá"
+            ) : (
+              "Gửi đánh giá"
+            )}
           </button>
         </div>
       </form>

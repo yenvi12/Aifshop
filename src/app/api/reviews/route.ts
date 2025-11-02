@@ -61,6 +61,38 @@ function verifyUserToken(request: NextRequest) {
   }
 }
 
+// Helper function to check if user can review a product
+async function checkReviewEligibility(userId: string, userRole: string, productId: string) {
+  // Check if user is admin
+  if (userRole === 'ADMIN') {
+    return { canReview: false, reason: 'Admin không thể review sản phẩm' }
+  }
+
+  // Check if user has a delivered order with this product
+  const deliveredOrders = await prisma.order.findMany({
+    where: {
+      userId: userId,
+      status: 'DELIVERED',
+      orderItems: {
+        some: {
+          productId: productId
+        }
+      }
+    },
+    select: {
+      id: true,
+      orderNumber: true
+    },
+    take: 1
+  })
+
+  if (deliveredOrders.length === 0) {
+    return { canReview: false, reason: 'Bạn cần mua và nhận hàng thành công sản phẩm này để có thể đánh giá' }
+  }
+
+  return { canReview: true, reason: 'Bạn có thể đánh giá sản phẩm này' }
+}
+
 // Helper function to calculate and update product rating
 async function updateProductRating(productId: string) {
    // Get all active reviews for this product
@@ -149,7 +181,7 @@ export async function GET(request: NextRequest) {
       comment: review.comment,
       images: review.images,
       videos: review.videos,
-      createdAt: review.createdAt.toISOString().split('T')[0], // Format as YYYY-MM-DD
+      createdAt: review.createdAt.toISOString(), // Keep full ISO string for accurate time calculations
       user: {
         id: review.user.id,
         name: `${review.user.firstName} ${review.user.lastName}`,
@@ -238,8 +270,18 @@ export async function POST(request: NextRequest) {
 
     if (existingReview) {
       return NextResponse.json(
-        { success: false, error: 'You have already reviewed this product' },
+        { success: false, error: 'Bạn đã đánh giá sản phẩm này rồi' },
         { status: 409 }
+      )
+    }
+
+    // Check review eligibility
+    const userRole = authResult.role || 'USER'
+    const eligibilityCheck = await checkReviewEligibility(userId, userRole, productId)
+    if (!eligibilityCheck.canReview) {
+      return NextResponse.json(
+        { success: false, error: eligibilityCheck.reason },
+        { status: 403 }
       )
     }
 
@@ -275,7 +317,7 @@ export async function POST(request: NextRequest) {
       comment: review.comment,
       images: review.images,
       videos: review.videos,
-      createdAt: review.createdAt.toISOString().split('T')[0],
+      createdAt: review.createdAt.toISOString(),
       user: {
         id: review.user.id,
         name: `${review.user.firstName} ${review.user.lastName}`,
@@ -339,6 +381,16 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Check review eligibility for editing
+    const userRole = authResult.role || 'USER'
+    const eligibilityCheck = await checkReviewEligibility(authResult.userId, userRole, existingReview.productId)
+    if (!eligibilityCheck.canReview) {
+      return NextResponse.json(
+        { success: false, error: eligibilityCheck.reason },
+        { status: 403 }
+      )
+    }
+
     const data = await request.json()
 
     // Validate input
@@ -380,7 +432,7 @@ export async function PUT(request: NextRequest) {
       comment: review.comment,
       images: review.images,
       videos: review.videos,
-      createdAt: review.createdAt.toISOString().split('T')[0],
+      createdAt: review.createdAt.toISOString(),
       user: {
         id: review.user.id,
         name: `${review.user.firstName} ${review.user.lastName}`,

@@ -103,6 +103,43 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; reviewId: string | null }>({ show: false, reviewId: null });
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [reviewEligibility, setReviewEligibility] = useState<{ canReview: boolean; reason: string } | null>(null);
+  const [isCheckingEligibility, setIsCheckingEligibility] = useState(false);
+
+  // Check review eligibility when user or product changes
+  const checkReviewEligibility = async () => {
+    if (!currentUserId || !product.id) {
+      setReviewEligibility(null);
+      return;
+    }
+
+    setIsCheckingEligibility(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await fetch(`/api/reviews/eligibility?productId=${product.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setReviewEligibility({
+          canReview: result.canReview,
+          reason: result.reason
+        });
+      }
+    } catch (error) {
+      console.error('Error checking review eligibility:', error);
+      setReviewEligibility({ canReview: false, reason: 'Không thể kiểm tra quyền review' });
+    } finally {
+      setIsCheckingEligibility(false);
+    }
+  };
 
   // Get current user ID and role from JWT token
   useEffect(() => {
@@ -122,7 +159,14 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     }
   }, []);
 
-  // Auto-open Reviews tab if ?review=1; only open form if user hasn't reviewed (enforce 1 review/product)
+  // Check review eligibility when user changes
+  useEffect(() => {
+    if (currentUserId && product.id) {
+      checkReviewEligibility();
+    }
+  }, [currentUserId, product.id]);
+
+  // Auto-open Reviews tab if ?review=1; only open form if user has review permissions
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -131,19 +175,23 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     // Always switch to Reviews tab
     setActiveTab("reviews");
 
-    // Wait until we know currentUserId; then decide to open/close the form
-    if (!currentUserId) return;
+    // Wait until we know currentUserId and eligibility; then decide to open/close the form
+    if (!currentUserId || !reviewEligibility) return;
 
     const alreadyReviewed = reviews.some((r) => r.user.id === currentUserId);
     if (alreadyReviewed) {
       // User already reviewed this product -> do NOT open the form
       setShowReviewForm(false);
       toast("You have already reviewed this product");
-    } else {
-      // User not yet reviewed -> open the form
+    } else if (reviewEligibility.canReview) {
+      // User can review -> open the form
       setShowReviewForm(true);
+    } else {
+      // User cannot review -> show eligibility reason
+      setShowReviewForm(false);
+      toast(reviewEligibility.reason);
     }
-  }, [currentUserId, reviews]);
+  }, [currentUserId, reviews, reviewEligibility]);
 
   const images = [product.image, ...(product.images || [])].filter((img): img is string => Boolean(img && img.trim()));
   const sizes = product.sizes || [];
@@ -582,16 +630,62 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                 {/* Reviews Header */}
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Product Reviews</h3>
-                  {!showReviewForm && !hasUserReviewed && currentUserId && (
+                  {!showReviewForm && !hasUserReviewed && currentUserId && reviewEligibility?.canReview && (
                     <button
                       onClick={() => setShowReviewForm(true)}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                      disabled={editingReviewId !== null}
+                      disabled={editingReviewId !== null || isCheckingEligibility}
                     >
                       {editingReviewId ? "Loading..." : "Write Review"}
                     </button>
                   )}
                 </div>
+
+                {/* Review Eligibility Message */}
+                {!isCheckingEligibility && currentUserId && reviewEligibility && !reviewEligibility.canReview && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-yellow-800">
+                          Không thể đánh giá sản phẩm
+                        </h4>
+                        <p className="text-sm text-yellow-700 mt-1">
+                          {reviewEligibility.reason}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Login prompt for non-authenticated users */}
+                {!currentUserId && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-700">
+                          Vui lòng{' '}
+                          <button
+                            onClick={() => router.push(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)}
+                            className="text-blue-600 hover:text-blue-800 underline font-medium"
+                          >
+                            đăng nhập
+                          </button>
+                          {' '}để có thể đánh giá sản phẩm này.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Review Form */}
                 {showReviewForm && (
