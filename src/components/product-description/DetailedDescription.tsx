@@ -62,7 +62,7 @@ export default function DetailedDescription({
             // Thêm icon cho unordered lists, style marker cho ordered lists
             li: ({ children, node, ...props }) => {
               // Kiểm tra parent node để xác định nằm trong ul hay ol
-              const parent = node?.parent;
+              const parent = (node as any)?.parent;
               const isInUnorderedList = parent?.type === 'element' && parent?.tagName === 'ul';
               
               if (isInUnorderedList) {
