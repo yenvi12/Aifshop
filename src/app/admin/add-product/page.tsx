@@ -356,7 +356,7 @@ export default function AddProductPage() {
                   placeholder="Nhập mô tả chi tiết đầy đủ về sản phẩm. Hỗ trợ Markdown format.\n\nVí dụ:\n## Tính năng nổi bật\n- Tính năng 1\n- Tính năng 2\n\n## Thông tin chi tiết\nMô tả chi tiết về sản phẩm..."
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Mô tả chi tiết, đầy đủ về sản phẩm. Hỗ trợ Markdown format (headings, lists, links, etc.). Sẽ hiển thị ở phần 'Mô tả chi tiết'.
+                  Mô tả chi tiết, đầy đủ về sản phẩm. Hỗ trợ Markdown format (headings, lists, links, etc.). Sẽ hiển thị ở phần &apos;Mô tả chi tiết&apos;.
                 </p>
               </div>
 
