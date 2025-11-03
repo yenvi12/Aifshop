@@ -192,6 +192,7 @@ export async function POST(request: NextRequest) {
 
       // Extract text fields
       data.name = formData.get('name') as string
+      data.overview = (formData.get('overview') as string) || undefined
       data.description = (formData.get('description') as string) || undefined
       data.price = formData.get('price') ? parseFloat(formData.get('price') as string) : undefined
       data.compareAtPrice = formData.get('compareAtPrice') ? parseFloat(formData.get('compareAtPrice') as string) : undefined
@@ -249,6 +250,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Handle JSON
       data = await request.json()
+      data.overview = data.overview ?? undefined
       data.description = data.description ?? undefined
       data.image = data.image ?? null
       data.images = data.images ?? []
@@ -267,7 +269,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, description, price, compareAtPrice, category, image, images, stock, sizes, badge, isActive } = validationResult.data
+    const { name, overview, description, price, compareAtPrice, category, image, images, stock, sizes, badge, isActive } = validationResult.data
 
     // Additional validations
     if (price !== null && price !== undefined && compareAtPrice < price) {
@@ -315,6 +317,7 @@ export async function POST(request: NextRequest) {
     const product = await prisma.product.create({
       data: {
         name,
+        overview,
         description,
         price,
         compareAtPrice,
@@ -405,8 +408,11 @@ export async function PUT(request: NextRequest) {
       const name = formData.get('name') as string
       if (name) data.name = name
 
+      const overview = formData.get('overview') as string
+      if (overview !== undefined && overview !== null) data.overview = overview || undefined
+
       const description = formData.get('description') as string
-      if (description) data.description = description
+      if (description !== undefined && description !== null) data.description = description || undefined
 
       const priceStr = formData.get('price') as string
       if (priceStr !== undefined && priceStr !== null) {
@@ -506,6 +512,7 @@ export async function PUT(request: NextRequest) {
     } else {
       // Handle JSON
       data = await request.json()
+      data.overview = data.overview ?? undefined
       data.description = data.description ?? undefined
       data.price = data.price ?? undefined
       data.compareAtPrice = data.compareAtPrice ?? undefined

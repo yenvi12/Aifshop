@@ -80,7 +80,8 @@ model TempRegistration {
 model Product {
   id             String   @id @default(cuid())
   name           String
-  description    String?
+  overview       String? // Tổng quan sản phẩm (mô tả ngắn gọn)
+  description    String? // Mô tả chi tiết đầy đủ
   price          Float? // Made optional
   compareAtPrice Float? // Original price for sale display
   category       String

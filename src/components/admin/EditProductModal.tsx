@@ -34,7 +34,8 @@ interface EditProductModalProps {
 
 interface ProductFormData {
    name: string;
-   description: string;
+   overview: string; // Tổng quan sản phẩm (ngắn gọn)
+   description: string; // Mô tả chi tiết (đầy đủ)
    price: string;
    compareAtPrice: string;
    category: string;
@@ -54,7 +55,8 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<ProductFormData>({
      name: "",
-     description: "",
+     overview: "", // Tổng quan sản phẩm
+     description: "", // Mô tả chi tiết
      price: "",
      compareAtPrice: "",
      category: "",
@@ -83,6 +85,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
      if (product && isOpen) {
        setFormData({
          name: product.name,
+         overview: (product as any).overview || "",
          description: product.description || "",
          price: product.price?.toString() || "",
          compareAtPrice: product.compareAtPrice?.toString() || "",
@@ -276,6 +279,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
 
       const submitData = new FormData();
       submitData.append('name', formData.name);
+      submitData.append('overview', formData.overview);
       submitData.append('description', formData.description);
       submitData.append('price', formData.price);
       submitData.append('compareAtPrice', formData.compareAtPrice);
@@ -402,15 +406,37 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Mô tả </label>
+                <label className="block text-sm font-medium mb-1">
+                  Tổng quan sản phẩm <span className="text-gray-400 font-normal">(Mô tả ngắn gọn)</span>
+                </label>
+                <textarea
+                  name="overview"
+                  value={formData.overview}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent"
+                  placeholder="Nhập mô tả tổng quan ngắn gọn về sản phẩm (2-3 câu). Sẽ hiển thị ở phần 'Tổng quan sản phẩm'."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Mô tả ngắn gọn, súc tích về sản phẩm. Khoảng 100-200 từ là lý tưởng.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Mô tả chi tiết <span className="text-gray-400 font-normal">(Mô tả đầy đủ)</span>
+                </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  rows={4}
-                  className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent"
-                  placeholder="Describe your product"
+                  rows={8}
+                  className="w-full rounded-xl border border-brand-light px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent font-mono text-sm"
+                  placeholder="Nhập mô tả chi tiết đầy đủ về sản phẩm. Hỗ trợ Markdown format.\n\nVí dụ:\n## Tính năng nổi bật\n- Tính năng 1\n- Tính năng 2\n\n## Thông tin chi tiết\nMô tả chi tiết về sản phẩm..."
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Mô tả chi tiết, đầy đủ về sản phẩm. Hỗ trợ Markdown format (headings, lists, links, etc.). Sẽ hiển thị ở phần 'Mô tả chi tiết'.
+                </p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
