@@ -114,6 +114,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
      if (!isOpen) {
        setFormData({
          name: "",
+         overview: "",
          description: "",
          price: "",
          compareAtPrice: "",
