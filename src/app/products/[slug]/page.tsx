@@ -12,7 +12,8 @@ interface RawProduct {
   images?: string[];
   badge?: string;
   rating?: number;
-  description?: string;
+  overview?: string; // Tổng quan sản phẩm
+  description?: string; // Mô tả chi tiết
   sizes?: string[];
 }
 
@@ -48,7 +49,8 @@ async function getProduct(slug: string) {
       images: p.images || [],
       badge: p.badge || undefined,
       rating: p.rating || undefined,
-      description: p.description || "Beautiful piece of jewelry crafted with attention to detail.",
+      overview: p.overview || undefined, // Tổng quan sản phẩm
+      description: p.description || undefined, // Mô tả chi tiết
       features: ["High-quality materials", "Quality control"],
       sizes: p.sizes || [],
       reviews: [] // Will be fetched separately

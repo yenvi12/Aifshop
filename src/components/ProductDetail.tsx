@@ -8,6 +8,7 @@ import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage, MdSmartToy, MdShopping
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
 import { useChat } from "@/contexts/ChatContext";
+import { ProductDescription } from "./product-description";
 
 type SizeOption = {
   name: string;
@@ -74,7 +75,8 @@ type Product = {
 
 type Props = {
   product: Product & {
-    description?: string;
+    overview?: string; // Mô tả tổng quan ngắn gọn (cho Overview section)
+    description?: string; // Mô tả chi tiết đầy đủ (cho Detailed Description section)
     features?: string[];
     sizes?: SizeOption[];
     images?: string[];
@@ -82,6 +84,16 @@ type Props = {
     rating?: number;
     badge?: string;
     reviews?: Review[];
+    specifications?: Record<string, string>;
+    careInstructions?: Array<{
+      title: string;
+      content: string;
+      icon?: string;
+    }>;
+    media?: {
+      videos?: string[];
+      images?: string[];
+    };
   };
   relatedProducts?: Product[];
 };
@@ -606,8 +618,8 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                    activeTab === tab ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
+                      activeTab === tab ? "border-brand-primary text-brand-primary" : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
@@ -617,12 +629,14 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
           <div className="py-8">
             {activeTab === "description" && (
-              <div className="space-y-4">
-                <p className="text-gray-600">
-                  {product.description ||
-                    "This is a beautiful piece of jewelry crafted with attention to detail. Perfect for any occasion."}
-                </p>
-              </div>
+              <ProductDescription
+                overview={product.overview}
+                description={product.description}
+                features={product.features}
+                specifications={product.specifications}
+                careInstructions={product.careInstructions}
+                media={product.media}
+              />
             )}
 
             {activeTab === "reviews" && (

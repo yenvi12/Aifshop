@@ -56,7 +56,8 @@ export const otpVerificationSchema = z.object({
 
 export const createProductSchema = z.object({
   name: z.string().min(1, 'Tên sản phẩm không được rỗng').max(100, 'Tên sản phẩm quá dài'),
-  description: z.string().optional(),
+  overview: z.string().optional(), // Tổng quan sản phẩm
+  description: z.string().optional(), // Mô tả chi tiết
   price: z.number().min(0, 'Giá phải lớn hơn hoặc bằng 0').nullable(),
   compareAtPrice: z.number().min(0, 'Giá gốc phải lớn hơn hoặc bằng 0'),
   category: z.string().min(1, 'Danh mục không được rỗng'),
@@ -73,7 +74,8 @@ export const createProductSchema = z.object({
 
 export const updateProductSchema = z.object({
   name: z.string().min(1, 'Tên sản phẩm không được rỗng').max(100, 'Tên sản phẩm quá dài').optional(),
-  description: z.string().optional(),
+  overview: z.string().optional(), // Tổng quan sản phẩm
+  description: z.string().optional(), // Mô tả chi tiết
   price: z.number().min(0, 'Giá phải lớn hơn hoặc bằng 0').nullable().optional(),
   compareAtPrice: z.number().min(0, 'Giá gốc phải lớn hơn hoặc bằng 0').optional(),
   category: z.string().min(1, 'Danh mục không được rỗng').optional(),
