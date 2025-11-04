@@ -50,6 +50,14 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { amount, description, shippingAddress, paymentMethod = "PAYOS" } = body;
 
+    console.log('💰 Payment request received:', {
+      paymentMethod,
+      amount,
+      hasShippingAddress: !!shippingAddress,
+      shippingAddress: shippingAddress || 'NOT_PROVIDED',
+      description
+    });
+
     // Validate payment method
     if (!["PAYOS", "COD"].includes(paymentMethod)) {
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
@@ -138,6 +146,14 @@ export async function POST(req: Request) {
 
         const order = await prisma.order.create({
           data: orderData
+        });
+
+        console.log('✅ PayOS Order created successfully:', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          shippingAddress: order.shippingAddress,
+          paymentMethod: paymentMethod,
+          totalAmount: totalAmount
         });
 
         // Create OrderItems

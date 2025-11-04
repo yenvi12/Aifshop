@@ -32,8 +32,16 @@ interface Order {
   estimatedDelivery?: Date;
   createdAt: Date;
   shippingAddress?: {
+    // PayOS format
     shipping?: string;
     billing?: string;
+    // COD format
+    firstName?: string;
+    lastName?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    fullName?: string;
   };
   orderItems: OrderItem[];
   payment: {
@@ -667,7 +675,11 @@ function OrderCard({ order }: { order: Order }) {
                 <div>
                   <p className="text-sm text-brand-secondary font-medium mb-1">Delivery Address</p>
                   <p className="text-sm text-brand-dark font-medium break-words leading-relaxed">
-                    {order.shippingAddress?.shipping || order.user?.defaultAddress?.shipping || 'No shipping address provided'}
+                    {order.shippingAddress?.shipping ||
+                     (order.shippingAddress?.address ?
+                      `${order.shippingAddress.address}${order.shippingAddress.city ? ', ' + order.shippingAddress.city : ''}${order.shippingAddress.postalCode ? ', ' + order.shippingAddress.postalCode : ''}` :
+                      order.user?.defaultAddress?.shipping || 'No shipping address provided')
+                    }
                   </p>
                 </div>
               </div>

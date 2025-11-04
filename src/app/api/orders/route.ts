@@ -202,6 +202,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    console.log('✅ COD Order created successfully:', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      shippingAddress: order.shippingAddress,
+      paymentMethod: paymentMethod,
+      totalAmount: amount
+    });
+
     // Create order items
     const orderItems = [];
     for (const item of cartItems) {

@@ -371,6 +371,17 @@ export default function PaymentPage() {
       }
 
       // Create COD order request
+      const orderRequestData = {
+        paymentMethod: 'COD',
+        paymentStatus: 'PENDING',
+        orderStatus: 'ORDERED',
+        amount: total,
+        shippingAddress,
+        cartItems,
+        shippingMethod: selectedShipping,
+      };
+
+      console.log('🚀 Sending COD order request:', orderRequestData);
 
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -378,15 +389,7 @@ export default function PaymentPage() {
           'Authorization': `Bearer ${supabaseToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          paymentMethod: 'COD',
-          paymentStatus: 'PENDING',
-          orderStatus: 'ORDERED',
-          amount: total,
-          shippingAddress,
-          cartItems,
-          shippingMethod: selectedShipping,
-        }),
+        body: JSON.stringify(orderRequestData),
       });
 
       const data = await response.json();
@@ -402,7 +405,7 @@ export default function PaymentPage() {
         sessionStorage.setItem('orderInfo', JSON.stringify(orderInfo));
 
         toast.success('Đơn hàng COD đã được tạo thành công! Bạn sẽ thanh toán khi nhận hàng.');
-        router.push('/payment-success');
+        router.push('/payment-cod-success');
       } else {
         console.error('❌ Lỗi tạo đơn hàng COD:', data.error);
         toast.error(data.error || 'Không thể tạo đơn hàng');
