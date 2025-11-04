@@ -92,7 +92,8 @@ export async function GET(request: NextRequest) {
           select: {
             orderCode: true,
             status: true,
-            amount: true
+            amount: true,
+            paymentMethod: true
           }
         },
         user: {
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
         orderCode: orderNumber,
         amount: amount,
         status: paymentStatus as PaymentStatus,
+        paymentMethod: paymentMethod as any, // Ensure paymentMethod is passed
         userId: dbUser.id
       }
     });
@@ -198,6 +200,14 @@ export async function POST(request: NextRequest) {
         shippingAddress: fullShippingAddress,
         estimatedDelivery: new Date(Date.now() + (shippingMethod === 'express' ? 2 : 5) * 24 * 60 * 60 * 1000)
       }
+    });
+
+    console.log('✅ COD Order created successfully:', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      shippingAddress: order.shippingAddress,
+      paymentMethod: paymentMethod,
+      totalAmount: amount
     });
 
     // Create order items

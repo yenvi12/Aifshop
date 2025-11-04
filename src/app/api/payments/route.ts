@@ -32,7 +32,13 @@ export async function GET(request: NextRequest) {
     // Get payments with order info
     const payments = await prisma.payment.findMany({
       where: { userId: dbUser.id },
-      include: {
+      select: {
+        id: true,
+        orderCode: true,
+        amount: true,
+        status: true,
+        paymentMethod: true,
+        createdAt: true,
         orders: {
           select: {
             id: true,

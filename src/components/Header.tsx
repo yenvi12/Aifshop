@@ -404,6 +404,19 @@ export default function Header() {
             </div>
           )}
 
+          {/* Cart Icon - Always visible in responsive */}
+          <Link
+            href="/cart"
+            className="flex items-center text-brand-dark hover:text-brand-primary p-1 relative"
+          >
+            <MdShoppingCart className="w-5 h-5" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-brand-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </span>
+            )}
+          </Link>
+
           {/* Messages */}
           {mounted && user && (
             <div className="relative message-menu">
@@ -530,7 +543,7 @@ export default function Header() {
                           onClick={() => setDropdownOpen(false)}
                         >
                           <MdPerson className="w-4 h-4" />
-                          Quản lý 
+                          Quản lý
                         </Link>
                       )}
                       <button

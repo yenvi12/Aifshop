@@ -480,17 +480,15 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
           )}
         </div>
 
-        {filteredProducts.length > 8 && (
-          <div className="mt-10 text-center">
-            <Link
-              href="/shop"
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
-            >
-              Xem tất cả sản phẩm
-              <MdTrendingUp className="w-5 h-5" />
-            </Link>
-          </div>
-        )}
+        {/* Nút Xem thêm - luôn hiển thị dưới phần sản phẩm */}
+        <div className="mt-10 text-center">
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+          >
+            Xem thêm
+          </Link>
+        </div>
       </section>
 
       {/* ===== TRUST & STATS SECTION ===== */}
