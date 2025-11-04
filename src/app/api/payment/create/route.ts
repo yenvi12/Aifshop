@@ -48,23 +48,22 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { amount, description, shippingAddress } = body;
+    const { amount, description, shippingAddress, paymentMethod = "PAYOS" } = body;
 
-    // Tạo yêu cầu thanh toán trên PayOS
-    const payment = await payos.paymentRequests.create({
-      orderCode,
-      amount,
-      description,
-      returnUrl: "http://localhost:3000/payment-success",
-      cancelUrl: "http://localhost:3000/payment-cancel",
-    });
+    // Validate payment method
+    if (!["PAYOS", "COD"].includes(paymentMethod)) {
+      return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
+    }
 
+    let checkoutUrl = null;
+    
     // Lưu thông tin vào DB
     const dbPayment = await prisma.payment.create({
       data: {
         orderCode: orderCode.toString(),
         amount,
         status: "PENDING",
+        paymentMethod: paymentMethod,
         userId: dbUser.id,
       },
     });
@@ -160,9 +159,27 @@ export async function POST(req: Request) {
       console.error('Error creating order:', error);
     }
 
+    // Chỉ tạo payment request trên PayOS khi paymentMethod là PAYOS
+    if (paymentMethod === "PAYOS") {
+      try {
+        const payment = await payos.paymentRequests.create({
+          orderCode,
+          amount,
+          description,
+          returnUrl: "http://localhost:3000/payment-success",
+          cancelUrl: "http://localhost:3000/payment-cancel",
+        });
+        checkoutUrl = payment.checkoutUrl;
+      } catch (payosError) {
+        console.error('PayOS payment creation failed:', payosError);
+        return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 });
+      }
+    }
+
     return NextResponse.json({
-      checkoutUrl: payment.checkoutUrl,
-      orderCode: orderCode.toString()
+      checkoutUrl,
+      orderCode: orderCode.toString(),
+      paymentMethod
     });
   } catch (error: unknown) {
     console.error(error);

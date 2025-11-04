@@ -40,6 +40,7 @@ interface Order {
     orderCode: string;
     status: string;
     amount: number;
+    paymentMethod: string;
   };
   user: {
     firstName: string;
@@ -58,6 +59,7 @@ interface Payment {
   orderCode: string;
   amount: number;
   status: string;
+  paymentMethod: string;
   createdAt: Date;
   orders: Array<{
     id: string;
@@ -727,16 +729,8 @@ function PaymentCard({ payment }: { payment: Payment }) {
   const [showDetails, setShowDetails] = useState(false);
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'paid':
-        return {
-          bg: 'bg-green-100',
-          text: 'text-green-700',
-          border: 'border-green-300',
-          icon: MdDone,
-          label: 'Successful'
-        };
-      case 'pending':
+    switch (status.toUpperCase()) {
+      case 'SUCCESS':
         return {
           bg: 'bg-green-100',
           text: 'text-green-700',
@@ -744,7 +738,32 @@ function PaymentCard({ payment }: { payment: Payment }) {
           icon: MdDone,
           label: 'Completed'
         };
-      case 'failed':
+      case 'PENDING':
+        return {
+          bg: 'bg-yellow-100',
+          text: 'text-yellow-700',
+          border: 'border-yellow-300',
+          icon: MdSchedule,
+          label: 'Pending'
+        };
+      case 'CANCELLED':
+        return {
+          bg: 'bg-red-100',
+          text: 'text-red-700',
+          border: 'border-red-300',
+          icon: MdRefresh,
+          label: 'Cancelled'
+        };
+      // Legacy support for old status values
+      case 'PAID':
+        return {
+          bg: 'bg-green-100',
+          text: 'text-green-700',
+          border: 'border-green-300',
+          icon: MdDone,
+          label: 'Completed'
+        };
+      case 'FAILED':
         return {
           bg: 'bg-red-100',
           text: 'text-red-700',
@@ -823,7 +842,9 @@ function PaymentCard({ payment }: { payment: Payment }) {
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-brand-light/50 rounded-lg p-3">
           <p className="text-xs text-brand-secondary font-medium">Payment Method</p>
-          <p className="text-sm font-semibold text-brand-dark">PayOS</p>
+          <p className="text-sm font-semibold text-brand-dark">
+            {payment.paymentMethod || 'PayOS'}
+          </p>
         </div>
         <div className="bg-brand-light/50 rounded-lg p-3">
           <p className="text-xs text-brand-secondary font-medium">Transaction ID</p>

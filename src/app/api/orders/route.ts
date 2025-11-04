@@ -92,7 +92,8 @@ export async function GET(request: NextRequest) {
           select: {
             orderCode: true,
             status: true,
-            amount: true
+            amount: true,
+            paymentMethod: true
           }
         },
         user: {
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
         orderCode: orderNumber,
         amount: amount,
         status: paymentStatus as PaymentStatus,
+        paymentMethod: paymentMethod as any, // Ensure paymentMethod is passed
         userId: dbUser.id
       }
     });

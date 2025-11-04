@@ -288,6 +288,7 @@ export default function PaymentPage() {
           description: createPaymentDescription(cartItems.length, total),
           cartItems, // Send cart items for order details
           shippingAddress, // Send shipping address for order details
+          paymentMethod: 'PAYOS'
         }),
       });
 
