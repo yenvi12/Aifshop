@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { FaChevronLeft, FaChevronRight, FaSort, FaFilter } from "react-icons/fa";
 import ProductCard, { type Product } from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { addGuestCartItem } from "@/lib/guestCart";
 
 interface ApiProduct {
   id: string;
@@ -225,7 +226,7 @@ export default function ProductListPage() {
     } else {
       const half = Math.floor(maxVisiblePages / 2);
       let start = Math.max(1, currentPage - half);
-      let end = Math.min(totalPages, start + maxVisiblePages - 1);
+      const end = Math.min(totalPages, start + maxVisiblePages - 1);
       
       if (end - start < maxVisiblePages - 1) {
         start = Math.max(1, end - maxVisiblePages + 1);
@@ -258,58 +259,33 @@ export default function ProductListPage() {
       return;
     }
 
+    // Guest: thêm vào guest cart, không ép đăng nhập
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    if (!token) {
+      addGuestCartItem({ productId: product.id, quantity: 1 });
+      toast.success("Đã thêm sản phẩm vào giỏ hàng");
+      return;
+    }
+
+    // Logged-in: gọi thẳng API /api/cart (upsert)
     try {
-      // Kiểm tra authentication
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        toast.error("Please login to add products to cart");
-        router.push("/login");
-        return;
-      }
-
-      // Lấy thông tin giỏ hàng hiện tại để kiểm tra sản phẩm đã tồn tại chưa
-      const cartResponse = await fetch('/api/cart', {
-        method: 'GET',
+      const response = await fetch("/api/cart", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const cartData = await cartResponse.json();
-
-      if (!cartData.success) {
-        toast.error("Unable to retrieve cart information");
-        return;
-      }
-
-      // Tìm sản phẩm trong giỏ hàng
-      const existingItem = cartData.data?.find((item: CartItem) => item.product.id === product.id);
-
-      // Nếu sản phẩm đã tồn tại, tăng số lượng hiện tại lên 1
-      // Nếu chưa tồn tại, thêm mới với số lượng 1
-      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
-
-      // Gọi API cập nhật giỏ hàng
-      const response = await fetch('/api/cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: newQuantity
-        })
+          quantity: 1,
+        }),
       });
 
       const data = await response.json();
 
       if (data.success) {
         toast.success(data.message || "Sản phẩm đã được thêm vào giỏ hàng!");
-
-        // Send event to update cart count in Header and other components
-        window.dispatchEvent(new CustomEvent('cartUpdated'));
+        window.dispatchEvent(new CustomEvent("cartUpdated"));
       } else {
         if (response.status === 401) {
           toast.error("Session expired. Please log in again.");
@@ -319,7 +295,7 @@ export default function ProductListPage() {
         }
       }
     } catch (error) {
-      console.error('Add to cart error:', error);
+      console.error("Add to cart error:", error);
       toast.error("An error occurred while adding the product to the cart");
     }
   };
