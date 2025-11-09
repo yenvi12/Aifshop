@@ -1,5 +1,5 @@
 export interface ParsedMessage {
-  type: 'text' | 'header' | 'list' | 'table' | 'product' | 'button' | 'link' | 'emphasis' | 'code';
+  type: 'text' | 'header' | 'list' | 'table' | 'product' | 'order' | 'button' | 'link' | 'emphasis' | 'code';
   content: string;
   props?: Record<string, unknown>;
   children?: ParsedMessage[];
@@ -92,6 +92,106 @@ export class MessageParser {
         listType = isOrdered ? 'ordered' : 'unordered';
         currentList.push(line.replace(/^[\*\-\+]\s|^\d+\.\s/, ''));
         inList = true;
+        continue;
+      }
+
+      // Product card list items [product-card:...]
+      const productCardMatch = line.match(/^\[product-card:([^\]]+)\]$/);
+      if (productCardMatch) {
+        if (inTable) {
+          parsed.push(this.parseTable(currentTable));
+          currentTable = [];
+          inTable = false;
+        }
+        if (inList) {
+          parsed.push(this.parseList(currentList, listType));
+          currentList = [];
+          inList = false;
+        }
+
+        const rawProps = productCardMatch[1].split(';').map(p => p.trim()).filter(Boolean);
+        const props: Record<string, unknown> = {};
+        for (const pair of rawProps) {
+          const [key, ...rest] = pair.split('=');
+          if (!key || rest.length === 0) continue;
+          const value = rest.join('=').trim();
+          if (!value) continue;
+
+          const normalizedKey = key.trim();
+          if (['price', 'compareAt', 'rating'].includes(normalizedKey)) {
+            const num = parseFloat(value);
+            if (!Number.isNaN(num)) {
+              props[normalizedKey] = num;
+            }
+          } else if (['reviews', 'reviewCount'].includes(normalizedKey)) {
+            const num = parseInt(value, 10);
+            if (!Number.isNaN(num)) {
+              props.reviewCount = num;
+            }
+          } else {
+            props[normalizedKey] = value;
+          }
+        }
+
+        const id = (props.id as string) || (props.productId as string) || '';
+        parsed.push({
+          type: 'product',
+          content: id,
+          props: {
+            ...props,
+            productId: id
+          }
+        });
+        continue;
+      }
+
+      // Order card list items [order-card:...]
+      const orderCardMatch = line.match(/^\[order-card:([^\]]+)\]$/);
+      if (orderCardMatch) {
+        if (inTable) {
+          parsed.push(this.parseTable(currentTable));
+          currentTable = [];
+          inTable = false;
+        }
+        if (inList) {
+          parsed.push(this.parseList(currentList, listType));
+          currentList = [];
+          inList = false;
+        }
+
+        const rawProps = orderCardMatch[1].split(';').map(p => p.trim()).filter(Boolean);
+        const props: Record<string, unknown> = {};
+
+        for (const pair of rawProps) {
+          const [key, ...rest] = pair.split('=');
+          if (!key) continue;
+          const value = rest.join('=').trim();
+
+          const normalizedKey = key.trim();
+          if (!value) {
+            // Allow empty values; just skip instead of forcing 0
+            continue;
+          }
+
+          if (normalizedKey === 'total' || normalizedKey === 'itemCount') {
+            const num = parseFloat(value);
+            if (!Number.isNaN(num)) {
+              props[normalizedKey] = num;
+            }
+          } else {
+            props[normalizedKey] = value;
+          }
+        }
+
+        const id = (props.id as string) || (props.code as string) || '';
+        parsed.push({
+          type: 'order',
+          content: (props.code as string) || id,
+          props: {
+            ...props,
+            id
+          }
+        });
         continue;
       }
 
@@ -263,6 +363,7 @@ export class MessageParser {
   static cleanText(text: string): string {
     return text
       .replace(/\[product:\w+\]/g, '')
+      .replace(/\[product-card:[^\]]+\]/g, '')
       .replace(/\[button:\w+:[^]]+\]/g, '')
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .trim();

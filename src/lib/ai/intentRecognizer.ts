@@ -34,7 +34,8 @@ export class IntentRecognizer {
       'liệt kê', 'danh sách', 'tất cả sản phẩm', 'show products', 'xem sản phẩm',
       'có những sản phẩm nào', 'sản phẩm đang có', 'shop có gì', 'hiển thị sản phẩm',
       'xem tất cả', 'danh mục sản phẩm', 'tất cả', 'show all', 'list products',
-      'xem hàng', 'có gì', 'sản phẩm có sẵn', 'inventory', 'stock'
+      'xem hàng', 'có gì', 'sản phẩm có sẵn', 'inventory', 'stock',
+      'xem thêm sản phẩm', 'xem thêm', 'thêm sản phẩm'
     ]
   }
 
