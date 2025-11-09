@@ -116,7 +116,7 @@ model payment {
   orderCode     String        @unique
   amount        Float
   status        PaymentStatus @default(PENDING)
-  paymentMethod PaymentMethod
+  paymentMethod PaymentMethod @default(PAYOS)
   userId        String
   createdAt     DateTime      @default(now())
   productId     String?

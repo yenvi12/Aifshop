@@ -318,7 +318,24 @@ Bạn muốn biết gì về sản phẩm này?`,
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto bg-gradient-to-b from-brand-light/20 to-white p-4 space-y-2 chat-messages-improved">
               {messages.map((message) => (
-                <MessageItem key={message.id} message={message} />
+                <MessageItem
+                  key={message.id}
+                  message={message}
+                  // Bắt sự kiện button từ nội dung AI (ví dụ: [button:primary:Xem thêm sản phẩm])
+                  onButtonAction={async (text) => {
+                    // Chỉ handle đúng nút "Xem thêm sản phẩm"
+                    if (text.trim() === 'Xem thêm sản phẩm') {
+                      try {
+                        // Ẩn quick suggestions trong lúc load thêm
+                        setShowSuggestions(false);
+                        // Gửi prompt đơn giản cho backend; logic phân trang sử dụng context/history phía server
+                        await sendMessage('Xem thêm sản phẩm');
+                      } catch (error) {
+                        toast.error('Không thể tải thêm sản phẩm, vui lòng thử lại.');
+                      }
+                    }
+                  }}
+                />
               ))}
               
               {isLoading && <TypingIndicator />}

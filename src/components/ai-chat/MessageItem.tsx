@@ -14,9 +14,11 @@ export interface Message {
 interface MessageItemProps {
   message: Message;
   isTyping?: boolean;
+  // Cho phép ChatModal bắt sự kiện button từ nội dung AI (vd: "Xem thêm sản phẩm")
+  onButtonAction?: (text: string) => void;
 }
 
-export default function MessageItem({ message, isTyping = false }: MessageItemProps) {
+export default function MessageItem({ message, isTyping = false, onButtonAction }: MessageItemProps) {
   const messageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,12 +100,16 @@ export default function MessageItem({ message, isTyping = false }: MessageItemPr
             content={message.content}
             className="text-brand-dark"
             onProductClick={(productId) => {
-              console.log('Product clicked:', productId);
-              // Handle product click - could open product modal, navigate, etc.
+              // Nếu cần sau này có logic đặc biệt cho productId (không có slug), có hook sẵn.
+              console.log('Product clicked from AI suggestion:', productId);
             }}
-            onButtonClick={(buttonText, variant) => {
-              console.log('Button clicked:', buttonText, variant);
-              // Handle button click - could trigger AI response, navigation, etc.
+            onButtonClick={(buttonText) => {
+              // Đẩy sự kiện button lên ChatModal để xử lý thực (bao gồm "Xem thêm sản phẩm")
+              if (typeof onButtonAction === 'function') {
+                onButtonAction(buttonText);
+              } else {
+                console.log('Button clicked:', buttonText);
+              }
             }}
           />
         )}
