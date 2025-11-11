@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { addGuestCartItem } from "@/lib/guestCart";
 import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage, MdSmartToy, MdShoppingCart } from "react-icons/md";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
@@ -314,35 +315,25 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
   const handleAddToCart = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        toast.error("Please login to add products to cart");
-        router.push("/login");
-        return;
-      }
-
       if (sizes.length > 0 && !selectedSize) {
         toast.error("Please select a product size");
         return;
       }
 
-      const cartResponse = await fetch("/api/cart", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-      const cartData = await cartResponse.json();
-      if (!cartData.success) {
-        toast.error("Unable to retrieve cart information");
+      // Guest: lưu vào guest cart với size + quantity, không ép login
+      if (!token) {
+        addGuestCartItem({
+          productId: product.id,
+          quantity,
+          size: sizes.length > 0 ? (selectedSize?.name || null) : null,
+        });
+        toast.success("Đã thêm sản phẩm vào giỏ hàng");
         return;
       }
 
-      const existingItem = cartData.data?.find((item: CartItem) => item.product.id === product.id && item.size === (selectedSize?.name || null));
-      const newQuantity = existingItem ? existingItem.quantity + quantity : quantity;
-
+      // Logged-in: gọi trực tiếp /api/cart, để backend xử lý kiểm tra tồn kho / size
       const response = await fetch("/api/cart", {
         method: "POST",
         headers: {
@@ -351,8 +342,8 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: newQuantity,
-          size: selectedSize?.name || null,
+          quantity,
+          size: sizes.length > 0 ? (selectedSize?.name || null) : null,
         }),
       });
 

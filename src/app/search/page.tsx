@@ -10,6 +10,7 @@ import SearchFiltersComponent, { type SearchFilters } from "@/components/search/
 import ViewToggle from "@/components/search/ViewToggle";
 import EnhancedEmptyState from "@/components/search/EnhancedEmptyState";
 import toast from "react-hot-toast";
+import { addGuestCartItem } from "@/lib/guestCart";
 
 interface ApiProduct {
   id: string;
@@ -253,32 +254,15 @@ function SearchContent() {
       return;
     }
 
+    // Guest: dùng local guest cart, không ép đăng nhập
     if (!user || !accessToken) {
-      toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      addGuestCartItem({ productId: product.id, quantity: 1 });
+      toast.success("Đã thêm sản phẩm vào giỏ hàng");
       return;
     }
 
+    // Logged-in: gọi POST /api/cart trực tiếp
     try {
-      const cartResponse = await fetch("/api/cart", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const cartData = await cartResponse.json();
-
-      if (!cartData.success) {
-        toast.error("Không thể lấy thông tin giỏ hàng");
-        return;
-      }
-
-      const existingItem = cartData.data?.find(
-        (item: CartItem) => item.product.id === product.id
-      );
-      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
-
       const response = await fetch("/api/cart", {
         method: "POST",
         headers: {
@@ -287,7 +271,7 @@ function SearchContent() {
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: newQuantity,
+          quantity: 1,
         }),
       });
 

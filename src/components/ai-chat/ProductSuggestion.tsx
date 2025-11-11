@@ -8,7 +8,10 @@ import { MdShoppingCart, MdStar, MdInfo } from "react-icons/md";
 interface Product {
   id: string;
   name: string;
-  price: number;
+  // price: luôn là giá hiển thị cuối cùng cho khách
+  price?: number | null;
+  // compareAtPrice: giá gốc (gạch ngang) nếu có khuyến mãi
+  compareAtPrice?: number | null;
   image?: string;
   slug?: string;
   rating?: number;
@@ -110,8 +113,18 @@ export default function ProductSuggestion({
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-brand-primary">
-                      {product.price.toLocaleString('vi-VN')}₫
+                      {typeof product.price === 'number' && product.price > 0
+                        ? `${product.price.toLocaleString('vi-VN')}₫`
+                        : 'Liên hệ'}
                     </span>
+                    {typeof product.price === 'number' &&
+                      product.price > 0 &&
+                      typeof product.compareAtPrice === 'number' &&
+                      product.compareAtPrice > product.price && (
+                        <span className="text-xs text-brand-secondary line-through">
+                          {product.compareAtPrice.toLocaleString('vi-VN')}₫
+                        </span>
+                      )}
                     {product.badge && (
                       <span className="px-2 py-0.5 bg-brand-accent text-brand-dark text-xs rounded-full">
                         {product.badge}

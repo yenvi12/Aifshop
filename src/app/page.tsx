@@ -18,6 +18,7 @@ import { BiSupport } from "react-icons/bi";
 import { HiSparkles } from "react-icons/hi";
 import toast from "react-hot-toast";
 import ProductCard, { type Product } from "@/components/ProductCard";
+import { addGuestCartItem } from "@/lib/guestCart";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import HeroCarouselOverlay from "@/components/HeroCarouselOverlay";
 import EnhancedSearchBar from "@/components/search/EnhancedSearchBar";
@@ -181,6 +182,7 @@ export default function HomePage() {
 
   // Function to handle adding product to cart
   const handleAddToCart = async (product: Product) => {
+    // If product has sizes -> go to detail page to choose size
     if (product.sizes && product.sizes.length > 0) {
       if (product.slug) {
         router.push(`/products/${product.slug}`);
@@ -190,30 +192,15 @@ export default function HomePage() {
       return;
     }
 
+    // If not logged in -> guest cart (no barrier)
     if (!user || !accessToken) {
-      toast.error("Please login to add products to cart");
+      addGuestCartItem({ productId: product.id, quantity: 1 });
+      toast.success("Đã thêm sản phẩm vào giỏ hàng");
       return;
     }
 
+    // Logged in -> use server cart directly with upsert semantics
     try {
-      const cartResponse = await fetch('/api/cart', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const cartData = await cartResponse.json();
-
-      if (!cartData.success) {
-        toast.error("Unable to retrieve cart information");
-        return;
-      }
-
-      const existingItem = cartData.data?.find((item: CartItem) => item.product.id === product.id);
-      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
-
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
@@ -222,7 +209,8 @@ export default function HomePage() {
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: newQuantity,
+          // Let backend treat missing quantity as 1 or update based on current logic
+          quantity: 1,
         }),
       });
 
@@ -480,17 +468,15 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
           )}
         </div>
 
-        {filteredProducts.length > 8 && (
-          <div className="mt-10 text-center">
-            <Link
-              href="/shop"
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
-            >
-              Xem tất cả sản phẩm
-              <MdTrendingUp className="w-5 h-5" />
-            </Link>
-          </div>
-        )}
+        {/* Nút Xem thêm - luôn hiển thị dưới phần sản phẩm */}
+        <div className="mt-10 text-center">
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+          >
+            Xem thêm
+          </Link>
+        </div>
       </section>
 
       {/* ===== TRUST & STATS SECTION ===== */}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { getGuestCartCount } from "@/lib/guestCart";
 import {
   MdShoppingCart,
   MdPerson,
@@ -195,36 +196,105 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ====== Fetch Cart Count ======
-  const fetchCartItemCount = async () => {
+  // ====== Merge Guest Cart into User Cart after login ======
+  const mergeGuestCartToUser = async () => {
+    if (typeof window === "undefined") return;
     const token = localStorage.getItem("accessToken");
-    if (!token || !user) {
+    if (!token || !user) return;
+
+    // Đọc guest cart trực tiếp từ localStorage để tránh phụ thuộc vào state / hook
+    try {
+      const raw = localStorage.getItem("guest_cart_v1");
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as {
+        items?: { productId: string; quantity: number; size?: string | null }[];
+        mergedOnce?: boolean;
+      };
+
+      // Nếu không có items hoặc đã merge trước đó thì bỏ qua
+      if (!parsed.items || parsed.items.length === 0 || parsed.mergedOnce) return;
+
+      // Lần lượt push từng item lên /api/cart (upsert)
+      for (const item of parsed.items) {
+        if (!item || !item.productId || !item.quantity || item.quantity <= 0) continue;
+
+        try {
+          await fetch("/api/cart", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              productId: item.productId,
+              quantity: item.quantity,
+              size: item.size ?? null,
+            }),
+          });
+        } catch {
+          // Nếu 1 item lỗi, bỏ qua item đó, tiếp tục các item khác để không chặn toàn bộ merge
+          continue;
+        }
+      }
+
+      // Đánh dấu đã merge và xoá items để tránh merge lại
+      const mergedSnapshot = {
+        items: [],
+        lastUpdated: new Date().toISOString(),
+        mergedOnce: true,
+      };
+      localStorage.setItem("guest_cart_v1", JSON.stringify(mergedSnapshot));
+
+      // Cập nhật lại count từ server
+      await fetchCartItemCountFromServer();
+      // Thông báo cho các component khác
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("cartUpdated"));
+      }
+    } catch {
+      // Nếu parse lỗi, xoá luôn guest cart để tránh lặp lỗi
+      localStorage.removeItem("guest_cart_v1");
+    }
+  };
+
+  // ====== Fetch Cart Count (server-first, fallback guest) ======
+  const fetchCartItemCountFromServer = async () => {
+    if (typeof window === "undefined") {
       setCartItemCount(0);
       return;
     }
+    const token = localStorage.getItem("accessToken");
+    if (token && user) {
+      try {
+        const response = await fetch("/api/cart", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
 
-    try {
-      const response = await fetch("/api/cart", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        const total = data.data.reduce(
-          (sum: number, item: CartItem) => sum + item.quantity,
-          0
-        );
-        setCartItemCount(total);
-      } else {
-        setCartItemCount(0);
+        if (data.success && data.data) {
+          const total = data.data.reduce(
+            (sum: number, item: CartItem) => sum + item.quantity,
+            0
+          );
+          setCartItemCount(total);
+          return;
+        }
+      } catch {
+        // nếu lỗi sẽ fallback xuống guest
       }
-    } catch {
-      setCartItemCount(0);
     }
+    // fallback guest
+    const guestCount = getGuestCartCount();
+    setCartItemCount(guestCount);
+  };
+
+  const fetchCartItemCount = async () => {
+    await fetchCartItemCountFromServer();
   };
 
   // ====== Fetch Unread Message Count ======
@@ -285,29 +355,42 @@ export default function Header() {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchCartItemCount();
-      fetchUnreadCount();
-      fetchRecentConversations();
+    // Khi state user thay đổi:
+    // - Nếu vừa có user + token: thực hiện merge guest cart -> user cart một lần.
+    // - Sau đó luôn fetch lại cart count.
+    const run = async () => {
+      if (user && typeof window !== "undefined") {
+        await mergeGuestCartToUser();
+      }
+      await fetchCartItemCount();
+      if (user) {
+        await fetchUnreadCount();
+        await fetchRecentConversations();
+      } else {
+        setUnreadCount(0);
+        setRecentConversations([]);
+      }
+    };
+    run();
 
-      const handleCartUpdate = () => fetchCartItemCount();
-      const handleMessageUpdate = () => {
+    const handleCartUpdate = () => {
+      fetchCartItemCount();
+    };
+
+    const handleMessageUpdate = () => {
+      if (user) {
         fetchUnreadCount();
         fetchRecentConversations();
-      };
+      }
+    };
 
-      window.addEventListener("cartUpdated", handleCartUpdate);
-      window.addEventListener("messageUpdated", handleMessageUpdate);
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    window.addEventListener("messageUpdated", handleMessageUpdate);
 
-      return () => {
-        window.removeEventListener("cartUpdated", handleCartUpdate);
-        window.removeEventListener("messageUpdated", handleMessageUpdate);
-      };
-    } else {
-      setCartItemCount(0);
-      setUnreadCount(0);
-      setRecentConversations([]);
-    }
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+      window.removeEventListener("messageUpdated", handleMessageUpdate);
+    };
   }, [user]);
 
   // ====== Logout ======
@@ -403,6 +486,8 @@ export default function Header() {
               <SearchBar variant="navbar" />
             </div>
           )}
+
+          {/* Cart Icon - chỉ dùng bản trong menu desktop; icon riêng này đã được gỡ để tránh trùng lặp */}
 
           {/* Messages */}
           {mounted && user && (
@@ -530,7 +615,7 @@ export default function Header() {
                           onClick={() => setDropdownOpen(false)}
                         >
                           <MdPerson className="w-4 h-4" />
-                          Quản lý 
+                          Quản lý
                         </Link>
                       )}
                       <button

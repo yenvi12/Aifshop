@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +5,180 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(cuid())
+  supabaseUserId   String?   @unique
+  email            String    @unique
+  firstName        String
+  lastName         String
+  phoneNumber      String?
+  dateOfBirth      DateTime
+  bio              String?
+  avatar           String?
+  stylePreferences String[]
+  defaultAddress   Json?
+  password         String
+  refreshTokenHash String?
+  isVerified       Boolean   @default(false)
+  role             Role      @default(USER)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  carts            Cart[]
+  receivedMessages Message[] @relation("MessageReceiver")
+  sentMessages     Message[] @relation("MessageSender")
+  Order            Order[]
+  payment          payment[]
+  reviews          Review[]
+
+  @@map("users")
+}
+
+model TempRegistration {
+  id            String   @id @default(cuid())
+  transactionId String   @unique
+  email         String
+  firstName     String
+  lastName      String
+  phoneNumber   String?
+  dateOfBirth   DateTime
+  password      String
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  @@map("temp_registrations")
+}
+
+model Product {
+  id             String      @id @default(cuid())
+  name           String
+  overview       String?
+  description    String?
+  price          Float?
+  compareAtPrice Float?
+  category       String
+  image          String?
+  images         String[]
+  stock          Int         @default(0)
+  sizes          Json?
+  rating         Float?      @default(0)
+  badge          String?
+  isActive       Boolean     @default(true)
+  slug           String      @unique
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  carts          Cart[]
+  Message        Message[]
+  orderItems     OrderItem[]
+  orders         Order[]
+  payments       payment[]
+  reviews        Review[]
+
+  @@map("products")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  rating    Int
+  comment   String
+  images    String[]
+  videos    String[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@map("reviews")
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  size      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, size], name: "userId_productId_size")
+  @@map("carts")
+}
+
+model payment {
+  id            Int           @id @default(autoincrement())
+  orderCode     String        @unique
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod @default(PAYOS)
+  userId        String
+  createdAt     DateTime      @default(now())
+  productId     String?
+  orders        Order[]
+  Product       Product?      @relation(fields: [productId], references: [id])
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  userId            String
+  paymentId         Int
+  orderNumber       String      @unique
+  status            OrderStatus @default(ORDERED)
+  totalAmount       Float
+  shippingAddress   Json?
+  trackingNumber    String?
+  estimatedDelivery DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  productId         String?
+  orderItems        OrderItem[]
+  payment           payment     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  Product           Product?    @relation(fields: [productId], references: [id])
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int      @default(1)
+  size        String?
+  priceAtTime Float
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  receiverId     String
+  productId      String
+  content        String
+  isRead         Boolean  @default(false)
+  timestamp      DateTime @default(now())
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  receiver       User     @relation("MessageReceiver", fields: [receiverId], references: [supabaseUserId], onDelete: Cascade)
+  sender         User     @relation("MessageSender", fields: [senderId], references: [supabaseUserId], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([timestamp])
+  @@index([isRead])
+  @@map("messages")
 }
 
 enum Role {
@@ -30,194 +201,7 @@ enum PaymentStatus {
   CANCELLED
 }
 
-model User {
-  id               String   @id @default(cuid())
-  supabaseUserId   String?  @unique
-  email            String   @unique
-  firstName        String
-  lastName         String
-  phoneNumber      String?
-  dateOfBirth      DateTime
-  bio              String?
-  avatar           String?
-  stylePreferences String[] // Array of preference strings
-  defaultAddress   Json? // JSON object for shipping and billing
-  password         String
-  refreshTokenHash String? // Hash of the refresh token for security
-  isVerified       Boolean  @default(false)
-  role             Role     @default(USER)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  reviews Review[] // Add relation to reviews
-  // Relations
-  carts   Cart[]
-  payment payment[]
-  Order   Order[]
-
-  // Message relations
-  sentMessages     Message[] @relation(name: "MessageSender")
-  receivedMessages Message[] @relation(name: "MessageReceiver")
-
-  @@map("users")
-}
-
-model TempRegistration {
-  id            String   @id @default(cuid())
-  transactionId String   @unique
-  email         String
-  firstName     String
-  lastName      String
-  phoneNumber   String?
-  dateOfBirth   DateTime
-  password      String
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
-
-  @@map("temp_registrations")
-}
-
-model Product {
-  id             String   @id @default(cuid())
-  name           String
-  overview       String? // Tổng quan sản phẩm (mô tả ngắn gọn)
-  description    String? // Mô tả chi tiết đầy đủ
-  price          Float? // Made optional
-  compareAtPrice Float? // Original price for sale display
-  category       String
-  image          String?
-  images         String[] // Array of image URLs
-  stock          Int      @default(0)
-  sizes          Json? // Custom sizes: [{name: "S", stock: 10}, {name: "M", stock: 15}]
-  rating         Float?   @default(0) // Average rating (0-5), calculated from reviews
-  badge          String? // Badge like "New", "Sale", "Hot"
-  isActive       Boolean  @default(true)
-  slug           String   @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  reviews    Review[] // Add relation to reviews
-  // Relations
-  carts      Cart[]
-  payments   payment[]
-  orders     Order[]
-  orderItems OrderItem[]
-  Message    Message[]
-
-  @@map("products")
-}
-
-model Review {
-  id        String   @id @default(cuid())
-  productId String
-  userId    String
-  rating    Int // 1-5 stars
-  comment   String
-  images    String[] // Array of image URLs (Cloudinary)
-  videos    String[] // Array of video URLs (Cloudinary)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, userId]) // One review per user per product
-  @@map("reviews")
-}
-
-model Cart {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  quantity  Int      @default(1)
-  size      String? // Size selected by user (e.g., "S", "M", "L")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Ensure one cart item per user per product per size
-  @@unique([userId, productId, size], name: "userId_productId_size")
-  @@map("carts")
-}
-
-model payment {
-  id        Int           @id @default(autoincrement())
-  orderCode String        @unique
-  amount    Float
-  status    PaymentStatus @default(PENDING)
-  userId    String
-  createdAt DateTime      @default(now())
-
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders    Order[] // One payment can have multiple orders (if split payments)
-  Product   Product? @relation(fields: [productId], references: [id])
-  productId String?
-
-  @@map("payments")
-}
-
-model Order {
-  id                String      @id @default(cuid())
-  userId            String
-  paymentId         Int // Reference to payment table
-  orderNumber       String      @unique // Display order number (ORD-001, ORD-002, etc.)
-  status            OrderStatus @default(ORDERED)
-  totalAmount       Float
-  shippingAddress   Json? // Shipping address at time of order (snapshot)
-  trackingNumber    String? // For shipping tracking
-  estimatedDelivery DateTime? // Estimated delivery date
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-
-  // Relations
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payment    payment     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
-  Product    Product?    @relation(fields: [productId], references: [id])
-  productId  String?
-
-  @@map("orders")
-}
-
-model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  productId   String
-  quantity    Int      @default(1)
-  size        String? // Selected size
-  priceAtTime Float // Product price at time of order
-  createdAt   DateTime @default(now())
-
-  // Relations
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@map("order_items")
-}
-
-model Message {
-  id             String   @id @default(cuid())
-  conversationId String
-  senderId       String // Now stores Supabase user ID
-  receiverId     String // Now stores Supabase user ID
-  productId      String
-  content        String
-  isRead         Boolean  @default(false)
-  timestamp      DateTime @default(now())
-
-  // Relations - using supabaseUserId for user lookups
-  sender   User    @relation(name: "MessageSender", fields: [senderId], references: [supabaseUserId], onDelete: Cascade)
-  receiver User    @relation(name: "MessageReceiver", fields: [receiverId], references: [supabaseUserId], onDelete: Cascade)
-  product  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Indexes for performance
-  @@index([conversationId])
-  @@index([timestamp])
-  @@index([isRead])
-  @@map("messages")
+enum PaymentMethod {
+  PAYOS
+  COD
 }
