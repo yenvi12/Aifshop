@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { createProductSchema, updateProductSchema, CreateProductInput, UpdateProductInput } from '@/lib/validation'
 import { Prisma } from '@prisma/client'
 import jwt from 'jsonwebtoken'
+import { normalizeSizes, calculateTotalStock } from '@/lib/inventory'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-123456789'
 
@@ -197,8 +198,22 @@ export async function POST(request: NextRequest) {
       data.price = formData.get('price') ? parseFloat(formData.get('price') as string) : undefined
       data.compareAtPrice = formData.get('compareAtPrice') ? parseFloat(formData.get('compareAtPrice') as string) : undefined
       data.category = formData.get('category') as string
-      data.stock = parseInt(formData.get('stock') as string) || 0
-      data.sizes = formData.get('sizes') ? JSON.parse(formData.get('sizes') as string) : []
+
+      const rawSizes = formData.get('sizes') ? JSON.parse(formData.get('sizes') as string) : []
+      const normalizedSizes = normalizeSizes(rawSizes)
+
+      if (normalizedSizes.length > 0) {
+        // Product has sizes: stock is derived from sizes
+        data.sizes = normalizedSizes as any
+        data.stock = calculateTotalStock(normalizedSizes)
+      } else {
+        // No valid sizes: treat as no-size product, use stock from input
+        const stockStr = formData.get('stock') as string
+        const stockVal = stockStr ? parseInt(stockStr, 10) : 0
+        data.stock = Number.isFinite(stockVal) && stockVal >= 0 ? stockVal : 0
+        data.sizes = []
+      }
+
       // Rating is now calculated from reviews, not set manually
       data.badge = (formData.get('badge') as string) || undefined
       data.isActive = formData.get('isActive') === 'true'
@@ -252,6 +267,20 @@ export async function POST(request: NextRequest) {
       data = await request.json()
       data.overview = data.overview ?? undefined
       data.description = data.description ?? undefined
+
+      const normalizedSizes = normalizeSizes((data as any).sizes)
+
+      if (normalizedSizes.length > 0) {
+        // Has sizes -> derive stock from sizes
+        ;(data as any).sizes = normalizedSizes
+        data.stock = calculateTotalStock(normalizedSizes)
+      } else {
+        // No sizes -> treat as simple product, allow explicit stock (>=0)
+        const stockVal = Number((data as any).stock)
+        data.stock = Number.isFinite(stockVal) && stockVal >= 0 ? Math.floor(stockVal) : 0
+        ;(data as any).sizes = []
+      }
+
       data.image = data.image ?? null
       data.images = data.images ?? []
     }
@@ -282,18 +311,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (sizes && Array.isArray(sizes) && sizes.length > 0) {
-      const totalSizeStock = sizes.reduce((sum: number, size: { stock?: number }) => sum + (size.stock || 0), 0);
-      if (totalSizeStock > stock) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Tổng số lượng size không được vượt quá số lượng tồn kho'
-          },
-          { status: 400 }
-        )
-      }
-    }
+    // At this point, if sizes has elements, stock is already derived from sizes.
 
     // Generate slug
     const slug = generateSlug(name)
@@ -431,18 +449,55 @@ export async function PUT(request: NextRequest) {
       const category = formData.get('category') as string
       if (category) data.category = category
 
-      const stockStr = formData.get('stock') as string
-      if (stockStr && !isNaN(parseInt(stockStr))) {
-        data.stock = parseInt(stockStr)
-      }
-
       const sizesStr = formData.get('sizes') as string
-      if (sizesStr) {
+      const hasSizesPayload = typeof sizesStr === 'string'
+
+      if (hasSizesPayload) {
+        // Caller is explicitly updating sizes
+        let parsed: any[] = []
         try {
-          data.sizes = JSON.parse(sizesStr)
+          parsed = JSON.parse(sizesStr)
         } catch {
-          data.sizes = []
+          parsed = []
         }
+        const normalizedSizes = normalizeSizes(parsed)
+
+        if (normalizedSizes.length > 0) {
+          // Product will have sizes: derive stock
+          ;(data as any).sizes = normalizedSizes
+          data.stock = calculateTotalStock(normalizedSizes)
+        } else {
+          // sizes provided but all invalid/empty => interpret as removing sizes
+          // Use provided stock (if valid) as simple product stock
+          const stockStr = formData.get('stock') as string
+          const stockVal = stockStr ? parseInt(stockStr, 10) : NaN
+          if (Number.isFinite(stockVal) && stockVal >= 0) {
+            data.stock = Math.floor(stockVal)
+            ;(data as any).sizes = []
+          } else {
+            return NextResponse.json(
+              {
+                success: false,
+                error: 'Invalid sizes payload. Provide valid sizes or a non-negative stock value when removing sizes.'
+              },
+              { status: 400 }
+            )
+          }
+        }
+      } else {
+        // No sizes field in payload:
+        // - If existing product has sizes: do NOT allow direct stock override.
+        // - If no sizes: allow updating stock if provided.
+        const stockStr = formData.get('stock') as string
+        if (!existingProduct.sizes || (Array.isArray(existingProduct.sizes) && existingProduct.sizes.length === 0)) {
+          if (stockStr && !isNaN(parseInt(stockStr, 10))) {
+            const stockVal = parseInt(stockStr, 10)
+            if (stockVal >= 0) {
+              data.stock = stockVal
+            }
+          }
+        }
+        // else: ignore stockStr silently to protect derived stock
       }
 
       // Rating is now calculated from reviews, not set manually
@@ -517,6 +572,54 @@ export async function PUT(request: NextRequest) {
       data.price = data.price ?? undefined
       data.compareAtPrice = data.compareAtPrice ?? undefined
       data.badge = data.badge ?? undefined
+
+      const hasSizesPayload = Object.prototype.hasOwnProperty.call(data, 'sizes')
+      if (hasSizesPayload) {
+        const normalizedSizes = normalizeSizes((data as any).sizes)
+        if (normalizedSizes.length > 0) {
+          ;(data as any).sizes = normalizedSizes
+          data.stock = calculateTotalStock(normalizedSizes)
+        } else {
+          // Caller is clearing sizes: require valid stock to become no-size product
+          const stockVal = Number((data as any).stock)
+          if (Number.isFinite(stockVal) && stockVal >= 0) {
+            data.stock = Math.floor(stockVal)
+            ;(data as any).sizes = []
+          } else {
+            return NextResponse.json(
+              {
+                success: false,
+                error: 'When removing sizes, a non-negative stock value is required.'
+              },
+              { status: 400 }
+            )
+          }
+        }
+      } else {
+        // No sizes payload: only allow stock update if product currently has no sizes
+        if (!existingProduct.sizes || (Array.isArray(existingProduct.sizes) && existingProduct.sizes.length === 0)) {
+          if (Object.prototype.hasOwnProperty.call(data, 'stock')) {
+            const stockVal = Number((data as any).stock)
+            if (Number.isFinite(stockVal) && stockVal >= 0) {
+              data.stock = Math.floor(stockVal)
+            } else {
+              return NextResponse.json(
+                {
+                  success: false,
+                  error: 'Stock must be a non-negative number.'
+                },
+                { status: 400 }
+              )
+            }
+          }
+        } else {
+          // Product has sizes: ignore any direct stock field to protect derived stock
+          if (Object.prototype.hasOwnProperty.call(data, 'stock')) {
+            delete (data as any).stock
+          }
+        }
+      }
+
       // For JSON updates, if image is not provided or is null, don't include it to keep existing
       if (!data.image) {
         delete data.image

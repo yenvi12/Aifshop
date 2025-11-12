@@ -575,10 +575,14 @@ export default function ManageOrdersPage() {
                     <div className="relative">
                       <select
                         onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                        className={`px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm bg-white shadow-md hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
+                        className={`px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm bg-white shadow-md hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED' ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
                         defaultValue={order.status}
-                        disabled={updatingStatus === order.id}
-                        title="Update Order Status"
+                        disabled={updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED'}
+                        title={
+                          order.status === 'CANCELLED' ? 'Cannot edit cancelled orders' :
+                          order.status === 'DELIVERED' ? 'Cannot edit delivered orders' :
+                          'Update Order Status'
+                        }
                       >
                         <option value="ORDERED">📋 Ordered</option>
                         <option value="CONFIRMED">✅ Confirmed</option>
@@ -715,10 +719,14 @@ export default function ManageOrdersPage() {
                           <div className="relative">
                             <select
                               onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                              className={`px-3 py-1.5 border-2 border-gray-300 rounded-lg text-xs bg-white shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
+                              className={`px-3 py-1.5 border-2 border-gray-300 rounded-lg text-xs bg-white shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED' ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
                               defaultValue={order.status}
-                              disabled={updatingStatus === order.id}
-                              title="Update Order Status"
+                              disabled={updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED'}
+                              title={
+                                order.status === 'CANCELLED' ? 'Cannot edit cancelled orders' :
+                                order.status === 'DELIVERED' ? 'Cannot edit delivered orders' :
+                                'Update Order Status'
+                              }
                             >
                               <option value="ORDERED">📋 Ordered</option>
                               <option value="CONFIRMED">✅ Confirmed</option>
