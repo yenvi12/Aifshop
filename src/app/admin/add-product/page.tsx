@@ -19,7 +19,7 @@ interface ProductFormData {
   price: string;
   compareAtPrice: string;
   category: string;
-  stock: string;
+  stock: string; // hiển thị: nếu có size thì = tổng stock size, nếu không có size thì nhập tay
   sizes: SizeOption[];
   badge: string;
   image: File | null;
@@ -124,12 +124,6 @@ export default function AddProductPage() {
       }
     }
 
-    // Stock quantity validation
-    const stockValue = parseInt(formData.stock);
-    if (!formData.stock.trim() || isNaN(stockValue) || stockValue < 0) {
-      newErrors.stock = "Stock quantity is required and must be a number greater than or equal to 0";
-    }
-
     // Original Price (Sale) validation (required)
     if (!formData.compareAtPrice.trim()) {
       newErrors.compareAtPrice = "Original price (Sale) is required";
@@ -142,10 +136,10 @@ export default function AddProductPage() {
       }
     }
 
-
-    // Size validation
-    let totalSizeStock = 0;
+    // Stock / sizes validation
     if (formData.sizes.length > 0) {
+      // Has sizes: derive stock from sizes
+      let totalSizeStock = 0;
       formData.sizes.forEach((size, index) => {
         if (!size.name.trim()) {
           newErrors[`size_${index}_name`] = `Size ${index + 1} name is required`;
@@ -156,10 +150,14 @@ export default function AddProductPage() {
           totalSizeStock += size.stock;
         }
       });
-
-      // Check total size stocks <= stock quantity
-      if (stockValue && totalSizeStock > stockValue) {
-        newErrors.sizes = `Total size stocks (${totalSizeStock}) cannot exceed stock quantity (${stockValue})`;
+      if (totalSizeStock < 0) {
+        newErrors.sizes = "Total stock by sizes must be greater than or equal to 0";
+      }
+    } else {
+      // No sizes: require stock input
+      const stockValue = parseInt(formData.stock);
+      if (!formData.stock.trim() || isNaN(stockValue) || stockValue < 0) {
+        newErrors.stock = "Stock quantity is required and must be a number greater than or equal to 0";
       }
     }
 
@@ -204,9 +202,13 @@ export default function AddProductPage() {
       }
       submitData.append('compareAtPrice', formData.compareAtPrice);
       submitData.append('category', formData.category);
-      submitData.append('stock', formData.stock);
+
       if (formData.sizes.length > 0) {
+        // Has sizes: let backend derive stock from sizes
         submitData.append('sizes', JSON.stringify(formData.sizes));
+      } else {
+        // No sizes: send explicit stock
+        submitData.append('stock', formData.stock);
       }
       if (formData.badge) {
         submitData.append('badge', formData.badge);
@@ -402,17 +404,28 @@ export default function AddProductPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Stock Quantity *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Stock Quantity {formData.sizes.length > 0 ? "(auto from sizes)" : "*"}
+                </label>
                 <input
                   type="number"
                   name="stock"
-                  value={formData.stock}
-                  onChange={handleInputChange}
-                  required
+                  value={
+                    formData.sizes.length > 0
+                      ? formData.sizes.reduce((sum, s) => sum + (s.stock || 0), 0).toString()
+                      : formData.stock
+                  }
+                  onChange={(e) => {
+                    if (formData.sizes.length === 0) {
+                      handleInputChange(e);
+                    }
+                  }}
+                  required={formData.sizes.length === 0}
                   min="0"
+                  readOnly={formData.sizes.length > 0}
                   className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
                     errors.stock ? 'border-red-500' : 'border-brand-light'
-                  }`}
+                  } ${formData.sizes.length > 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="0"
                 />
                 {errors.stock && (
