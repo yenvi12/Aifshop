@@ -334,11 +334,11 @@ function OrderCard({ order }: { order: Order }) {
     if (paymentStatus === 'failed') {
       return { text: 'Payment Failed', color: 'bg-red-600 text-white shadow-red-200', icon: MdKeyboardArrowRight };
     }
-    if (paymentStatus === 'paid') {
+    if (paymentStatus === 'SUCCESS') {
       return { text: 'Payment Completed', color: 'bg-green-600 text-white shadow-green-200', icon: MdDone };
     }
-    if (paymentStatus === 'pending') {
-      return { text: 'Payment Completed', color: 'bg-green-600 text-white shadow-green-200', icon: MdDone };
+    if (paymentStatus === 'PENDING') {
+      return { text: 'Awaiting Payment', color: 'bg-yellow-600 text-white shadow-yellow-200', icon: MdSchedule };
     }
     if (status === 'CONFIRMED') {
       return { text: 'Confirmed', color: 'bg-yellow-600 text-white shadow-yellow-200', icon: MdCheckCircle };
@@ -400,7 +400,7 @@ function OrderCard({ order }: { order: Order }) {
             <MdCheckCircle className="w-4 h-4 mr-1" />
             {order.status}
           </span>
-          {order.payment.status === 'paid' && (
+          {(order.payment.status === 'paid' || order.payment.status === 'SUCCESS') && (
             <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold border-2 shadow-sm bg-green-100 text-green-900 border-green-300 shadow-green-100">
               Payment: Completed
             </span>
@@ -815,13 +815,13 @@ function PaymentCard({ payment }: { payment: Payment }) {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-            payment.status === 'paid' ? 'bg-green-100' :
+            (payment.status === 'paid' || payment.status === 'SUCCESS') ? 'bg-green-100' :
             payment.status === 'pending' ? 'bg-yellow-100' :
             payment.status === 'failed' ? 'bg-red-100' :
             'bg-gray-100'
           }`}>
             <StatusIcon className={`w-5 h-5 ${
-              payment.status === 'paid' ? 'text-green-600' :
+              (payment.status === 'paid' || payment.status === 'SUCCESS') ? 'text-green-600' :
               payment.status === 'pending' ? 'text-yellow-600' :
               payment.status === 'failed' ? 'text-red-600' :
               'text-gray-600'
@@ -847,6 +847,38 @@ function PaymentCard({ payment }: { payment: Payment }) {
             <StatusIcon className="w-4 h-4 mr-1" />
             {statusInfo.label}
           </span>
+        </div>
+      </div>
+
+      {/* Payment Breakdown */}
+      <div className="mb-4 p-4 bg-brand-light/30 rounded-lg border border-brand-accent/30">
+        <h4 className="text-sm font-semibold text-brand-dark mb-3">Payment Breakdown</h4>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-brand-secondary">Products Total:</span>
+            <span className="font-medium text-brand-dark">
+              {/* Calculate subtotal from orders */}
+              {payment.orders.length > 0 ?
+                formatVND(payment.orders.reduce((sum, order) => sum + order.totalAmount, 0)) :
+                formatVND(payment.amount - 15000) // Assume standard shipping if no orders data
+              }
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-brand-secondary">Shipping Fee:</span>
+            <span className="font-medium text-brand-dark">
+              {/* Calculate shipping as difference */}
+              {payment.orders.length > 0 ?
+                formatVND(Math.max(0, payment.amount - payment.orders.reduce((sum, order) => sum + order.totalAmount, 0))) :
+                formatVND(15000) // Assume standard shipping
+              }
+            </span>
+          </div>
+          <hr className="border-brand-accent/30" />
+          <div className="flex justify-between text-sm font-semibold">
+            <span className="text-brand-dark">Total Amount:</span>
+            <span className="text-green-600">{formatVND(payment.amount)}</span>
+          </div>
         </div>
       </div>
 

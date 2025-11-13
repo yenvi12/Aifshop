@@ -182,8 +182,8 @@ export async function POST(req: Request) {
           orderCode,
           amount,
           description,
-          returnUrl: "http://localhost:3000/payment-success",
-          cancelUrl: "http://localhost:3000/payment-cancel",
+          returnUrl: "https://aifshop-blond.vercel.app/payment-success",
+          cancelUrl: "https://aifshop-blond.vercel.app/payment-cancel",
         });
         checkoutUrl = payment.checkoutUrl;
       } catch (payosError) {

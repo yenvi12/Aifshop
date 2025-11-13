@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
     const paymentStatus = searchParams.get("paymentStatus") || "";
+    const paymentMethod = searchParams.get("paymentMethod") || "";
 
     const skip = (page - 1) * limit;
 
@@ -118,6 +119,7 @@ export async function GET(request: NextRequest) {
           totalAmount: true,
           trackingNumber: true,
           estimatedDelivery: true,
+          shippingNote: true,
           createdAt: true,
           updatedAt: true,
           orderItems: {
@@ -143,6 +145,7 @@ export async function GET(request: NextRequest) {
               orderCode: true,
               status: true,
               amount: true,
+              paymentMethod: true,
             },
           },
           shippingAddress: true,
