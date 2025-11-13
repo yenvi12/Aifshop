@@ -88,37 +88,37 @@ export default function Breadcrumb({
     return (
       <div key={href} className="flex items-center">
         {isLast ? (
-          <span className="text-sm font-semibold text-brand-dark">{label}</span>
+          <span className="text-xs sm:text-sm font-semibold text-brand-dark truncate max-w-[120px] sm:max-w-none">{label}</span>
         ) : (
           <Link
             href={hrefOverride ?? href}
-            className="text-sm font-medium text-brand-primary hover:text-brand-dark transition-colors"
+            className="text-xs sm:text-sm font-medium text-brand-primary hover:text-brand-dark transition-colors truncate max-w-[100px] sm:max-w-none"
           >
             {label}
           </Link>
         )}
         {!isLast && (
-          <MdChevronRight className="text-brand-secondary mx-2 w-4 h-4" />
+          <MdChevronRight className="text-brand-secondary mx-1 sm:mx-2 w-3 h-3 sm:w-4 sm:h-4" />
         )}
       </div>
     );
   });
 
   return (
-    <nav
-      aria-label="breadcrumb"
-      className={`flex items-center mb-6 ${className}`}
-    >
-      <Link
-        href="/"
-        className="text-sm font-medium text-brand-primary hover:text-brand-dark transition-colors"
-      >
-        {homeLabel}
-      </Link>
-      {parts.length > 0 && (
-        <MdChevronRight className="text-brand-secondary w-4 h-4 mx-2" />
-      )}
-      {items}
-    </nav>
-  );
+     <nav
+       aria-label="breadcrumb"
+       className={`flex items-center mb-4 md:mb-6 ${className}`}
+     >
+       <Link
+         href="/"
+         className="text-xs sm:text-sm font-medium text-brand-primary hover:text-brand-dark transition-colors"
+       >
+         {homeLabel}
+       </Link>
+       {parts.length > 0 && (
+         <MdChevronRight className="text-brand-secondary w-3 h-3 sm:w-4 sm:h-4 mx-1 sm:mx-2" />
+       )}
+       {items}
+     </nav>
+   );
 }

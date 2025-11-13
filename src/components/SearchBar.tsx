@@ -115,7 +115,7 @@ export default function SearchBar({
   // Enhanced Navbar variant styles
   const navbarStyles =
     variant === "navbar"
-      ? "w-52 md:w-64 px-3 py-1.5 text-sm border border-brand-secondary/40 focus-within:ring-2 focus-within:ring-brand-primary/40 focus-within:border-brand-primary/60 bg-white"
+      ? "w-32 sm:w-40 md:w-52 lg:w-64 px-2 sm:px-3 py-1.5 text-sm border border-brand-secondary/40 focus-within:ring-2 focus-within:ring-brand-primary/40 focus-within:border-brand-primary/60 bg-white"
       : "";
 
   // Determine dimensions based on variant

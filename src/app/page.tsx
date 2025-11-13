@@ -400,14 +400,14 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
       </section>
 
       {/* ===== FEATURED PRODUCTS ===== */}
-      <section className="max-w-6xl mx-auto px-4 py-10">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-3 pb-1 leading-tight">
-            Sản phẩm nổi bật
-          </h2>
-          <p className="text-brand-secondary text-lg mb-8">
-            Khám phá bộ sưu tập được yêu thích nhất
-          </p>
+     <section className="max-w-6xl mx-auto px-4 py-8 md:py-10">
+       <div className="text-center mb-6 md:mb-8">
+         <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-dark mb-3 pb-1 leading-tight">
+           Sản phẩm nổi bật
+         </h2>
+         <p className="text-brand-secondary text-base md:text-lg mb-6 md:mb-8">
+           Khám phá bộ sưu tập được yêu thích nhất
+         </p>
 
           {/* Filter Tabs */}
           <div className="flex items-center justify-center gap-3 flex-wrap mb-2">
@@ -454,7 +454,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-stretch">
+        <div className="mt-6 md:mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 items-stretch">
           {filteredProducts.length > 0 ? (
             filteredProducts.slice(0, 8).map((p) => (
               <div key={p.id} className="h-full">
@@ -462,8 +462,8 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
               </div>
             ))
           ) : (
-            <div className="col-span-full text-center py-12">
-              <p className="text-brand-secondary">Không tìm thấy sản phẩm nào trong danh mục này</p>
+            <div className="col-span-full text-center py-8 md:py-12">
+              <p className="text-brand-secondary text-sm md:text-base">Không tìm thấy sản phẩm nào trong danh mục này</p>
             </div>
           )}
         </div>
@@ -480,132 +480,132 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
       </section>
 
       {/* ===== TRUST & STATS SECTION ===== */}
-      <section className="max-w-6xl mx-auto px-4 py-16">
-        <div className="stats-section-container relative rounded-3xl overflow-hidden shadow-premium-lg">
+      <section className="max-w-6xl mx-auto px-4 py-12 md:py-16">
+        <div className="stats-section-container relative rounded-2xl md:rounded-3xl overflow-hidden shadow-premium-lg">
           {/* Animated gradient background */}
           <div className="stats-gradient-bg absolute inset-0 bg-gradient-to-br from-brand-primary via-brand-secondary to-brand-accent opacity-10" />
-          
-          <div className="stats-glass-panel relative grid md:grid-cols-4 gap-8 p-12">
+
+          <div className="stats-glass-panel relative grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 p-8 md:p-12">
             {/* Happy Customers */}
             <div className="stat-card text-center relative">
-              <div className="stat-icon w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg">
-                <MdPeople className="w-8 h-8 text-white" />
+              <div className="stat-icon w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg">
+                <MdPeople className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
-              <div className="stat-number text-4xl font-bold mb-2">
+              <div className="stat-number text-2xl md:text-4xl font-bold mb-2">
                 {stats.customers.toLocaleString()}+
               </div>
-              <p className="stat-label text-brand-secondary font-medium">Đánh giá của khách hàng</p>
+              <p className="stat-label text-brand-secondary font-medium text-xs md:text-sm">Đánh giá của khách hàng</p>
             </div>
 
             {/* Average Rating */}
             <div className="stat-card text-center relative">
-              <div className="stat-icon w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
-                <MdStar className="w-8 h-8 text-white" />
+              <div className="stat-icon w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                <MdStar className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
-              <div className="stat-number text-4xl font-bold mb-2">
+              <div className="stat-number text-2xl md:text-4xl font-bold mb-2">
                 {stats.rating}★
               </div>
-              <p className="stat-label text-brand-secondary font-medium">Đánh giá trung bình</p>
+              <p className="stat-label text-brand-secondary font-medium text-xs md:text-sm">Đánh giá trung bình</p>
             </div>
 
             {/* AI Support */}
             <div className="stat-card text-center relative">
-              <div className="stat-icon w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-brand-secondary to-brand-accent flex items-center justify-center shadow-lg">
-                <BiSupport className="w-8 h-8 text-white" />
+              <div className="stat-icon w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 rounded-full bg-gradient-to-br from-brand-secondary to-brand-accent flex items-center justify-center shadow-lg">
+                <BiSupport className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
-              <div className="stat-number text-4xl font-bold mb-2">
+              <div className="stat-number text-2xl md:text-4xl font-bold mb-2">
                 {stats.support}/7
               </div>
-              <p className="stat-label text-brand-secondary font-medium">AI hỗ trợ</p>
+              <p className="stat-label text-brand-secondary font-medium text-xs md:text-sm">AI hỗ trợ</p>
             </div>
 
             {/* Free Shipping */}
             <div className="stat-card text-center relative">
-              <div className="stat-icon w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
-                <MdLocalShipping className="w-8 h-8 text-white" />
+              <div className="stat-icon w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
+                <MdLocalShipping className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
-              <div className="stat-number text-4xl font-bold mb-2">
+              <div className="stat-number text-2xl md:text-4xl font-bold mb-2">
                 {stats.shipping}%
               </div>
-              <p className="stat-label text-brand-secondary font-medium">Miễn phí vận chuyển</p>
+              <p className="stat-label text-brand-secondary font-medium text-xs md:text-sm">Miễn phí vận chuyển</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* ===== CUSTOMER TESTIMONIALS ===== */}
-      <section className="max-w-6xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4 pb-1 leading-tight">
+      <section className="max-w-6xl mx-auto px-4 py-12 md:py-16">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-dark mb-4 pb-1 leading-tight">
             Trải nghiệm của khách hàng
           </h2>
-          <p className="text-brand-secondary text-lg">
+          <p className="text-brand-secondary text-base md:text-lg">
             Khách hàng nói gì về trải nghiệm của họ
           </p>
         </div>
 
         {reviews.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {reviews.map((review) => (
               <div
                 key={review.id}
-                className="bg-white rounded-2xl border border-brand-light p-6 shadow-premium hover:shadow-premium-lg transition-all duration-300 hover:-translate-y-2"
+                className="bg-white rounded-xl md:rounded-2xl border border-brand-light p-4 md:p-6 shadow-premium hover:shadow-premium-lg transition-all duration-300 hover:-translate-y-2"
               >
                 {/* User Info */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-brand-light flex items-center justify-center overflow-hidden">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-brand-light flex items-center justify-center overflow-hidden">
                     {review.user.avatar ? (
                       <Image
                         src={review.user.avatar}
                         alt={review.user.name}
-                        width={48}
-                        height={48}
+                        width={40}
+                        height={40}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-brand-primary font-bold text-lg">
+                      <span className="text-brand-primary font-bold text-base md:text-lg">
                         {review.user.name.charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-brand-dark">{review.user.name}</p>
+                    <p className="font-semibold text-brand-dark text-sm md:text-base">{review.user.name}</p>
                     <div className="flex items-center gap-1 mt-1">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <MdStar
                           key={i}
-                          className={`w-4 h-4 ${
+                          className={`w-3 h-3 md:w-4 md:h-4 ${
                             i < review.rating ? "text-amber-400" : "text-brand-light"
                           }`}
                         />
                       ))}
                     </div>
                   </div>
-                  <MdVerified className="w-5 h-5 text-green-500" />
+                  <MdVerified className="w-4 h-4 md:w-5 md:h-5 text-green-500" />
                 </div>
 
                 {/* Review Content */}
-                <p className="text-brand-secondary leading-relaxed mb-4 line-clamp-3">
+                <p className="text-brand-secondary leading-relaxed mb-4 line-clamp-3 text-sm md:text-base">
                   {review.comment}
                 </p>
 
                 {/* Product Info */}
                 {review.product && (
-                  <Link 
+                  <Link
                     href={`/products/${review.product.slug}`}
                     className="flex items-center gap-3 p-3 rounded-xl bg-brand-light/50 hover:bg-brand-light transition-colors"
                   >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-white">
                       <Image
                         src={review.product.image}
                         alt={review.product.name}
-                        width={48}
-                        height={48}
+                        width={40}
+                        height={40}
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-brand-dark truncate">
+                      <p className="text-xs md:text-sm font-medium text-brand-dark truncate">
                         {review.product.name}
                       </p>
                       <p className="text-xs text-brand-secondary">
@@ -618,9 +618,9 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 bg-brand-light/30 rounded-2xl">
-            <MdStar className="w-16 h-16 text-brand-light mx-auto mb-4" />
-            <p className="text-brand-secondary">Chưa có đánh giá nào. Hãy là người đầu tiên chia sẻ trải nghiệm của bạn!</p>
+          <div className="text-center py-8 md:py-12 bg-brand-light/30 rounded-2xl">
+            <MdStar className="w-12 h-12 md:w-16 md:h-16 text-brand-light mx-auto mb-4" />
+            <p className="text-brand-secondary text-sm md:text-base">Chưa có đánh giá nào. Hãy là người đầu tiên chia sẻ trải nghiệm của bạn!</p>
           </div>
         )}
       </section>
