@@ -140,82 +140,210 @@ export async function GET(request: NextRequest) {
         }
       }).then(result => result._sum.totalAmount || 0),
 
+      // Calculate previous period data using raw SQL for better performance
       (async () => {
         const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
         const previousEnd = startDate;
-        return prisma.order.aggregate({
-          _sum: { totalAmount: true },
-          where: {
-            createdAt: { gte: previousStart, lt: previousEnd },
-            status: { in: ['SHIPPED', 'DELIVERED'] }
-          }
-        }).then(result => result._sum.totalAmount || 0);
+        const result = await prisma.$queryRaw`
+          SELECT COALESCE(SUM("totalAmount"), 0) as total
+          FROM orders
+          WHERE "createdAt" >= ${previousStart}
+            AND "createdAt" < ${previousEnd}
+            AND status IN ('SHIPPED', 'DELIVERED')
+        `;
+        return Number((result as any)[0].total);
       })(),
 
       (async () => {
         const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
         const previousEnd = startDate;
-        return prisma.order.count({
-          where: {
-            createdAt: { gte: previousStart, lt: previousEnd },
-            status: { in: ['SHIPPED', 'DELIVERED'] }
-          }
+        const result = await prisma.$queryRaw`
+          SELECT COUNT(*) as count
+          FROM orders
+          WHERE "createdAt" >= ${previousStart}
+            AND "createdAt" < ${previousEnd}
+            AND status IN ('SHIPPED', 'DELIVERED')
+        `;
+        return Number((result as any)[0].count);
+      })(),
+
+      (async () => {
+        // Optimize by using raw SQL for daily trends to reduce multiple queries
+        const days = 30;
+        const trendData = [];
+        const startTrendDate = new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+        const endTrendDate = now;
+
+        // Get daily revenue and orders in a single query using raw SQL
+        const dailyData = await prisma.$queryRaw`
+          SELECT
+            DATE("createdAt") as date,
+            COALESCE(SUM("totalAmount"), 0) as revenue,
+            COUNT(*) as orders
+          FROM orders
+          WHERE "createdAt" >= ${startTrendDate}
+            AND "createdAt" < ${endTrendDate}
+            AND status IN ('SHIPPED', 'DELIVERED')
+          GROUP BY DATE("createdAt")
+          ORDER BY date DESC
+        `;
+
+        // Create a map for quick lookup
+        const dataMap = new Map();
+        (dailyData as any[]).forEach((row: any) => {
+          dataMap.set(row.date.toISOString().split('T')[0], {
+            revenue: Number(row.revenue),
+            orders: Number(row.orders)
+          });
         });
-      })(),
 
-      (async () => {
-        const trendData = [];
-        for (let i = 29; i >= 0; i--) {
+        // Fill in the last 30 days
+        for (let i = days - 1; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+          const dateStr = date.toISOString().split('T')[0];
+          const existing = dataMap.get(dateStr);
+
           trendData.push({
-            date: date.toISOString().split('T')[0],
-            revenue: Math.floor(Math.random() * 10000) + 5000,
-            orders: Math.floor(Math.random() * 20) + 5
+            date: dateStr,
+            revenue: existing ? existing.revenue : 0,
+            orders: existing ? existing.orders : 0
           });
         }
+
         return trendData;
       })(),
 
       (async () => {
+        // Optimize user growth with raw SQL
+        const days = 30;
         const trendData = [];
-        for (let i = 29; i >= 0; i--) {
+        const startTrendDate = new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+        const endTrendDate = now;
+
+        const dailyUsers = await prisma.$queryRaw`
+          SELECT
+            DATE("createdAt") as date,
+            COUNT(*) as users
+          FROM users
+          WHERE "createdAt" >= ${startTrendDate}
+            AND "createdAt" < ${endTrendDate}
+          GROUP BY DATE("createdAt")
+          ORDER BY date DESC
+        `;
+
+        const dataMap = new Map();
+        (dailyUsers as any[]).forEach((row: any) => {
+          dataMap.set(row.date.toISOString().split('T')[0], Number(row.users));
+        });
+
+        for (let i = days - 1; i >= 0; i--) {
           const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+          const dateStr = date.toISOString().split('T')[0];
           trendData.push({
-            date: date.toISOString().split('T')[0],
-            users: Math.floor(Math.random() * 10) + 5
+            date: dateStr,
+            users: dataMap.get(dateStr) || 0
           });
         }
+
         return trendData;
       })(),
 
       (async () => {
-        const mockStatusData = [
-          { status: 'DELIVERED', count: 145, percentage: 65.3 },
-          { status: 'SHIPPED', count: 38, percentage: 17.1 },
-          { status: 'PROCESSING', count: 25, percentage: 11.3 },
-          { status: 'ORDERED', count: 12, percentage: 5.4 },
-          { status: 'CANCELLED', count: 2, percentage: 0.9 }
-        ];
-        return mockStatusData;
+        const statusCounts = await prisma.order.groupBy({
+          by: ['status'],
+          _count: { status: true },
+          where: { createdAt: { gte: startDate } }
+        });
+
+        const totalOrdersInRange = statusCounts.reduce((sum, item) => sum + item._count.status, 0);
+
+        return statusCounts.map(item => ({
+          status: item.status,
+          count: item._count.status,
+          percentage: totalOrdersInRange > 0 ? Math.round((item._count.status / totalOrdersInRange) * 100 * 10) / 10 : 0
+        }));
       })(),
 
       (async () => {
-        const mockProducts = [
-          { name: 'Premium Gold Ring', sales: 45, revenue: 22500, orders: 38 },
-          { name: 'Diamond Necklace', sales: 32, revenue: 48000, orders: 28 },
-          { name: 'Silver Earrings', sales: 28, revenue: 8400, orders: 25 },
-          { name: 'Luxury Watch', sales: 18, revenue: 36000, orders: 15 },
-          { name: 'Pearl Bracelet', sales: 15, revenue: 6750, orders: 12 }
-        ];
-        return mockProducts;
+        const topProductsData = await prisma.orderItem.groupBy({
+          by: ['productId'],
+          _sum: {
+            quantity: true,
+            priceAtTime: true
+          },
+          _count: {
+            orderId: true
+          },
+          where: {
+            order: {
+              createdAt: { gte: startDate },
+              status: { in: ['SHIPPED', 'DELIVERED'] }
+            }
+          },
+          orderBy: {
+            _sum: {
+              quantity: 'desc'
+            }
+          },
+          take: 5
+        });
+
+        const topProducts = await Promise.all(
+          topProductsData.map(async (item) => {
+            const product = await prisma.product.findUnique({
+              where: { id: item.productId },
+              select: { name: true }
+            });
+
+            return {
+              name: product?.name || 'Unknown Product',
+              sales: item._sum.quantity || 0,
+              revenue: item._sum.priceAtTime || 0,
+              orders: item._count.orderId
+            };
+          })
+        );
+
+        return topProducts;
       })()
     ]);
 
     const conversionRate = totalUsers > 0 ? (totalOrders / totalUsers) * 100 : 0;
-    const revenueChange = 12.5;
-    const ordersChange = 8.3;
-    const userChange = 15.2;
-    const aovChange = 3.8;
+
+    // Calculate real trends by comparing with previous period
+    const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
+    const previousEnd = startDate;
+
+    // Previous period calculations already optimized above in Promise.all
+    const previousRevenue = previousPeriodRevenue;
+    const previousOrders = previousPeriodOrders;
+
+    const previousUsers = await prisma.$queryRaw`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE "createdAt" >= ${previousStart}
+        AND "createdAt" < ${previousEnd}
+    `;
+
+    const previousUsersCount = Number((previousUsers as any)[0].count);
+
+    const previousAOV = previousOrders > 0 ? (previousRevenue || 0) / previousOrders : 0;
+
+    const revenueChange = previousRevenue && previousRevenue > 0
+      ? ((revenueInRange - previousRevenue) / previousRevenue) * 100
+      : 0;
+
+    const ordersChange = previousOrders > 0
+      ? ((ordersInRange - previousOrders) / previousOrders) * 100
+      : 0;
+
+    const userChange = totalUsers > previousUsersCount
+      ? ((totalUsers - previousUsersCount) / previousUsersCount) * 100
+      : 0;
+
+    const aovChange = previousAOV > 0
+      ? ((averageOrderValue - previousAOV) / previousAOV) * 100
+      : 0;
 
     return NextResponse.json({
       success: true,
