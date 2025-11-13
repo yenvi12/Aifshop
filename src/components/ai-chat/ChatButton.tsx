@@ -18,9 +18,9 @@ export default function ChatButton({ isOpen, onToggle, unreadCount = 0 }: ChatBu
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`
-        fixed bottom-6 right-6 z-50
+        fixed bottom-4 right-4 z-50
         flex items-center justify-center
-        w-14 h-14 rounded-full
+        w-12 h-12 sm:w-14 sm:h-14 rounded-full
         shadow-lg hover:shadow-xl
         transition-all duration-300 ease-out
         transform hover:scale-110 active:scale-95
