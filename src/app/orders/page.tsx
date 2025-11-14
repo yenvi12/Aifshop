@@ -1052,7 +1052,7 @@ function PaymentCard({ payment }: { payment: Payment }) {
           <div className="flex justify-between text-sm">
             <span className="text-brand-secondary">Products Total:</span>
             <span className="font-medium text-brand-dark">
-              {/* Calculate subtotal from orders */}
+              {/* Calculate products total from orders data - shows actual products cost */}
               {payment.orders.length > 0 ?
                 formatVND(payment.orders.reduce((sum, order) => sum + order.totalAmount, 0)) :
                 formatVND(payment.amount - 15000) // Assume standard shipping if no orders data
@@ -1062,10 +1062,13 @@ function PaymentCard({ payment }: { payment: Payment }) {
           <div className="flex justify-between text-sm">
             <span className="text-brand-secondary">Shipping Fee:</span>
             <span className="font-medium text-brand-dark">
-              {/* Calculate shipping as difference */}
-              {payment.orders.length > 0 ?
-                formatVND(Math.max(0, payment.amount - payment.orders.reduce((sum, order) => sum + order.totalAmount, 0))) :
-                formatVND(15000) // Assume standard shipping
+              {/* For COD: show shipping as 15,000 VND (standard shipping fee) */}
+              {/* For PAYOS: calculate shipping as difference */}
+              {payment.paymentMethod === 'COD' ?
+                formatVND(15000) :
+                payment.orders.length > 0 ?
+                  formatVND(Math.max(0, payment.amount - payment.orders.reduce((sum, order) => sum + order.totalAmount, 0))) :
+                  formatVND(15000) // Assume standard shipping
               }
             </span>
           </div>

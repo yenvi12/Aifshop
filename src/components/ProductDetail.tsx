@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { addGuestCartItem } from "@/lib/guestCart";
-import { MdStar, MdMessage, MdSmartToy } from "react-icons/md";
+import { MdStar, MdMessage, MdSmartToy, MdShoppingCart } from "react-icons/md";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
 import { useChat } from "@/contexts/ChatContext";
@@ -457,7 +457,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             )}
 
             {/* Size Selection - Only show if product has custom sizes */}
-             {sizes.length > 0 && (
+            {sizes.length > 0 && (
                <div className="space-y-3">
                  <h3 className="font-semibold text-gray-900 text-sm md:text-base">
                    Size {!selectedSize && sizes.length > 0 && <span className="text-red-500">*</span>}
@@ -487,48 +487,29 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
             {/* Quantity and Actions */}
 <div className="space-y-3">
-  {/* --- Hàng 1: Add to cart --- */}
-  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-  {/* --- Hàng 1: Add to cart, Wishlist --- */}
-  <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
-    {/* Add to Cart */}
-    <button
-      onClick={handleAddToCart}
-      disabled={!selectedSize && sizes.length > 0}
-      title={
-        !selectedSize && sizes.length > 0
-          ? "Please select a size first"
-          : "Add to cart"
-      }
-      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-4 md:px-6
+ {/* --- Hàng 1: Add to cart --- */}
+ <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
+   {/* Add to Cart */}
+   <button
+     onClick={handleAddToCart}
+     disabled={!selectedSize && sizes.length > 0}
+     title={
+       !selectedSize && sizes.length > 0
+         ? "Please select a size first"
+         : "Add to cart"
+     }
+     className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-4 md:px-6
                  bg-brand-accent text-brand-dark font-semibold border border-brand-light
                  hover:border-brand-primary hover:brightness-110
                  hover:shadow-lg hover:shadow-brand-accent/30 hover:scale-[1.02]
                  disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none
                  transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none
                  text-sm md:text-base min-h-[44px]"
-    >
-      <MdShoppingCart className="w-4 h-4 md:w-5 md:h-5" />
-      Add to cart
-    </button>
-
-    {/* ❤️ Wishlist */}
-    <button
-      onClick={() => setWished(!wished)}
-      title={wished ? "Remove from wishlist" : "Add to wishlist"}
-      className="inline-flex items-center justify-center rounded-xl h-11 w-11
-                 border border-gray-300 hover:bg-gray-100
-                 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none
-                 min-h-[44px] min-w-[44px]"
-      aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
-    >
-      {wished ? (
-        <MdFavorite className="w-5 h-5 text-red-500" />
-      ) : (
-        <MdFavoriteBorder className="w-5 h-5 text-brand-dark" />
-      )}
-    </button>
-  </div>
+   >
+     <MdShoppingCart className="w-4 h-4 md:w-5 md:h-5" />
+     Add to cart
+   </button>
+ </div>
 
   {/* --- Hàng 2: Message & AI --- */}
   <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
@@ -586,9 +567,6 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
     </button>
   </div>
 </div>
-
-
-
 
             {/* Additional Info */}
             <div className="space-y-3 text-sm text-gray-600">

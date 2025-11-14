@@ -419,7 +419,7 @@ export default function EditProfileModal({
 
                   {form.addresses.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
-                      <p>No addresses added yet. Click "Add Address" to get started.</p>
+                      <p>No addresses added yet. Click &quot;Add Address&quot; to get started.</p>
                     </div>
                   )}
                 </div>

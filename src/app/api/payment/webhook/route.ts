@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { payos } from "@/lib/payos";
 import { PrismaClient, PaymentStatus } from "@prisma/client";
-import { PrismaClient } from "@prisma/client";
 import { validateStockAvailability, deductStock } from "@/lib/inventory";
 
 const prisma = new PrismaClient();
@@ -75,9 +74,10 @@ export async function POST(req: Request) {
             });
 
             console.log(`Cart cleared for user ${payment.user.id} after successful payment`);
-            } catch (error) {
-              console.error('Error confirming orders or clearing cart:', error);
-            }
+          } catch (error) {
+            console.error('Error confirming orders or clearing cart:', error);
+          }
+        }
         // Get orders and order items for stock validation
         const orders = await prisma.order.findMany({
           where: { paymentId: payment.id },

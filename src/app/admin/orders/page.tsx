@@ -7,50 +7,50 @@ import { MdAdd, MdEdit, MdDelete, MdShoppingCart, MdSearch, MdFilterList, MdChec
 import toast from "react-hot-toast";
 
 interface Order {
-   id: string;
-   orderNumber: string;
-   status: string;
-   totalAmount: number;
-   trackingNumber?: string;
-   estimatedDelivery?: Date;
-   shippingNote?: string;
-   createdAt: Date;
-   updatedAt: Date;
-   shippingAddress?: {
-     shipping?: string;
-     billing?: string;
-   } | null;
-  orderItems: Array<{
     id: string;
-    quantity: number;
-    priceAtTime: number;
-    size?: string;
-    product: {
-      id: string;
-      name: string;
-      image?: string;
-      slug: string;
-    };
-  }>;
-  payment: {
-    id: number;
-    orderCode: string;
+    orderNumber: string;
     status: string;
-    amount: number;
-    paymentMethod: string;
-  };
-  user: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber?: string;
-    defaultAddress?: {
+    totalAmount: number;
+    trackingNumber?: string;
+    estimatedDelivery?: Date;
+    shippingNote?: string;
+    createdAt: Date;
+    updatedAt: Date;
+    shippingAddress?: {
+      address?: string;
+      city?: string;
       shipping?: string;
       billing?: string;
-    };
-  };
-}
+      fullName?: string;
+      postalCode?: string;
+    } | null;
+   orderItems: Array<{
+     id: string;
+     quantity: number;
+     priceAtTime: number;
+     size?: string;
+     product: {
+       id: string;
+       name: string;
+       image?: string;
+       slug: string;
+     };
+   }>;
+   payment: {
+     id: number;
+     orderCode: string;
+     status: string;
+     amount: number;
+     paymentMethod: string;
+   };
+   user: {
+     id: string;
+     firstName: string;
+     lastName: string;
+     email: string;
+     phoneNumber?: string;
+   };
+ }
 
 // Function to calculate shipping cost based on amount
 const getShippingCost = (order: Order): number => {
@@ -603,7 +603,6 @@ export default function ManageOrdersPage() {
                     <div className="relative">
                       <select
                         onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                        className={`px-3 py-2 border-2 border-gray-300 rounded-lg text-xs bg-white shadow-md hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
                         className={`px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm bg-white shadow-md hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED' ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
                         defaultValue={order.status}
                         disabled={updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED'}
@@ -760,7 +759,6 @@ export default function ManageOrdersPage() {
                           <div className="relative">
                             <select
                               onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                              className={`px-2 py-1.5 border-2 border-gray-300 rounded-lg text-xs bg-white shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
                               className={`px-3 py-1.5 border-2 border-gray-300 rounded-lg text-xs bg-white shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED' ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
                               defaultValue={order.status}
                               disabled={updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED'}
@@ -962,15 +960,22 @@ export default function ManageOrdersPage() {
                           <p className="font-medium">{selectedOrder.user.phoneNumber}</p>
                         </div>
                       )}
-                      {selectedOrder.shippingAddress?.shipping ? (
+                      {selectedOrder.shippingAddress?.address || selectedOrder.shippingAddress?.shipping ? (
                         <div className="md:col-span-2">
                           <p className="text-sm text-brand-secondary">Shipping Address</p>
-                          <p className="font-medium">{selectedOrder.shippingAddress.shipping}</p>
-                        </div>
-                      ) : selectedOrder.user.defaultAddress?.shipping ? (
-                        <div className="md:col-span-2">
-                          <p className="text-sm text-brand-secondary">Shipping Address (Default)</p>
-                          <p className="font-medium">{selectedOrder.user.defaultAddress.shipping}</p>
+                          <div className="font-medium">
+                            {/* Handle PayOS format (shipping/billing) */}
+                            {selectedOrder.shippingAddress.shipping && (
+                              <p>{selectedOrder.shippingAddress.shipping}</p>
+                            )}
+                            {/* Handle COD format (address/city/fullName) */}
+                            {selectedOrder.shippingAddress.address && (
+                              <>
+                                <p>{selectedOrder.shippingAddress.address}</p>
+                                {selectedOrder.shippingAddress.city && <p>{selectedOrder.shippingAddress.city}</p>}
+                              </>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <div className="md:col-span-2">

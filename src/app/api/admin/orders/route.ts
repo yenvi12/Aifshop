@@ -156,7 +156,6 @@ export async function GET(request: NextRequest) {
               lastName: true,
               email: true,
               phoneNumber: true,
-              defaultAddress: true,
             },
           },
         },
@@ -167,11 +166,17 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where }),
     ]);
 
+    // ✅ Ensure shipping address is properly displayed for all orders
+    const processedOrders = orders.map(order => ({
+      ...order,
+      shippingAddress: order.shippingAddress,
+    }));
+
     const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
       success: true,
-      data: orders,
+      data: processedOrders,
       pagination: {
         page,
         limit,

@@ -264,7 +264,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="text-center py-8 text-brand-secondary">
                     <p>No addresses added yet.</p>
-                    <p className="text-sm mt-1">Click "Edit" to add your first address.</p>
+                    <p className="text-sm mt-1">Click &quot;Edit&quot; to add your first address.</p>
                   </div>
                 )}
               </Section>
@@ -353,7 +353,8 @@ export default function ProfilePage() {
 
             <div className="pt-4 text-xs text-center text-brand-secondary">
               <p>
-                © 2025 AIFShop. All rights reserved. • <Link href="#" className="hover:text-brand-primary">Privacy Policy</Link> •{" "}
+                © 2025 AIFShop. All rights reserved. •{" "}
+                <Link href="#" className="hover:text-brand-primary">Privacy Policy</Link> •{" "}
                 <Link href="#" className="hover:text-brand-primary">Terms of Service</Link>
               </p>
             </div>

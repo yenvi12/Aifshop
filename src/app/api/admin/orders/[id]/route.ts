@@ -299,16 +299,22 @@ export async function PUT(
             lastName: true,
             email: true,
             phoneNumber: true,
-            defaultAddress: true,
           },
         },
         Product: true, // Optional: include if you need info from related product
+        shippingAddress: true,
       },
     });
 
+    // ✅ Ensure shipping address is properly displayed for COD orders
+    const orderData = {
+      ...updatedOrder,
+      shippingAddress: updatedOrder.shippingAddress,
+    };
+
     return NextResponse.json({
       success: true,
-      data: updatedOrder,
+      data: orderData,
       message: "Order updated successfully",
     });
   } catch (error) {
