@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { addGuestCartItem } from "@/lib/guestCart";
-import { MdStar, MdFavoriteBorder, MdFavorite, MdMessage, MdSmartToy, MdShoppingCart } from "react-icons/md";
+import { MdStar, MdMessage, MdSmartToy } from "react-icons/md";
 import ReviewList from "./ReviewList";
 import ReviewForm from "./ReviewForm";
 import { useChat } from "@/contexts/ChatContext";
@@ -105,7 +105,6 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState("description");
   const [quantity, setQuantity] = useState(1);
-  const [wished, setWished] = useState(false);
   const [selectedSize, setSelectedSize] = useState<SizeOption | null>(null);
   const [reviews, setReviews] = useState<Review[]>(product.reviews || []);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -488,7 +487,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
 
             {/* Quantity and Actions */}
 <div className="space-y-3">
-  {/* --- Hàng 1: Add to cart, Wishlist --- */}
+  {/* --- Hàng 1: Add to cart --- */}
   <div className="flex flex-wrap items-center gap-3 sm:gap-4">
     {/* Add to Cart */}
     <button
@@ -507,21 +506,6 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
                  transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none"
     >
       Add to cart
-    </button>
-
-    {/* ❤️ Wishlist */}
-    <button
-      onClick={() => setWished(!wished)}
-      title={wished ? "Remove from wishlist" : "Add to wishlist"}
-      className="inline-flex items-center justify-center rounded-xl h-11 w-11
-                 border border-gray-300 hover:bg-gray-100
-                 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none"
-    >
-      {wished ? (
-        <MdFavorite className="w-5 h-5 text-red-500" />
-      ) : (
-        <MdFavoriteBorder className="w-5 h-5 text-brand-dark" />
-      )}
     </button>
   </div>
 

@@ -48,6 +48,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get addresses
+    const addresses = await prisma.address.findMany({
+      where: { userId: dbUser.id },
+      orderBy: { isDefault: 'desc' } // Default addresses first
+    })
+
     // Return profile data
     return NextResponse.json({
       id: dbUser.id,
@@ -58,7 +64,17 @@ export async function GET(request: NextRequest) {
       bio: dbUser.bio || '',
       avatar: dbUser.avatar || '',
       stylePreferences: dbUser.stylePreferences || [],
-      defaultAddress: dbUser.defaultAddress || { shipping: '', billing: '' }
+      addresses: addresses.map(addr => ({
+        id: addr.id,
+        firstName: addr.firstName,
+        lastName: addr.lastName,
+        address: addr.address,
+        city: addr.city || '',
+        postalCode: addr.postalCode || '',
+        phone: addr.phone || '',
+        label: addr.label || '',
+        isDefault: addr.isDefault
+      }))
     })
 
   } catch (error) {
@@ -114,7 +130,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, email, phone, birthday, bio, avatar, stylePreferences, defaultAddress } = body
+    const { name, email, phone, birthday, bio, avatar, stylePreferences, addresses } = body
 
     // Split name into firstName and lastName
     const nameParts = name?.trim().split(' ') || []
@@ -132,9 +148,41 @@ export async function PUT(request: NextRequest) {
         dateOfBirth: new Date(birthday),
         bio: bio || null,
         avatar: avatar || null,
-        stylePreferences: stylePreferences || [],
-        defaultAddress: defaultAddress || null
+        stylePreferences: stylePreferences || []
       }
+    })
+
+    // Handle addresses
+    if (addresses && Array.isArray(addresses)) {
+      // Delete existing addresses
+      await prisma.address.deleteMany({
+        where: { userId: dbUser.id }
+      })
+
+      // Create new addresses
+      for (const addr of addresses) {
+        if (addr.firstName && addr.lastName && addr.address) {
+          await prisma.address.create({
+            data: {
+              userId: dbUser.id,
+              firstName: addr.firstName,
+              lastName: addr.lastName,
+              address: addr.address,
+              city: addr.city || null,
+              postalCode: addr.postalCode || null,
+              phone: addr.phone || null,
+              label: addr.label || null,
+              isDefault: addr.isDefault || false
+            }
+          })
+        }
+      }
+    }
+
+    // Get updated addresses
+    const updatedAddresses = await prisma.address.findMany({
+      where: { userId: dbUser.id },
+      orderBy: { isDefault: 'desc' }
     })
 
     return NextResponse.json({
@@ -149,7 +197,17 @@ export async function PUT(request: NextRequest) {
         bio: updatedUser.bio || '',
         avatar: updatedUser.avatar || '',
         stylePreferences: updatedUser.stylePreferences || [],
-        defaultAddress: updatedUser.defaultAddress || { shipping: '', billing: '' }
+        addresses: updatedAddresses.map(addr => ({
+          id: addr.id,
+          firstName: addr.firstName,
+          lastName: addr.lastName,
+          address: addr.address,
+          city: addr.city || '',
+          postalCode: addr.postalCode || '',
+          phone: addr.phone || '',
+          label: addr.label || '',
+          isDefault: addr.isDefault
+        }))
       }
     })
 
