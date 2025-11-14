@@ -9,6 +9,8 @@ import {
   MdPerson,
   MdLogout,
   MdMessage,
+  MdMenu,
+  MdClose,
 } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -67,18 +69,19 @@ interface CartItem {
 }
 
 export default function Header() {
-  const router = useRouter();
-  const pathname = usePathname();
+   const router = useRouter();
+   const pathname = usePathname();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [cartItemCount, setCartItemCount] = useState<number>(0);
-  const [messageDropdownOpen, setMessageDropdownOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [recentConversations, setRecentConversations] = useState<ConversationData[]>([]);
-  const authRequestIdRef = useRef(0);
+   const [user, setUser] = useState<User | null>(null);
+   const [dropdownOpen, setDropdownOpen] = useState(false);
+   const [mounted, setMounted] = useState(false);
+   const [userRole, setUserRole] = useState<string | null>(null);
+   const [cartItemCount, setCartItemCount] = useState<number>(0);
+   const [messageDropdownOpen, setMessageDropdownOpen] = useState(false);
+   const [unreadCount, setUnreadCount] = useState<number>(0);
+   const [recentConversations, setRecentConversations] = useState<ConversationData[]>([]);
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const authRequestIdRef = useRef(0);
 
   // ====== Highlight active link ======
   const isActive = (href: string) => {
@@ -190,6 +193,7 @@ export default function Header() {
       const target = event.target as HTMLElement;
       if (!target.closest(".user-menu")) setDropdownOpen(false);
       if (!target.closest(".message-menu")) setMessageDropdownOpen(false);
+      if (!target.closest(".mobile-menu")) setMobileMenuOpen(false);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -421,68 +425,87 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-brand-head shadow-sm">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
-        {/* ====== Logo ====== */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex items-center justify-center h-10 w-10 overflow-hidden">
-            <img
-              src="/AIFShop.svg"
-              alt="AIFShop Logo"
-              className="h-18 w-18 object-contain align-middle"
-            />
-          </div>
-          <span className="font-bold text-xl text-brand-dark leading-none">
-            AIFShop
-          </span>
-        </Link>
+     <header className="sticky top-0 z-50 bg-brand-head shadow-sm">
+       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
+         {/* ====== Mobile Menu Button + Logo ====== */}
+         <div className="flex items-center gap-2">
+           {/* Mobile Menu Button */}
+           <button
+             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+             className="md:hidden p-2 text-brand-dark hover:text-brand-primary transition-colors min-w-[44px] min-h-[44px]"
+             aria-label="Toggle mobile menu"
+           >
+             {mobileMenuOpen ? <MdClose className="w-6 h-6" /> : <MdMenu className="w-6 h-6" />}
+           </button>
+ 
+           {/* Logo */}
+           <Link href="/" className="flex items-center gap-2">
+             <div className="flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 overflow-hidden">
+               <img
+                 src="/AIFShop.svg"
+                 alt="AIFShop Logo"
+                 className="h-16 w-16 sm:h-18 sm:w-18 object-contain align-middle"
+               />
+             </div>
+             <span className="font-bold text-lg sm:text-xl text-brand-dark leading-none">
+               AIFShop
+             </span>
+           </Link>
+         </div>
 
-        {/* ====== Menu ====== */}
-        <nav className="hidden md:flex items-center gap-6 text-sm text-brand-dark font-medium relative">
-          <Link
-            href="/"
-            className={`${baseCls} ${isActive("/") ? activeCls : ""}`}
-            aria-current={isActive("/") ? "page" : undefined}
-          >
-            Trang chủ
-          </Link>
+         {/* ====== Desktop Menu ====== */}
+         <nav className="hidden md:flex items-center gap-6 text-sm text-brand-dark font-medium relative">
+           <Link
+             href="/"
+             className={`${baseCls} ${isActive("/") ? activeCls : ""}`}
+             aria-current={isActive("/") ? "page" : undefined}
+           >
+             Trang chủ
+           </Link>
 
-          <Link
-            href="/shop"
-            className={`${baseCls} ${isActive("/shop") ? activeCls : ""}`}
-            aria-current={isActive("/shop") ? "page" : undefined}
-          >
-            Sản phẩm
-          </Link>
+           <Link
+             href="/shop"
+             className={`${baseCls} ${isActive("/shop") ? activeCls : ""}`}
+             aria-current={isActive("/shop") ? "page" : undefined}
+           >
+             Sản phẩm
+           </Link>
 
-          <Link
-            href="/about"
-            className={`${baseCls} ${isActive("/about") ? activeCls : ""}`}
-            aria-current={isActive("/about") ? "page" : undefined}
-          >
-            Thông tin
-          </Link>
+           <Link
+             href="/about"
+             className={`${baseCls} ${isActive("/about") ? activeCls : ""}`}
+             aria-current={isActive("/about") ? "page" : undefined}
+           >
+             Thông tin
+           </Link>
 
-          <Link
-            href="/cart"
-            className={`${baseCls} ${isActive("/cart") ? activeCls : ""} flex items-center gap-1 relative`}
-            aria-current={isActive("/cart") ? "page" : undefined}
-          >
-            <MdShoppingCart className="w-4 h-4" />
-            Giỏ hàng
-            {cartItemCount > 0 && (
-              <span className="absolute -top-2 -right-5 bg-brand-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                {cartItemCount > 99 ? "99+" : cartItemCount}
-              </span>
-            )}
-          </Link>
-        </nav>
+           <Link
+             href="/cart"
+             className={`${baseCls} ${isActive("/cart") ? activeCls : ""} flex items-center gap-1 relative`}
+             aria-current={isActive("/cart") ? "page" : undefined}
+           >
+             <MdShoppingCart className="w-4 h-4" />
+             Giỏ hàng
+             {cartItemCount > 0 && (
+               <span className="absolute -top-2 -right-5 bg-brand-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                 {cartItemCount > 99 ? "99+" : cartItemCount}
+               </span>
+             )}
+           </Link>
+         </nav>
 
         {/* ====== Search + Auth ====== */}
-        <div className="flex items-center gap-4">
-          {/* Search - Hide on Home and Search pages */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Mobile Search - Show on all pages except home */}
+          {pathname !== "/" && (
+            <div className="md:hidden block">
+              <SearchBar variant="navbar" />
+            </div>
+          )}
+
+          {/* Desktop Search - Hide on Home and Search pages */}
           {pathname !== "/" && pathname !== "/search" && (
-            <div className="hidden sm:block">
+            <div className="hidden md:block">
               <SearchBar variant="navbar" />
             </div>
           )}
@@ -494,11 +517,12 @@ export default function Header() {
             <div className="relative message-menu">
               <button
                 onClick={() => setMessageDropdownOpen(!messageDropdownOpen)}
-                className="flex items-center gap-2 text-brand-dark hover:text-brand-primary p-1 relative"
+                className="flex items-center gap-2 text-brand-dark hover:text-brand-primary p-2 sm:p-1 relative min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+                aria-label="Messages"
               >
                 <MdMessage className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                  <span className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -580,12 +604,13 @@ export default function Header() {
 
           {/* Auth */}
           {mounted && (
-            <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-2 sm:gap-3 text-sm">
               {user ? (
                 <div className="relative user-menu">
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="flex items-center gap-2 text-brand-dark hover:text-brand-primary p-1"
+                    className="flex items-center gap-2 text-brand-dark hover:text-brand-primary p-2 sm:p-1 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+                    aria-label="User menu"
                   >
                     <MdPerson className="w-5 h-5" />
                   </button>
@@ -632,15 +657,15 @@ export default function Header() {
                 <>
                   <Link
                     href="/login"
-                    className="text-brand-dark hover:text-brand-primary"
+                    className="text-brand-dark hover:text-brand-primary min-h-[44px] flex items-center px-2"
                   >
                     Đăng nhập
                   </Link>
                   <Link
                     href="/register"
-                    className="rounded-lg px-3 py-1.5 bg-brand-primary text-white hover:opacity-90"
+                    className="rounded-lg px-3 py-2 min-h-[44px] bg-brand-primary text-white hover:opacity-90 flex items-center text-sm"
                   >
-                    Đăng kí
+                    Đăng ký
                   </Link>
                 </>
               )}
@@ -648,6 +673,143 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      {/* ====== Mobile Menu Overlay ====== */}
+      {mobileMenuOpen && (
+        <div className="mobile-menu fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
+            <div className="flex flex-col h-full">
+              {/* Mobile Menu Header */}
+              <div className="flex items-center justify-between p-4 border-b border-brand-light">
+                <span className="font-semibold text-brand-dark">Menu</span>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 text-brand-dark hover:text-brand-primary"
+                  aria-label="Close menu"
+                >
+                  <MdClose className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Mobile Menu Navigation */}
+              <nav className="flex-1 px-4 py-6">
+                <div className="space-y-4">
+                  <Link
+                    href="/"
+                    className={`block py-3 px-4 rounded-lg text-lg font-medium transition-colors ${
+                      isActive("/") ? "bg-brand-primary text-white" : "text-brand-dark hover:bg-brand-light"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Trang chủ
+                  </Link>
+
+                  <Link
+                    href="/shop"
+                    className={`block py-3 px-4 rounded-lg text-lg font-medium transition-colors ${
+                      isActive("/shop") ? "bg-brand-primary text-white" : "text-brand-dark hover:bg-brand-light"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Sản phẩm
+                  </Link>
+
+                  <Link
+                    href="/about"
+                    className={`block py-3 px-4 rounded-lg text-lg font-medium transition-colors ${
+                      isActive("/about") ? "bg-brand-primary text-white" : "text-brand-dark hover:bg-brand-light"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Thông tin
+                  </Link>
+
+                  <Link
+                    href="/cart"
+                    className={`flex items-center gap-3 py-3 px-4 rounded-lg text-lg font-medium transition-colors ${
+                      isActive("/cart") ? "bg-brand-primary text-white" : "text-brand-dark hover:bg-brand-light"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <MdShoppingCart className="w-5 h-5" />
+                    Giỏ hàng
+                    {cartItemCount > 0 && (
+                      <span className="bg-red-500 text-white text-sm rounded-full h-6 w-6 flex items-center justify-center font-medium">
+                        {cartItemCount > 99 ? "99+" : cartItemCount}
+                      </span>
+                    )}
+                  </Link>
+                </div>
+
+                {/* User Actions in Mobile Menu */}
+                <div className="mt-8 pt-6 border-t border-brand-light">
+                  {user ? (
+                    <div className="space-y-3">
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-3 py-3 px-4 rounded-lg text-brand-dark hover:bg-brand-light transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <MdPerson className="w-5 h-5" />
+                        Thông tin cá nhân
+                      </Link>
+
+                      <Link
+                        href="/orders"
+                        className="flex items-center gap-3 py-3 px-4 rounded-lg text-brand-dark hover:bg-brand-light transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <MdShoppingCart className="w-5 h-5" />
+                        Đơn hàng
+                      </Link>
+
+                      {userRole === "ADMIN" && (
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-3 py-3 px-4 rounded-lg text-brand-dark hover:bg-brand-light transition-colors"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <MdPerson className="w-5 h-5" />
+                          Quản lý
+                        </Link>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 py-3 px-4 rounded-lg text-brand-dark hover:bg-brand-light transition-colors w-full text-left"
+                      >
+                        <MdLogout className="w-5 h-5" />
+                        Đăng xuất
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Link
+                        href="/login"
+                        className="block py-3 px-4 rounded-lg text-center bg-brand-primary text-white font-medium hover:opacity-90 transition-opacity"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Đăng nhập
+                      </Link>
+                      <Link
+                        href="/register"
+                        className="block py-3 px-4 rounded-lg text-center border border-brand-primary text-brand-primary font-medium hover:bg-brand-primary hover:text-white transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Đăng ký
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

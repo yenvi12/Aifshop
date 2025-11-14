@@ -325,15 +325,16 @@ export default function ProductListPage() {
               </div>
               
               {/* Nút Sort và Filter */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 {/* Nút Sort */}
                 <div className="relative sort-dropdown">
                   <button
                     onClick={() => setShowSortDropdown(!showSortDropdown)}
-                    className="flex items-center gap-2 px-4 py-2 border border-brand-light rounded-lg hover:bg-brand-light/50"
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-brand-light rounded-lg hover:bg-brand-light/50 min-h-[44px] min-w-[44px] sm:min-w-0"
+                    aria-label="Sort products"
                   >
                     <FaSort className="text-brand-primary" size={14} />
-                    <span className="text-sm font-medium">Sort</span>
+                    <span className="text-sm font-medium hidden sm:inline">Sort</span>
                   </button>
                   
                   {showSortDropdown && (
@@ -384,10 +385,11 @@ export default function ProductListPage() {
                 <div className="relative filter-dropdown">
                   <button
                     onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                    className="flex items-center gap-2 px-4 py-2 border border-brand-light rounded-lg hover:bg-brand-light/50"
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-brand-light rounded-lg hover:bg-brand-light/50 min-h-[44px] min-w-[44px] sm:min-w-0"
+                    aria-label="Filter products"
                   >
                     <FaFilter className="text-brand-primary" size={14} />
-                    <span className="text-sm font-medium">Filter</span>
+                    <span className="text-sm font-medium hidden sm:inline">Filter</span>
                   </button>
                   
                   {showFilterDropdown && (
@@ -432,7 +434,7 @@ export default function ProductListPage() {
             </div>
           ) : (
             <>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 items-stretch">
                 {currentProducts.map((p) => (
                   <div key={p.id} className="relative z-0 h-full">
                     <ProductCard p={p} onAdd={handleAddToCart} />

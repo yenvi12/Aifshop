@@ -373,7 +373,7 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
   return (
     <>
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
             {/* Main Image – hiệu ứng đẹp */}
@@ -391,14 +391,14 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             </div>
 
             {/* Thumbnail Images – ring + hover */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-3 md:gap-4">
               {images.map((img, index) => {
                 const active = selectedImage === index;
                 return (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border transition-all duration-300 focus:outline-none ${
+                    className={`relative aspect-square rounded-xl overflow-hidden border transition-all duration-300 focus:outline-none min-h-[60px] min-w-[60px] ${
                       active
                         ? "border-brand-primary ring-2 ring-brand-primary/40 shadow-lg scale-[1.03]"
                         : "border-gray-200 hover:-translate-y-[2px] hover:shadow-md"
@@ -413,17 +413,17 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-              <div className="flex items-center gap-4 mb-4">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              <div className="flex items-center gap-3 md:gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <MdStar key={i} className={`w-5 h-5 ${i < Math.round(product.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+                    <MdStar key={i} className={`w-4 h-4 md:w-5 md:h-5 ${i < Math.round(product.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
                   ))}
-                  <span className="text-sm text-gray-600 ml-2">({product.rating?.toFixed(1) || "0.0"})</span>
+                  <span className="text-xs md:text-sm text-gray-600 ml-2">({product.rating?.toFixed(1) || "0.0"})</span>
                 </div>
-                <span className="text-sm text-green-600">✓ In Stock</span>
+                <span className="text-xs md:text-sm text-green-600">✓ In Stock</span>
               </div>
             </div>
 
@@ -457,38 +457,40 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
             )}
 
             {/* Size Selection - Only show if product has custom sizes */}
-            {sizes.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">
-                  Size {!selectedSize && sizes.length > 0 && <span className="text-red-500">*</span>}
-                </h3>
-                <div className="flex gap-3">
-                  {sizes.map((size) => (
-                    <button
-                      key={size.name}
-                      onClick={() => setSelectedSize(size)}
-                      disabled={size.stock === 0}
-                      className={`px-4 py-2 border rounded-lg font-medium transition ${
-                        selectedSize?.name === size.name
-                          ? "border-brand-primary bg-brand-primary text-white"
-                          : size.stock === 0
-                          ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "border-gray-300 hover:border-gray-400"
-                      }`}
-                    >
-                      {size.name}
-                      {size.stock > 0 && <span className="block text-xs opacity-75">({size.stock} left)</span>}
-                      {size.stock === 0 && <span className="block text-xs">Out of stock</span>}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+             {sizes.length > 0 && (
+               <div className="space-y-3">
+                 <h3 className="font-semibold text-gray-900 text-sm md:text-base">
+                   Size {!selectedSize && sizes.length > 0 && <span className="text-red-500">*</span>}
+                 </h3>
+                 <div className="flex flex-wrap gap-2 md:gap-3">
+                   {sizes.map((size) => (
+                     <button
+                       key={size.name}
+                       onClick={() => setSelectedSize(size)}
+                       disabled={size.stock === 0}
+                       className={`px-3 md:px-4 py-2 border rounded-lg font-medium transition min-h-[44px] min-w-[44px] text-sm md:text-base ${
+                         selectedSize?.name === size.name
+                           ? "border-brand-primary bg-brand-primary text-white"
+                           : size.stock === 0
+                           ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                           : "border-gray-300 hover:border-gray-400"
+                       }`}
+                     >
+                       {size.name}
+                       {size.stock > 0 && <span className="block text-xs opacity-75">({size.stock} left)</span>}
+                       {size.stock === 0 && <span className="block text-xs">Out of stock</span>}
+                     </button>
+                   ))}
+                 </div>
+               </div>
+             )}
 
             {/* Quantity and Actions */}
 <div className="space-y-3">
   {/* --- Hàng 1: Add to cart --- */}
   <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+  {/* --- Hàng 1: Add to cart, Wishlist --- */}
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
     {/* Add to Cart */}
     <button
       onClick={handleAddToCart}
@@ -498,38 +500,59 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
           ? "Please select a size first"
           : "Add to cart"
       }
-      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
+      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-4 md:px-6
                  bg-brand-accent text-brand-dark font-semibold border border-brand-light
                  hover:border-brand-primary hover:brightness-110
                  hover:shadow-lg hover:shadow-brand-accent/30 hover:scale-[1.02]
                  disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none
-                 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none"
+                 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none
+                 text-sm md:text-base min-h-[44px]"
     >
+      <MdShoppingCart className="w-4 h-4 md:w-5 md:h-5" />
       Add to cart
+    </button>
+
+    {/* ❤️ Wishlist */}
+    <button
+      onClick={() => setWished(!wished)}
+      title={wished ? "Remove from wishlist" : "Add to wishlist"}
+      className="inline-flex items-center justify-center rounded-xl h-11 w-11
+                 border border-gray-300 hover:bg-gray-100
+                 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/30 focus:outline-none
+                 min-h-[44px] min-w-[44px]"
+      aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+    >
+      {wished ? (
+        <MdFavorite className="w-5 h-5 text-red-500" />
+      ) : (
+        <MdFavoriteBorder className="w-5 h-5 text-brand-dark" />
+      )}
     </button>
   </div>
 
   {/* --- Hàng 2: Message & AI --- */}
-  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
     {/* Message */}
     {currentUserRole && currentUserRole !== "ADMIN" && (
       <button
         onClick={handleMessage}
         disabled={!currentUserId}
         title={!currentUserId ? "Please login to message" : "Message seller"}
-        className="group relative inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
+        className="group relative inline-flex items-center justify-center gap-2 rounded-xl h-11 px-4 md:px-6
                    bg-gradient-to-r from-[#0088cc] to-[#0077b3] text-white font-bold
                    border-2 border-[#0088cc] hover:border-[#0077b3]
                    hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02]
                    disabled:opacity-60 disabled:hover:scale-100
-                   transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+                   transition-all duration-300 focus:ring-4 focus:ring-blue-300 focus:outline-none
+                   text-sm md:text-base min-h-[44px]"
+        aria-label={!currentUserId ? "Login to message seller" : "Message seller"}
       >
         <MdMessage
-          className={`w-5 h-5 transition-transform duration-300 ${
+          className={`w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 ${
             !currentUserId ? "" : "group-hover:scale-110 group-hover:animate-pulse"
           }`}
         />
-        <span>Message</span>
+        <span className="hidden sm:inline">Message</span>
         {!currentUserId && (
           <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
         )}
@@ -550,15 +573,16 @@ export default function ProductDetail({ product, relatedProducts = [] }: Props) 
       })}
       aria-label="Ask AI"
       title="Ask AI for product advice"
-      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6
+      className="inline-flex items-center justify-center gap-2 rounded-xl h-11 px-4 md:px-6
                  bg-gradient-to-r from-[#8b5cf6] via-[#d946ef] to-[#ec4899]
                  text-white font-bold border-2 border-transparent
                  hover:shadow-lg hover:shadow-pink-500/40 hover:scale-[1.02]
                  disabled:opacity-60 disabled:hover:scale-100
-                 transition-all duration-300 focus:ring-4 focus:ring-pink-300 focus:outline-none"
+                 transition-all duration-300 focus:ring-4 focus:ring-pink-300 focus:outline-none
+                 text-sm md:text-base min-h-[44px]"
     >
-      <MdSmartToy className="w-5 h-5" />
-      <span>AI</span>
+      <MdSmartToy className="w-4 h-4 md:w-5 md:h-5" />
+      <span className="hidden sm:inline">AI</span>
     </button>
   </div>
 </div>
