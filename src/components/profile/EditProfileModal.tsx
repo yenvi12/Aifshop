@@ -6,6 +6,18 @@ import "react-datepicker/dist/react-datepicker.css";
 import { MdOutlineCalendarToday } from "react-icons/md";
 import toast from "react-hot-toast";
 
+export type AddressForm = {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  phone?: string;
+  label?: string;
+  isDefault?: boolean;
+};
+
 export type ProfileForm = {
   name: string;
   email: string;
@@ -14,10 +26,7 @@ export type ProfileForm = {
   bio: string;
   avatar: string | null;
   stylePreferences: string[];
-  defaultAddress: {
-    shipping: string;
-    billing: string;
-  };
+  addresses: AddressForm[];
 };
 
 const STYLE_OPTIONS = [
@@ -68,7 +77,7 @@ export default function EditProfileModal({
     bio: "",
     avatar: null,
     stylePreferences: [],
-    defaultAddress: { shipping: "", billing: "" },
+    addresses: [],
   }));
   const [uploading, setUploading] = useState(false);
 
@@ -84,10 +93,7 @@ export default function EditProfileModal({
         bio: initial.bio ?? "",
         avatar: initial.avatar ?? null,
         stylePreferences: Array.isArray(initial.stylePreferences) ? [...initial.stylePreferences] : [],
-        defaultAddress: {
-          shipping: initial.defaultAddress?.shipping ?? "",
-          billing: initial.defaultAddress?.billing ?? "",
-        },
+        addresses: Array.isArray(initial.addresses) ? [...initial.addresses] : [],
       });
 
       // reset any native file inputs if present
@@ -112,9 +118,45 @@ export default function EditProfileModal({
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((s) => ({ ...s, [k]: (e.target as HTMLInputElement).value }));
 
-  // For nested defaultAddress
-  const handleAddressChange = (type: "shipping" | "billing") => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((s) => ({ ...s, defaultAddress: { ...s.defaultAddress, [type]: e.target.value } }));
+  // Address management functions
+  const addAddress = () => {
+    const newAddress: AddressForm = {
+      firstName: '',
+      lastName: '',
+      address: '',
+      city: '',
+      postalCode: '',
+      phone: '',
+      label: '',
+      isDefault: false,
+    };
+    setForm(s => ({ ...s, addresses: [...s.addresses, newAddress] }));
+  };
+
+  const updateAddress = (index: number, field: keyof AddressForm, value: string | boolean) => {
+    setForm(s => ({
+      ...s,
+      addresses: s.addresses.map((addr, i) =>
+        i === index ? { ...addr, [field]: value } : addr
+      ),
+    }));
+  };
+
+  const removeAddress = (index: number) => {
+    setForm(s => ({
+      ...s,
+      addresses: s.addresses.filter((_, i) => i !== index),
+    }));
+  };
+
+  const setDefaultAddress = (index: number) => {
+    setForm(s => ({
+      ...s,
+      addresses: s.addresses.map((addr, i) => ({
+        ...addr,
+        isDefault: i === index,
+      })),
+    }));
   };
 
   const handleStyleToggle = (style: string) => {
@@ -182,7 +224,7 @@ export default function EditProfileModal({
           </div>
 
           {/* body (scrollable) */}
-          <div className="p-5 overflow-y-auto max-h-[calc(100vh-7rem)]">
+          <div className="p-5 overflow-y-auto max-h-[calc(100vh-12rem)]">
             <div className="grid grid-cols-1 md:grid-cols-[128px,1fr] gap-4">
               {/* Avatar */}
               <div>
@@ -283,13 +325,104 @@ export default function EditProfileModal({
               </div>
 
               {/* Addresses */}
-              <div className="mt-4 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <L label="Shipping address">
-                  <I value={form.defaultAddress.shipping} onChange={handleAddressChange("shipping")} />
-                </L>
-                <L label="Billing address">
-                  <I value={form.defaultAddress.billing} onChange={handleAddressChange("billing")} />
-                </L>
+              <div className="mt-4 md:col-span-2">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-900">Addresses</span>
+                  <button
+                    type="button"
+                    onClick={addAddress}
+                    className="inline-flex items-center gap-2 rounded-xl border border-brand-primary bg-brand-primary text-white px-3 py-1.5 text-sm hover:opacity-90"
+                  >
+                    + Add Address
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {form.addresses.map((addr, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="defaultAddress"
+                            checked={addr.isDefault || false}
+                            onChange={() => setDefaultAddress(index)}
+                            className="text-brand-primary"
+                          />
+                          <span className="text-sm font-medium">
+                            {addr.label || `Address ${index + 1}`}
+                            {addr.isDefault && (
+                              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-brand-primary text-white">
+                                Default
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeAddress(index)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <L label="Label">
+                          <I
+                            value={addr.label || ''}
+                            onChange={(e) => updateAddress(index, 'label', e.target.value)}
+                            placeholder="e.g. Home, Work"
+                          />
+                        </L>
+                        <div></div>
+                        <L label="First Name">
+                          <I
+                            value={addr.firstName}
+                            onChange={(e) => updateAddress(index, 'firstName', e.target.value)}
+                          />
+                        </L>
+                        <L label="Last Name">
+                          <I
+                            value={addr.lastName}
+                            onChange={(e) => updateAddress(index, 'lastName', e.target.value)}
+                          />
+                        </L>
+                        <L label="Address">
+                          <I
+                            value={addr.address}
+                            onChange={(e) => updateAddress(index, 'address', e.target.value)}
+                            placeholder="Street address"
+                          />
+                        </L>
+                        <L label="City">
+                          <I
+                            value={addr.city}
+                            onChange={(e) => updateAddress(index, 'city', e.target.value)}
+                          />
+                        </L>
+                        <L label="Postal Code">
+                          <I
+                            value={addr.postalCode}
+                            onChange={(e) => updateAddress(index, 'postalCode', e.target.value)}
+                          />
+                        </L>
+                        <L label="Phone">
+                          <I
+                            value={addr.phone || ''}
+                            onChange={(e) => updateAddress(index, 'phone', e.target.value)}
+                          />
+                        </L>
+                      </div>
+                    </div>
+                  ))}
+
+                  {form.addresses.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No addresses added yet. Click &quot;Add Address&quot; to get started.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

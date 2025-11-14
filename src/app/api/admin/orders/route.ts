@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
     const paymentStatus = searchParams.get("paymentStatus") || "";
+    const paymentMethod = searchParams.get("paymentMethod") || "";
 
     const skip = (page - 1) * limit;
 
@@ -118,6 +119,7 @@ export async function GET(request: NextRequest) {
           totalAmount: true,
           trackingNumber: true,
           estimatedDelivery: true,
+          shippingNote: true,
           createdAt: true,
           updatedAt: true,
           orderItems: {
@@ -143,6 +145,7 @@ export async function GET(request: NextRequest) {
               orderCode: true,
               status: true,
               amount: true,
+              paymentMethod: true,
             },
           },
           shippingAddress: true,
@@ -153,7 +156,6 @@ export async function GET(request: NextRequest) {
               lastName: true,
               email: true,
               phoneNumber: true,
-              defaultAddress: true,
             },
           },
         },
@@ -164,11 +166,17 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where }),
     ]);
 
+    // ✅ Ensure shipping address is properly displayed for all orders
+    const processedOrders = orders.map(order => ({
+      ...order,
+      shippingAddress: order.shippingAddress,
+    }));
+
     const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
       success: true,
-      data: orders,
+      data: processedOrders,
       pagination: {
         page,
         limit,

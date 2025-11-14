@@ -40,7 +40,8 @@ export async function POST(req: Request) {
 
     // Find user in DB
     const dbUser = await prisma.user.findUnique({
-      where: { supabaseUserId: user.id }
+      where: { supabaseUserId: user.id },
+      include: { addresses: true }
     });
 
     if (!dbUser) {
@@ -107,7 +108,7 @@ export async function POST(req: Request) {
           orderNumber: generateOrderNumber(),
           status: OrderStatus.ORDERED,
           totalAmount,
-          shippingAddress: undefined
+          shippingAddress: null
         };
 
         // Use custom shipping address if provided, otherwise fall back to profile default
@@ -140,8 +141,26 @@ export async function POST(req: Request) {
             billing: shippingAddress.address || `Địa chỉ: ${shippingAddress.city || 'Chưa cập nhật'}`
           };
           orderData.shippingAddress = formattedShippingAddress;
-        } else if (dbUser.defaultAddress) {
-          orderData.shippingAddress = dbUser.defaultAddress;
+        } else {
+          // Find default address from user's addresses
+          const defaultAddress = dbUser.addresses.find(addr => addr.isDefault);
+          if (defaultAddress) {
+            const addressParts = [];
+            if (defaultAddress.address && defaultAddress.address.trim()) {
+              addressParts.push(defaultAddress.address.trim());
+            }
+            if (defaultAddress.city && defaultAddress.city.trim()) {
+              addressParts.push(defaultAddress.city.trim());
+            }
+            if (defaultAddress.postalCode && defaultAddress.postalCode.trim()) {
+              addressParts.push(defaultAddress.postalCode.trim());
+            }
+            const shippingText = addressParts.length > 0 ? addressParts.join(', ') : 'Địa chỉ chưa được cập nhật';
+            orderData.shippingAddress = {
+              shipping: shippingText,
+              billing: defaultAddress.address || `Địa chỉ: ${defaultAddress.city || 'Chưa cập nhật'}`
+            };
+          }
         }
 
         const order = await prisma.order.create({
@@ -182,8 +201,8 @@ export async function POST(req: Request) {
           orderCode,
           amount,
           description,
-          returnUrl: "http://localhost:3000/payment-success",
-          cancelUrl: "http://localhost:3000/payment-cancel",
+          returnUrl: "https://aifshop-blond.vercel.app/payment-success",
+          cancelUrl: "https://aifshop-blond.vercel.app/payment-cancel",
         });
         checkoutUrl = payment.checkoutUrl;
       } catch (payosError) {

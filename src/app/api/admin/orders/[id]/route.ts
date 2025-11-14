@@ -49,7 +49,7 @@ export async function PUT(
     const resolvedParams = await params;
     const orderId = resolvedParams.id;
     const body = await request.json();
-    const { status, trackingNumber, estimatedDelivery } = body;
+    const { status, trackingNumber, estimatedDelivery, shippingNote } = body;
 
     // ✅ Validate order exists
     const order = await prisma.order.findUnique({
@@ -262,12 +262,23 @@ export async function PUT(
       updateData.estimatedDelivery = estimatedDelivery
         ? new Date(estimatedDelivery)
         : null;
+    if (shippingNote !== undefined)
+      updateData.shippingNote = shippingNote || null;
 
     // ✅ Update order with correct includes
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: updateData,
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        totalAmount: true,
+        trackingNumber: true,
+        estimatedDelivery: true,
+        shippingNote: true,
+        createdAt: true,
+        updatedAt: true,
         orderItems: {
           include: {
             product: {
@@ -288,16 +299,22 @@ export async function PUT(
             lastName: true,
             email: true,
             phoneNumber: true,
-            defaultAddress: true,
           },
         },
         Product: true, // Optional: include if you need info from related product
+        shippingAddress: true,
       },
     });
 
+    // ✅ Ensure shipping address is properly displayed for COD orders
+    const orderData = {
+      ...updatedOrder,
+      shippingAddress: updatedOrder.shippingAddress,
+    };
+
     return NextResponse.json({
       success: true,
-      data: updatedOrder,
+      data: orderData,
       message: "Order updated successfully",
     });
   } catch (error) {

@@ -166,11 +166,23 @@ export async function GET(request: NextRequest) {
           bio: true,
           avatar: true,
           stylePreferences: true,
-          defaultAddress: true,
           isVerified: true,
           role: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
+          addresses: {
+            where: { isDefault: true },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              address: true,
+              city: true,
+              postalCode: true,
+              phone: true,
+              label: true
+            }
+          }
         }
       })
 
@@ -184,7 +196,7 @@ export async function GET(request: NextRequest) {
         bio: dbUser?.bio || null,
         avatar: dbUser?.avatar || null,
         stylePreferences: dbUser?.stylePreferences || [],
-        defaultAddress: dbUser?.defaultAddress || null,
+        defaultAddress: dbUser?.addresses?.[0] || null,
         isVerified: dbUser?.isVerified ?? false,
         role: dbUser?.role ?? 'USER',
         createdAt: new Date(supabaseUser.user.created_at),
@@ -256,11 +268,23 @@ export async function GET(request: NextRequest) {
         bio: true,
         avatar: true,
         stylePreferences: true,
-        defaultAddress: true,
         isVerified: true,
         role: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        addresses: {
+          where: { isDefault: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            address: true,
+            city: true,
+            postalCode: true,
+            phone: true,
+            label: true
+          }
+        }
       }
     })
 
@@ -291,7 +315,7 @@ export async function GET(request: NextRequest) {
           bio: dbUser?.bio || null,
           avatar: dbUser?.avatar || null,
           stylePreferences: dbUser?.stylePreferences || [],
-          defaultAddress: dbUser?.defaultAddress || null,
+          defaultAddress: dbUser?.addresses?.[0] || null,
           isVerified: dbUser?.isVerified ?? false,
           role: dbUser?.role ?? 'USER',
           createdAt: new Date(supabaseUser.created_at),

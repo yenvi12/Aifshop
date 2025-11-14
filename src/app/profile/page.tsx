@@ -88,7 +88,7 @@ export default function ProfilePage() {
           bio: data.bio || '',
           avatar: data.avatar && String(data.avatar).trim() !== '' ? data.avatar : null,
           stylePreferences: data.stylePreferences || [],
-          defaultAddress: data.defaultAddress || { shipping: '', billing: '' }
+          addresses: data.addresses || []
         });
       }
     } catch (error) {
@@ -125,7 +125,7 @@ export default function ProfilePage() {
           bio: data.user.bio || '',
           avatar: data.user.avatar && String(data.user.avatar).trim() !== '' ? data.user.avatar : null,
           stylePreferences: data.user.stylePreferences || [],
-          defaultAddress: data.user.defaultAddress || { shipping: '', billing: '' }
+          addresses: data.user.addresses || []
         });
         toast.success(data.message || 'Profile updated successfully');
       } else {
@@ -230,18 +230,48 @@ export default function ProfilePage() {
               </Section>
             </div>
 
-            {/* Default address */}
+            {/* Addresses */}
             <div id="addresses" className="scroll-mt-24">
-              <Section title="Default address">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <ViewField label="Shipping address" value={user.defaultAddress.shipping || '-'} />
-                  <ViewField label="Billing address" value={user.defaultAddress.billing || '-'} />
-                </div>
+              <Section title="Addresses">
+                {user.addresses.length > 0 ? (
+                  <div className="space-y-4">
+                    {user.addresses.map((addr, index) => (
+                      <div key={addr.id || index} className="rounded-xl border border-brand-accent bg-white p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="font-semibold text-brand-dark">
+                                {addr.label || `Address ${index + 1}`}
+                              </span>
+                              {addr.isDefault && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-brand-primary text-white">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-1 gap-2">
+                                <ViewField label="Address" value={addr.address} />
+                                {addr.city && <ViewField label="City" value={addr.city} />}
+                                {addr.postalCode && <ViewField label="Postal Code" value={addr.postalCode} />}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-brand-secondary">
+                    <p>No addresses added yet.</p>
+                    <p className="text-sm mt-1">Click &quot;Edit&quot; to add your first address.</p>
+                  </div>
+                )}
               </Section>
             </div>
 
             {/* Payment methods */}
-            <div id="payments" className="scroll-mt-24">
+            {/* <div id="payments" className="scroll-mt-24">
               <Section
                 title="Payment methods"
                 right={
@@ -261,7 +291,7 @@ export default function ProfilePage() {
                   </div>
                 )}
               </Section>
-            </div>
+            </div> */}
 
             {/* Recent activity */}
             <div id="activity" className="scroll-mt-24">
@@ -323,7 +353,8 @@ export default function ProfilePage() {
 
             <div className="pt-4 text-xs text-center text-brand-secondary">
               <p>
-                © 2025 AIFShop. All rights reserved. • <Link href="#" className="hover:text-brand-primary">Privacy Policy</Link> •{" "}
+                © 2025 AIFShop. All rights reserved. •{" "}
+                <Link href="#" className="hover:text-brand-primary">Privacy Policy</Link> •{" "}
                 <Link href="#" className="hover:text-brand-primary">Terms of Service</Link>
               </p>
             </div>
