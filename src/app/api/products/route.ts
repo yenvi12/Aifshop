@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
       data.name = formData.get('name') as string
       data.overview = (formData.get('overview') as string) || undefined
       data.description = (formData.get('description') as string) || undefined
-      data.price = formData.get('price') ? parseFloat(formData.get('price') as string) : undefined
+      data.price = formData.get('price') ? parseFloat(formData.get('price') as string) : null
       data.compareAtPrice = formData.get('compareAtPrice') ? parseFloat(formData.get('compareAtPrice') as string) : undefined
       data.category = formData.get('category') as string
 
@@ -569,7 +569,7 @@ export async function PUT(request: NextRequest) {
       data = await request.json()
       data.overview = data.overview ?? undefined
       data.description = data.description ?? undefined
-      data.price = data.price ?? undefined
+      data.price = data.price ?? null
       data.compareAtPrice = data.compareAtPrice ?? undefined
       data.badge = data.badge ?? undefined
 

@@ -81,7 +81,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("/api/products");
+        const response = await fetch("/api/products?limit=4");
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
@@ -456,7 +456,7 @@ Giao diện dễ dùng và hỗ trợ nhanh chóng giúp mọi người dễ ti�
 
         <div className="mt-6 md:mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 items-stretch">
           {filteredProducts.length > 0 ? (
-            filteredProducts.slice(0, 8).map((p) => (
+            filteredProducts.slice(0, 4).map((p) => (
               <div key={p.id} className="h-full">
                 <ProductCard key={p.id} p={p} onAdd={handleAddToCart} />
               </div>

@@ -119,8 +119,8 @@ export default function AddProductPage() {
     let priceValue: number | null = null;
     if (formData.price.trim()) {
       priceValue = parseFloat(formData.price);
-      if (isNaN(priceValue) || priceValue <= 0) {
-        newErrors.price = "Price must be a number greater than 0";
+      if (isNaN(priceValue) || priceValue < 0) {
+        newErrors.price = "Price must be a number 0 or greater";
       }
     }
 
@@ -129,8 +129,8 @@ export default function AddProductPage() {
       newErrors.compareAtPrice = "Original price (Sale) is required";
     } else {
       const compareValue = parseFloat(formData.compareAtPrice);
-      if (isNaN(compareValue) || compareValue <= 0) {
-        newErrors.compareAtPrice = "Original price (Sale) must be a number greater than 0";
+      if (isNaN(compareValue) || compareValue < 0) {
+        newErrors.compareAtPrice = "Original price (Sale) must be a number 0 or greater";
       } else if (priceValue !== null && compareValue < priceValue) {
         newErrors.compareAtPrice = "Original price (Sale) must be greater than or equal to Price";
       }
@@ -364,7 +364,7 @@ export default function AddProductPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price (₫)</label>
+                  <label className="block text-sm font-medium mb-1">Price (₫) <span className="text-gray-400 font-normal">(Optional)</span></label>
                   <input
                     type="number"
                     name="price"
@@ -375,7 +375,7 @@ export default function AddProductPage() {
                     className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
                       errors.price ? 'border-red-500' : 'border-brand-light'
                     }`}
-                    placeholder="0₫"
+                    placeholder="Leave empty if no price"
                   />
                   {errors.price && (
                     <p className="text-red-500 text-xs mt-1">{errors.price}</p>

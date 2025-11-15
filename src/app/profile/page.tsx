@@ -294,7 +294,7 @@ export default function ProfilePage() {
             </div> */}
 
             {/* Recent activity */}
-            <div id="activity" className="scroll-mt-24">
+            {/* <div id="activity" className="scroll-mt-24">
               <Section
                 title="Recent activity"
                 right={
@@ -344,7 +344,7 @@ export default function ProfilePage() {
                   </div>
                 )}
               </Section>
-            </div>
+            </div> */}
 
             {/* Security (đặt id nếu muốn cuộn tới) */}
             <div id="security" className="scroll-mt-24">

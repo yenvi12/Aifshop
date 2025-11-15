@@ -206,15 +206,15 @@ export default function PaymentCancelPage() {
             </button>
           )}
 
-          <button
+          {/* <button
             onClick={() => window.history.back()}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
             Try Again
-          </button>
+          </button> */}
           <button
             onClick={() => window.location.href = '/shop'}
-            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            className="w-full bg-green-100 hover:bg-green-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
             Continue Shopping
           </button>
