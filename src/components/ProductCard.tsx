@@ -3,13 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  MdFavoriteBorder,
-  MdFavorite,
   MdShoppingBag,
   MdStar,
   MdSmartToy,
 } from "react-icons/md";
-import { useState } from "react";
 
 export type Product = {
   id: string;
@@ -31,12 +28,10 @@ export type Product = {
 type Props = {
   p: Product;
   onAdd?: (p: Product) => void;
-  onWish?: (p: Product, wished: boolean) => void;
   compact?: boolean;
 };
 
-export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
-  const [wished, setWished] = useState(false);
+export default function ProductCard({ p, onAdd, compact }: Props) {
   const discount =
     p.compareAtPrice && p.price && p.compareAtPrice > p.price
       ? Math.round(((p.compareAtPrice - p.price) / p.compareAtPrice) * 100)
@@ -77,19 +72,6 @@ export default function ProductCard({ p, onAdd, onWish, compact }: Props) {
           )}
         </div>
 
-        {/* Wishlist */}
-        <button
-          aria-label="wishlist"
-          onClick={() => {
-            const val = !wished;
-            setWished(val);
-            onWish?.(p, val);
-          }}
-          className="absolute right-3 top-3 p-2 rounded-full bg-white text-brand-primary shadow-sm
-                     hover:scale-105 transition"
-        >
-          {wished ? <MdFavorite className="w-5 h-5" /> : <MdFavoriteBorder className="w-5 h-5" />}
-        </button>
       </div>
 
       {/* Content */}
