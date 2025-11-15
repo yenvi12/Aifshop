@@ -30,37 +30,43 @@ interface ApiResponse {
   error?: string;
 }
 
+interface AddressData {
+   id: string;
+   firstName: string;
+   lastName: string;
+   address: string;
+   city: string;
+   postalCode: string;
+   phone: string;
+   label: string;
+   isDefault: boolean;
+ }
+
 interface ProfileData {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  birthday: string;
-  bio: string;
-  avatar: string;
-  stylePreferences: string[];
-  defaultAddress: {
-    shipping: string;
-    billing: string;
-  };
-}
+   id: string;
+   name: string;
+   email: string;
+   phone: string | null;
+   birthday: string;
+   bio: string;
+   avatar: string;
+   stylePreferences: string[];
+   addresses: AddressData[];
+ }
 
 interface ProfileResponse {
-  success?: boolean;
-  id?: string;
-  name?: string;
-  email?: string;
-  phone?: string | null;
-  birthday?: string;
-  bio?: string;
-  avatar?: string;
-  stylePreferences?: string[];
-  defaultAddress?: {
-    shipping: string;
-    billing: string;
-  };
-  error?: string;
-}
+   success?: boolean;
+   id?: string;
+   name?: string;
+   email?: string;
+   phone?: string | null;
+   birthday?: string;
+   bio?: string;
+   avatar?: string;
+   stylePreferences?: string[];
+   addresses?: AddressData[];
+   error?: string;
+ }
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -71,6 +77,7 @@ export default function PaymentPage() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
 
   // Shipping address form state
   const [shippingAddress, setShippingAddress] = useState({
@@ -199,23 +206,23 @@ export default function PaymentPage() {
           bio: data.bio || '',
           avatar: data.avatar || '',
           stylePreferences: data.stylePreferences || [],
-          defaultAddress: data.defaultAddress || { shipping: '', billing: '' }
+          addresses: data.addresses || []
         };
 
         setProfileData(profile);
 
-        // Auto-fill shipping address from profile
-        const nameParts = profile.name.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
-        setShippingAddress({
-          firstName,
-          lastName,
-          address: profile.defaultAddress?.shipping || '',
-          city: '', // Will need to parse from address or add city field to profile
-          postalCode: '' // Will need to parse from address or add postal code field to profile
-        });
+        // Auto-fill shipping address from default address or first address
+        const defaultAddress = profile.addresses.find(addr => addr.isDefault) || profile.addresses[0];
+        if (defaultAddress) {
+          setShippingAddress({
+            firstName: defaultAddress.firstName,
+            lastName: defaultAddress.lastName,
+            address: defaultAddress.address,
+            city: defaultAddress.city,
+            postalCode: defaultAddress.postalCode
+          });
+          setSelectedAddressId(defaultAddress.id);
+        }
       } else {
         console.error('Profile API error:', data?.error);
       }
@@ -496,23 +503,20 @@ export default function PaymentPage() {
     }));
   };
 
-  // Function to reset to profile address
-  const handleResetToProfile = () => {
-    if (profileData?.defaultAddress?.shipping) {
-      const nameParts = profileData.name.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      setEditedAddress({
-        firstName,
-        lastName,
-        address: profileData.defaultAddress.shipping || '',
-        city: '',
-        postalCode: ''
-      });
-      toast.success('Đã reset về địa chỉ mặc định');
-    }
-  };
+  // Function to handle address selection
+   const handleAddressSelect = (addressId: string) => {
+     const selectedAddr = profileData?.addresses.find(addr => addr.id === addressId);
+     if (selectedAddr) {
+       setShippingAddress({
+         firstName: selectedAddr.firstName,
+         lastName: selectedAddr.lastName,
+         address: selectedAddr.address,
+         city: selectedAddr.city,
+         postalCode: selectedAddr.postalCode
+       });
+       setSelectedAddressId(addressId);
+     }
+   };
   
   //const inputClass = "border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary";
   //const labelClass = "text-sm font-medium text-gray-700";
@@ -561,7 +565,9 @@ export default function PaymentPage() {
                         </span>
                       )}
                     </div>
-                    <span className="text-xs font-bold px-3 py-1 bg-brand-primary text-white rounded-full shadow-sm">Default</span>
+                    <span className="text-xs font-bold px-3 py-1 bg-green-500 text-white rounded-full shadow-sm">
+                      {profileData?.addresses.length ? 'Addresses loaded' : 'No addresses'}
+                    </span>
                   </div>
 
                   {/* Customer info or Edit Form */}
@@ -579,16 +585,34 @@ export default function PaymentPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       <div className="text-gray-700 leading-relaxed">
-                        {shippingAddress.address || shippingAddress.city || shippingAddress.postalCode ? (
-                          <div className="text-sm">
-                            {[shippingAddress.address, shippingAddress.city, shippingAddress.postalCode]
-                              .filter(Boolean)
-                              .join(', ')}
+                        {profileData?.addresses.length ? (
+                          <div>
+                            <select
+                              value={selectedAddressId}
+                              onChange={(e) => handleAddressSelect(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                            >
+                              <option value="">Chọn địa chỉ giao hàng</option>
+                              {profileData.addresses.map((addr) => (
+                                <option key={addr.id} value={addr.id}>
+                                  {addr.label ? `${addr.label}: ` : ''}{addr.address}, {addr.city} {addr.postalCode}
+                                </option>
+                              ))}
+                            </select>
+                            {selectedAddressId && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Người nhận: {shippingAddress.firstName} {shippingAddress.lastName}
+                                {profileData.addresses.find(a => a.id === selectedAddressId)?.phone && ` • ${profileData.addresses.find(a => a.id === selectedAddressId)?.phone}`}
+                              </p>
+                            )}
                           </div>
-                        ) : profileData.defaultAddress?.shipping ? (
-                          <div className="text-sm">{profileData.defaultAddress.shipping}</div>
                         ) : (
-                          <span className="text-orange-600 font-medium">⚠️ Vui lòng cập nhật địa chỉ giao hàng</span>
+                          <div className="text-center py-4">
+                            <p className="text-orange-600 font-medium">⚠️ Chưa có địa chỉ nào</p>
+                            <Link href="/profile#addresses" className="text-brand-primary hover:underline text-sm">
+                              Thêm địa chỉ trong profile
+                            </Link>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -610,85 +634,6 @@ export default function PaymentPage() {
                     )}
                   </div>
 
-                  {/* Edit Form or Edit Button */}
-                  {isEditingAddress ? (
-                    <div className="mt-4 pt-4 border-t border-brand-primary/20">
-                      <div className="space-y-3 mb-4">
-                        <div className="grid grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            placeholder="First Name *"
-                            value={editedAddress.firstName}
-                            onChange={(e) => handleAddressInputChange('firstName', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Last Name *"
-                            value={editedAddress.lastName}
-                            onChange={(e) => handleAddressInputChange('lastName', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Street Address * (số nhà, tên đường)"
-                          value={editedAddress.address}
-                          onChange={(e) => handleAddressInputChange('address', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            placeholder="City"
-                            value={editedAddress.city}
-                            onChange={(e) => handleAddressInputChange('city', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Postal Code"
-                            value={editedAddress.postalCode}
-                            onChange={(e) => handleAddressInputChange('postalCode', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleSaveAddress}
-                          className="flex-1 bg-brand-primary text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-brand-primary/90 transition-colors"
-                        >
-                          Save Address
-                        </button>
-                        <button
-                          onClick={handleResetToProfile}
-                          className="px-3 bg-blue-100 text-blue-700 py-2 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
-                          title="Reset về địa chỉ mặc định từ profile"
-                        >
-                          Reset
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="px-3 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4 pt-4 border-t border-brand-primary/20">
-                      <button
-                        onClick={handleEditAddress}
-                        className="w-full flex items-center justify-center gap-2 p-2 bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-medium rounded-lg transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        {shippingAddress.address ? 'Edit address' : 'Add shipping address'}
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (
@@ -772,8 +717,6 @@ export default function PaymentPage() {
                   </div>
                 ))}
               </div>
-
-              <input type="text" placeholder="Promo / Gift code" className="input w-full mt-4" />
 
               {/* Totals */}
               <div className="border-t pt-4 space-y-2 text-sm">

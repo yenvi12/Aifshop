@@ -374,9 +374,24 @@ export default function AnalyticsPage() {
                   fillOpacity={1}
                   fill="url(#revenueGradient)"
                   strokeWidth={2}
+                  name="Revenue"
                 />
               </AreaChart>
             </ResponsiveContainer>
+            <div className="mt-4">
+              <div className="flex items-center justify-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: chartColors.secondary }}
+                  ></div>
+                  <span className="text-sm text-gray-600 font-medium">Total Revenue</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Daily revenue from completed orders over the selected time period
+              </p>
+            </div>
           </div>
 
           {/* Orders by Status */}
@@ -388,42 +403,27 @@ export default function AnalyticsPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-  data={data?.ordersByStatus}
-  cx="50%"
-  cy="50%"
-  labelLine={false}
-  label={(props: PieLabelRenderProps) => {
-    const { name, percent, x, y, textAnchor, fill } = props;
-    return (
-      <text
-        x={x}
-        y={y}
-        textAnchor={textAnchor}
-        fill={fill}
-        dominantBaseline="central"
-      >
-        {`${name}: ${((percent as number) * 100).toFixed(1)}%`}
-      </text>
-    );
-  }}
-  outerRadius={100}
-  fill="#8884d8"
-  dataKey="count"
->
-  {data?.ordersByStatus.map((entry, index) => (
-    <Cell
-      key={`cell-${index}`}
-      fill={[
-        chartColors.accent,
-        chartColors.warning,
-        chartColors.danger,
-        chartColors.secondary,
-        chartColors.purple
-      ][index % 5]}
-    />
-  ))}
-</Pie>
-
+                  data={data?.ordersByStatus}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="count"
+                >
+                  {data?.ordersByStatus.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={[
+                        chartColors.accent,
+                        chartColors.warning,
+                        chartColors.danger,
+                        chartColors.secondary,
+                        chartColors.purple
+                      ][index % 5]}
+                    />
+                  ))}
+                </Pie>
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'white',
@@ -431,9 +431,39 @@ export default function AnalyticsPage() {
                     borderRadius: '8px',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
+                  formatter={(value: number, name: string) => [`${value} orders`, name]}
                 />
               </PieChart>
             </ResponsiveContainer>
+            <div className="mt-4">
+              <div className="grid grid-cols-2 gap-3">
+                {data?.ordersByStatus.map((status, index) => (
+                  <div key={status.status} className="flex items-center space-x-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{
+                        backgroundColor: [
+                          chartColors.accent,
+                          chartColors.warning,
+                          chartColors.danger,
+                          chartColors.secondary,
+                          chartColors.purple
+                        ][index % 5]
+                      }}
+                    ></div>
+                    <span className="text-sm text-gray-600 font-medium capitalize">
+                      {status.status.toLowerCase().replace('_', ' ')}
+                    </span>
+                    <span className="text-xs text-gray-500 ml-auto">
+                      {status.count} ({status.percentage.toFixed(1)}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 text-center mt-3">
+                Distribution of orders by their current processing status
+              </p>
+            </div>
           </div>
 
           {/* Top Products */}
@@ -465,11 +495,28 @@ export default function AnalyticsPage() {
                     borderRadius: '8px',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
-                  formatter={(value: number) => [value, 'Sales']}
+                  formatter={(value: number, name: string) => [
+                    value,
+                    name === 'sales' ? 'Units Sold' : name === 'revenue' ? 'Revenue' : name
+                  ]}
                 />
-                <Bar dataKey="sales" fill={chartColors.purple} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="sales" fill={chartColors.purple} radius={[0, 4, 4, 0]} name="Units Sold" />
               </BarChart>
             </ResponsiveContainer>
+            <div className="mt-4">
+              <div className="flex items-center justify-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className="w-3 h-3 rounded"
+                    style={{ backgroundColor: chartColors.purple }}
+                  ></div>
+                  <span className="text-sm text-gray-600 font-medium">Units Sold</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Best performing products ranked by total units sold
+              </p>
+            </div>
           </div>
 
           {/* User Growth */}
@@ -508,9 +555,24 @@ export default function AnalyticsPage() {
                   strokeWidth={3}
                   dot={{ fill: chartColors.pink, strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, stroke: chartColors.pink, strokeWidth: 2 }}
+                  name="New Users"
                 />
               </LineChart>
             </ResponsiveContainer>
+            <div className="mt-4">
+              <div className="flex items-center justify-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className="w-3 h-3 rounded-full border-2"
+                    style={{ backgroundColor: chartColors.pink, borderColor: chartColors.pink }}
+                  ></div>
+                  <span className="text-sm text-gray-600 font-medium">Daily Registrations</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                New user accounts created each day over the selected period
+              </p>
+            </div>
           </div>
         </div>
 

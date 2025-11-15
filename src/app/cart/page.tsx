@@ -641,25 +641,6 @@ const CartPage = () => {
                   </div>
                 </div>
 
-                {/* Promo Code */}
-                <div className="mb-4">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Enter promo code"
-                      className="flex-1 border border-brand-light rounded-lg px-3 py-2 text-sm bg-brand-soft focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
-                    />
-                    <button
-                      className="px-4 py-2 rounded-xl text-sm font-semibold
-                 bg-brand-accent text-brand-dark border border-brand-light
-                 hover:bg-brand-accent/90 hover:shadow-md
-                 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-brand-primary/25"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-
                 {/* Checkout Buttons */}
                 <div className="space-y-3">
                   <button

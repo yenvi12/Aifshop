@@ -36,11 +36,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Update payment status
+    // Update payment status - remove userId filter to allow webhook updates
     const updatedPayment = await prisma.payment.updateMany({
       where: {
-        orderCode,
-        userId: dbUser.id
+        orderCode
       },
       data: {
         status: status as PaymentStatus
@@ -48,14 +47,36 @@ export async function POST(req: Request) {
     });
 
     if (updatedPayment.count === 0) {
-      console.error(`Payment not found: orderCode=${orderCode}, userId=${dbUser.id}`);
+      console.error(`Payment not found: orderCode=${orderCode}`);
       return NextResponse.json({
         error: 'Payment not found',
         details: 'Payment record may have been already updated or expired'
       }, { status: 404 });
     }
 
-    console.log(`Payment status updated successfully: orderCode=${orderCode}, status=${status}, userId=${dbUser.id}`);
+    console.log(`Payment status updated successfully: orderCode=${orderCode}, status=${status}`);
+
+    // Update Order status to CONFIRMED when payment is successful
+    if (status === 'SUCCESS') {
+      try {
+        // Update existing orders to CONFIRMED status
+        await prisma.order.updateMany({
+          where: {
+            payment: {
+              orderCode
+            },
+            status: 'ORDERED'
+          },
+          data: {
+            status: 'CONFIRMED'
+          }
+        });
+
+        console.log(`Orders confirmed for payment ${orderCode}`);
+      } catch (error) {
+        console.error('Error confirming orders:', error);
+      }
+    }
 
     // Clear user's cart after successful payment (only for SUCCESS status)
     if (status === 'SUCCESS') {

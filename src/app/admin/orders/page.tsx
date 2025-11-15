@@ -7,47 +7,63 @@ import { MdAdd, MdEdit, MdDelete, MdShoppingCart, MdSearch, MdFilterList, MdChec
 import toast from "react-hot-toast";
 
 interface Order {
-   id: string;
-   orderNumber: string;
-   status: string;
-   totalAmount: number;
-   trackingNumber?: string;
-   estimatedDelivery?: Date;
-   createdAt: Date;
-   updatedAt: Date;
-   shippingAddress?: {
-     shipping?: string;
-     billing?: string;
-   } | null;
-  orderItems: Array<{
     id: string;
-    quantity: number;
-    priceAtTime: number;
-    product: {
-      id: string;
-      name: string;
-      image?: string;
-      slug: string;
-    };
-  }>;
-  payment: {
-    id: number;
-    orderCode: string;
+    orderNumber: string;
     status: string;
-    amount: number;
-  };
-  user: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber?: string;
-    defaultAddress?: {
+    totalAmount: number;
+    trackingNumber?: string;
+    estimatedDelivery?: Date;
+    shippingNote?: string;
+    createdAt: Date;
+    updatedAt: Date;
+    shippingAddress?: {
+      address?: string;
+      city?: string;
       shipping?: string;
       billing?: string;
-    };
-  };
-}
+      fullName?: string;
+      postalCode?: string;
+    } | null;
+   orderItems: Array<{
+     id: string;
+     quantity: number;
+     priceAtTime: number;
+     size?: string;
+     product: {
+       id: string;
+       name: string;
+       image?: string;
+       slug: string;
+     };
+   }>;
+   payment: {
+     id: number;
+     orderCode: string;
+     status: string;
+     amount: number;
+     paymentMethod: string;
+   };
+   user: {
+     id: string;
+     firstName: string;
+     lastName: string;
+     email: string;
+     phoneNumber?: string;
+   };
+ }
+
+// Function to calculate shipping cost based on amount
+const getShippingCost = (order: Order): number => {
+  // Calculate product total from order items
+  const productTotal = order.orderItems.reduce((sum, item) => sum + (item.priceAtTime * item.quantity), 0);
+  
+  // Shipping cost is the difference between payment amount and product total
+  // If payment amount equals total amount, it means shipping was included
+  const shippingCost = order.payment.amount - productTotal;
+  
+  // Return shipping cost, minimum 0
+  return Math.max(0, shippingCost);
+};
 
 export default function ManageOrdersPage() {
   const router = useRouter();
@@ -55,7 +71,6 @@ export default function ManageOrdersPage() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
@@ -64,6 +79,7 @@ export default function ManageOrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
 
   // Bulk selection states
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
@@ -74,25 +90,30 @@ export default function ManageOrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Shipping note state
+  const [showShippingNote, setShowShippingNote] = useState(false);
+  const [shippingNote, setShippingNote] = useState('');
+  const [noteForOrder, setNoteForOrder] = useState<string | null>(null);
+
   useEffect(() => {
     fetchCategories();
   }, []);
 
   // Fetch orders when filters or page change
   useEffect(() => {
-    if (searchTerm || statusFilter || paymentStatusFilter || currentPage > 1) {
-      fetchOrders(currentPage, searchTerm, statusFilter, paymentStatusFilter);
+    if (searchTerm || statusFilter || paymentStatusFilter || paymentMethodFilter || currentPage > 1) {
+      fetchOrders(currentPage, searchTerm, statusFilter, paymentStatusFilter, paymentMethodFilter);
     } else {
       fetchOrders(currentPage);
     }
-  }, [searchTerm, statusFilter, paymentStatusFilter, currentPage]);
+  }, [searchTerm, statusFilter, paymentStatusFilter, paymentMethodFilter, currentPage]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, paymentStatusFilter]);
+  }, [searchTerm, statusFilter, paymentStatusFilter, paymentMethodFilter]);
 
-  const fetchOrders = async (page: number = 1, search?: string, status?: string, paymentStatus?: string) => {
+  const fetchOrders = async (page: number = 1, search?: string, status?: string, paymentStatus?: string, paymentMethod?: string) => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -108,6 +129,7 @@ export default function ManageOrdersPage() {
       if (search) params.append('search', search);
       if (status) params.append('status', status);
       if (paymentStatus) params.append('paymentStatus', paymentStatus);
+      if (paymentMethod) params.append('paymentMethod', paymentMethod);
 
       const response = await fetch(`/api/admin/orders?${params}`, {
         headers: {
@@ -242,28 +264,39 @@ export default function ManageOrdersPage() {
     }
   };
 
-  const handleDelete = async (orderId: string) => {
+  const handleShippingNote = (orderId: string) => {
+    setNoteForOrder(orderId);
+    setShippingNote('');
+    setShowShippingNote(true);
+  };
+
+  const handleSaveShippingNote = async () => {
+    if (!noteForOrder || !shippingNote.trim()) return;
+
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/admin/orders?id=${orderId}`, {
-        method: 'DELETE',
+      const response = await fetch(`/api/admin/orders/${noteForOrder}`, {
+        method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ shippingNote: shippingNote.trim() })
       });
 
       if (response.ok) {
-        toast.success('Order deleted successfully');
-        fetchOrders(); // Refresh list
+        toast.success('Shipping note saved successfully');
+        setShowShippingNote(false);
+        setNoteForOrder(null);
+        setShippingNote('');
+        fetchOrders(); // Refresh to show the note
       } else {
-        toast.error('Failed to delete order');
+        toast.error('Failed to save shipping note');
       }
     } catch (error) {
-      console.error('Delete error:', error);
-      toast.error('Failed to delete order');
+      console.error('Failed to save shipping note:', error);
+      toast.error('Failed to save shipping note');
     }
-    setShowDeleteConfirm(false);
-    setSelectedOrder(null);
   };
 
   // Bulk operations
@@ -315,39 +348,10 @@ export default function ManageOrdersPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedOrders.length === 0) return;
-
-    try {
-      const token = localStorage.getItem('accessToken');
-      const deletePromises = selectedOrders.map(id =>
-        fetch(`/api/admin/orders?id=${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-      );
-
-      const results = await Promise.all(deletePromises);
-      const successCount = results.filter(r => r.ok).length;
-
-      if (successCount > 0) {
-        toast.success(`Deleted ${successCount} order(s) successfully`);
-        fetchOrders();
-        setSelectedOrders([]);
-      } else {
-        toast.error('Failed to delete orders');
-      }
-    } catch (error) {
-      console.error('Bulk delete error:', error);
-      toast.error('Failed to delete orders');
-    }
-  };
-
   // Get unique statuses for filter dropdown
   const orderStatuses = Array.from(new Set(allOrders.map(o => o.status)));
   const paymentStatuses = Array.from(new Set(allOrders.map(o => o.payment.status)));
+  const paymentMethods = Array.from(new Set(allOrders.map(o => o.payment.paymentMethod)));
 
   if (loading) {
     return (
@@ -440,6 +444,17 @@ export default function ManageOrdersPage() {
                     <option key={status} value={status}>{status}</option>
                   ))}
                 </select>
+
+                <select
+                  value={paymentMethodFilter}
+                  onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                  className="px-3 py-2 border border-brand-light rounded-lg focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
+                >
+                  <option value="">All Payment Methods</option>
+                  {paymentMethods.map(method => (
+                    <option key={method} value={method}>{method}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -464,12 +479,6 @@ export default function ManageOrdersPage() {
                     <option value="DELIVERED">Deliver</option>
                     <option value="CANCELLED">Cancel</option>
                   </select>
-                  <button
-                    onClick={handleBulkDelete}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
-                  >
-                    Delete Selected
-                  </button>
                 </div>
               </div>
             )}
@@ -547,15 +556,27 @@ export default function ManageOrdersPage() {
                       {order.payment.status === 'CANCELLED' && <MdError className="w-3 h-3" />}
                       Payment: {order.payment.status}
                     </span>
+                    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium shadow-sm border ml-2 ${
+                      order.payment.paymentMethod === 'PAYOS' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                      order.payment.paymentMethod === 'COD' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                      'bg-gray-100 text-gray-800 border-gray-200'
+                    }`}>
+                      {order.payment.paymentMethod === 'PAYOS' && <MdPayment className="w-3 h-3" />}
+                      {order.payment.paymentMethod === 'COD' && <MdLocalShipping className="w-3 h-3" />}
+                      {order.payment.paymentMethod}
+                    </span>
                   </div>
 
                   {/* Total */}
-                  <p className="text-lg font-bold text-brand-dark">{order.payment.amount.toLocaleString('vi-VN')}₫</p>
-                  {order.payment.amount !== order.totalAmount && (
-                    <p className="text-xs text-yellow-600 mt-1">
-                      (ĐH: {order.totalAmount.toLocaleString('vi-VN')}₫)
+                  <div className="space-y-1">
+                    <p className="text-lg font-bold text-brand-dark">{order.payment.amount.toLocaleString('vi-VN')}₫</p>
+                    <p className="text-sm text-brand-secondary">
+                      Sản phẩm: {(order.payment.amount - getShippingCost(order)).toLocaleString('vi-VN')}₫
                     </p>
-                  )}
+                    <p className="text-sm text-brand-secondary">
+                      Ship: {getShippingCost(order).toLocaleString('vi-VN')}₫
+                    </p>
+                  </div>
 
                   {/* Items */}
                   <div className="mb-4">
@@ -563,22 +584,33 @@ export default function ManageOrdersPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => handleViewDetails(order)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg"
                       title="View Order Details"
                     >
                       <MdVisibility className="w-4 h-4" />
                       View Details
                     </button>
+                    <button
+                      onClick={() => handleShippingNote(order.id)}
+                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 active:scale-95 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg"
+                      title="Add Shipping Note"
+                    >
+                      <MdLocalShipping className="w-4 h-4" />
+                    </button>
                     <div className="relative">
                       <select
                         onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                        className={`px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm bg-white shadow-md hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
+                        className={`px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm bg-white shadow-md hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED' ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
                         defaultValue={order.status}
-                        disabled={updatingStatus === order.id}
-                        title="Update Order Status"
+                        disabled={updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED'}
+                        title={
+                          order.status === 'CANCELLED' ? 'Cannot edit cancelled orders' :
+                          order.status === 'DELIVERED' ? 'Cannot edit delivered orders' :
+                          'Update Order Status'
+                        }
                       >
                         <option value="ORDERED">📋 Ordered</option>
                         <option value="CONFIRMED">✅ Confirmed</option>
@@ -589,20 +621,10 @@ export default function ManageOrdersPage() {
                       </select>
                       {updatingStatus === order.id && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                          <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-500 border-t-transparent"></div>
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        setShowDeleteConfirm(true);
-                      }}
-                      className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 active:scale-95 transition-all duration-200 shadow-md hover:shadow-lg"
-                      title="Delete Order"
-                    >
-                      <MdDelete className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -631,6 +653,7 @@ export default function ManageOrdersPage() {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-dark">Customer</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-dark">Status</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-dark">Payment</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-brand-dark">Method</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-dark">Total</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-dark">Date</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-brand-dark">Actions</th>
@@ -692,33 +715,58 @@ export default function ManageOrdersPage() {
                           {order.payment.status}
                         </span>
                       </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium shadow-sm border ${
+                          order.payment.paymentMethod === 'PAYOS' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                          order.payment.paymentMethod === 'COD' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                          'bg-gray-100 text-gray-800 border-gray-200'
+                        }`}>
+                          {order.payment.paymentMethod === 'PAYOS' && <MdPayment className="w-3 h-3" />}
+                          {order.payment.paymentMethod === 'COD' && <MdLocalShipping className="w-3 h-3" />}
+                          {order.payment.paymentMethod}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 text-sm font-medium text-brand-dark">
-                        {order.payment.amount.toLocaleString('vi-VN')}₫
-                        {order.payment.amount !== order.totalAmount && (
-                          <div className="text-xs text-yellow-600">
-                            (ĐH: {order.totalAmount.toLocaleString('vi-VN')}₫)
+                        <div className="space-y-1">
+                          <div>{order.payment.amount.toLocaleString('vi-VN')}₫</div>
+                          <div className="text-xs text-brand-secondary">
+                            Sản phẩm: {(order.payment.amount - getShippingCost(order)).toLocaleString('vi-VN')}₫
                           </div>
-                        )}
+                          <div className="text-xs text-brand-secondary">
+                            Ship: {getShippingCost(order).toLocaleString('vi-VN')}₫
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-brand-secondary">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-3">
+                        <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleViewDetails(order)}
-                            className="p-2.5 text-blue-600 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                            className="p-2 text-blue-600 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                             title="View Order Details"
                           >
                             <MdVisibility className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => handleShippingNote(order.id)}
+                            className="p-2 text-green-600 hover:bg-green-50 active:bg-green-100 rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                            title="Add Shipping Note"
+                          >
+                            <MdLocalShipping className="w-4 h-4" />
+                          </button>
                           <div className="relative">
                             <select
                               onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                              className={`px-3 py-1.5 border-2 border-gray-300 rounded-lg text-xs bg-white shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
+                              className={`px-3 py-1.5 border-2 border-gray-300 rounded-lg text-xs bg-white shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 font-medium ${updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED' ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
                               defaultValue={order.status}
-                              disabled={updatingStatus === order.id}
-                              title="Update Order Status"
+                              disabled={updatingStatus === order.id || order.status === 'CANCELLED' || order.status === 'DELIVERED'}
+                              title={
+                                order.status === 'CANCELLED' ? 'Cannot edit cancelled orders' :
+                                order.status === 'DELIVERED' ? 'Cannot edit delivered orders' :
+                                'Update Order Status'
+                              }
                             >
                               <option value="ORDERED">📋 Ordered</option>
                               <option value="CONFIRMED">✅ Confirmed</option>
@@ -733,16 +781,6 @@ export default function ManageOrdersPage() {
                               </div>
                             )}
                           </div>
-                          <button
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowDeleteConfirm(true);
-                            }}
-                            className="p-2.5 text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
-                            title="Delete Order"
-                          >
-                            <MdDelete className="w-4 h-4" />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -801,26 +839,37 @@ export default function ManageOrdersPage() {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && selectedOrder && (
+        {/* Shipping Note Modal */}
+        {showShippingNote && noteForOrder && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-brand-dark mb-4">Delete Order</h3>
-              <p className="text-brand-secondary mb-6">
-                Are you sure you want to delete order &quot;{selectedOrder.orderNumber}&quot;? This action cannot be undone.
+              <h3 className="text-lg font-semibold text-brand-dark mb-4">Add Shipping Note</h3>
+              <p className="text-brand-secondary mb-4">
+                Add notes for shipping this order (tracking info, delivery instructions, etc.)
               </p>
-              <div className="flex gap-3">
+              <textarea
+                value={shippingNote}
+                onChange={(e) => setShippingNote(e.target.value)}
+                placeholder="Enter shipping notes..."
+                className="w-full h-32 px-3 py-2 border border-brand-light rounded-lg focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary resize-none"
+              />
+              <div className="flex gap-3 mt-4">
                 <button
-                  onClick={() => setShowDeleteConfirm(false)}
+                  onClick={() => {
+                    setShowShippingNote(false);
+                    setNoteForOrder(null);
+                    setShippingNote('');
+                  }}
                   className="flex-1 px-4 py-2 border border-brand-light text-brand-dark rounded-lg hover:bg-brand-light/50"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleDelete(selectedOrder.id)}
-                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                  onClick={handleSaveShippingNote}
+                  disabled={!shippingNote.trim()}
+                  className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Delete
+                  Save Note
                 </button>
               </div>
             </div>
@@ -879,16 +928,17 @@ export default function ManageOrdersPage() {
                     <div className="bg-brand-light/30 p-4 rounded-lg">
                       <h4 className="font-semibold text-brand-dark mb-2">Payment Amount</h4>
                       <p className="text-xl font-bold text-brand-primary">{selectedOrder.payment.amount.toLocaleString('vi-VN')}₫</p>
-                      {selectedOrder.payment.amount !== selectedOrder.totalAmount && (
-                        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <p className="text-sm text-yellow-800">
-                            <span className="font-medium">Order Total:</span> {selectedOrder.totalAmount.toLocaleString('vi-VN')}₫
-                          </p>
-                          <p className="text-xs text-yellow-600 mt-1">
-                            Có sự khác biệt giữa số tiền thanh toán và tổng đơn hàng
-                          </p>
-                        </div>
-                      )}
+                      <div className="mt-2 space-y-1">
+                        <p className="text-sm text-brand-secondary">
+                          <span className="font-medium">Method:</span> {selectedOrder.payment.paymentMethod}
+                        </p>
+                        <p className="text-sm text-brand-secondary">
+                          <span className="font-medium">Sản phẩm:</span> {(selectedOrder.payment.amount - getShippingCost(selectedOrder)).toLocaleString('vi-VN')}₫
+                        </p>
+                        <p className="text-sm text-brand-secondary">
+                          <span className="font-medium">Ship:</span> {getShippingCost(selectedOrder).toLocaleString('vi-VN')}₫
+                        </p>
+                      </div>
                     </div>
                   </div>
 
@@ -910,15 +960,22 @@ export default function ManageOrdersPage() {
                           <p className="font-medium">{selectedOrder.user.phoneNumber}</p>
                         </div>
                       )}
-                      {selectedOrder.shippingAddress?.shipping ? (
+                      {selectedOrder.shippingAddress?.address || selectedOrder.shippingAddress?.shipping ? (
                         <div className="md:col-span-2">
                           <p className="text-sm text-brand-secondary">Shipping Address</p>
-                          <p className="font-medium">{selectedOrder.shippingAddress.shipping}</p>
-                        </div>
-                      ) : selectedOrder.user.defaultAddress?.shipping ? (
-                        <div className="md:col-span-2">
-                          <p className="text-sm text-brand-secondary">Shipping Address (Default)</p>
-                          <p className="font-medium">{selectedOrder.user.defaultAddress.shipping}</p>
+                          <div className="font-medium">
+                            {/* Handle PayOS format (shipping/billing) */}
+                            {selectedOrder.shippingAddress.shipping && (
+                              <p>{selectedOrder.shippingAddress.shipping}</p>
+                            )}
+                            {/* Handle COD format (address/city/fullName) */}
+                            {selectedOrder.shippingAddress.address && (
+                              <>
+                                <p>{selectedOrder.shippingAddress.address}</p>
+                                {selectedOrder.shippingAddress.city && <p>{selectedOrder.shippingAddress.city}</p>}
+                              </>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <div className="md:col-span-2">
@@ -942,7 +999,10 @@ export default function ManageOrdersPage() {
                           />
                           <div className="flex-1">
                             <p className="font-medium text-brand-dark">{item.product.name}</p>
-                            <p className="text-sm text-brand-secondary">Qty: {item.quantity}</p>
+                            <p className="text-sm text-brand-secondary">
+                              Qty: {item.quantity}
+                              {item.size && ` • Size: ${item.size}`}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-brand-dark">{(item.priceAtTime * item.quantity).toLocaleString('vi-VN')}₫</p>

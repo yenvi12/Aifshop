@@ -7,6 +7,7 @@ import Section from "@/components/ui/Section";
 import { supabase } from "@/lib/supabase";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { MdShoppingBag, MdPayment, MdKeyboardArrowRight, MdCheckCircle, MdSchedule, MdLocalShipping, MdDone, MdRefresh } from "react-icons/md";
+import toast from "react-hot-toast";
 
 // Types
 interface OrderItem {
@@ -84,6 +85,11 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingOrder, setCancellingOrder] = useState<string | null>(null);
+  const [isReviewChooserOpen, setIsReviewChooserOpen] = useState(false);
+  const [currentOrderForReview, setCurrentOrderForReview] = useState<Order | null>(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
 
   useEffect(() => {
     const getSession = async () => {
@@ -118,6 +124,63 @@ export default function OrdersPage() {
       console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    setOrderToCancel(order);
+    setIsCancelModalOpen(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!orderToCancel) return;
+
+    setCancellingOrder(orderToCancel.id);
+    setIsCancelModalOpen(false);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/orders/${orderToCancel.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === orderToCancel.id ? { ...order, status: 'CANCELLED' } : order
+          )
+        );
+        toast.success('Đơn hàng đã được hủy thành công');
+      } else {
+        const error = await response.json();
+        toast.error(error.message || error.error || 'Không thể hủy đơn hàng');
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast.error('Không thể hủy đơn hàng. Vui lòng thử lại.');
+    } finally {
+      setCancellingOrder(null);
+    }
+  };
+
+  const handleWriteReviewClick = () => {
+    if (currentOrderForReview && currentOrderForReview.orderItems.length === 1) {
+      router.push(`/products/${currentOrderForReview.orderItems[0].product.slug}`);
+    } else {
+      setIsReviewChooserOpen(true);
     }
   };
 
@@ -159,7 +222,74 @@ export default function OrdersPage() {
 
         {/* Content */}
         {activeTab === 'orders' && (
-          <OrdersTab orders={orders} />
+          <OrdersTab
+            orders={orders}
+            onCancelOrder={handleCancelOrder}
+            cancellingOrder={cancellingOrder}
+            onWriteReview={(order) => {
+              setCurrentOrderForReview(order);
+              handleWriteReviewClick();
+            }}
+            isReviewChooserOpen={isReviewChooserOpen}
+            setIsReviewChooserOpen={setIsReviewChooserOpen}
+            currentOrderForReview={currentOrderForReview}
+          />
+        )}
+
+        {/* Cancel Order Confirmation Modal */}
+        {isCancelModalOpen && orderToCancel && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+              <div className="px-5 py-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-brand-dark">Xác nhận hủy đơn hàng</h3>
+                <button
+                  onClick={() => setIsCancelModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-5">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <MdRefresh className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-brand-dark mb-2">
+                      Bạn có chắc chắn muốn hủy đơn hàng {orderToCancel.orderNumber}?
+                    </h4>
+                    <p className="text-sm text-brand-secondary mb-3">
+                      Hành động này không thể hoàn tác. Đơn hàng sẽ bị hủy và bạn có thể sẽ mất quyền hủy trong tương lai.
+                    </p>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-xs text-red-800 font-medium mb-1">Thông tin đơn hàng:</p>
+                      <p className="text-sm text-red-800">
+                        Tổng tiền: {orderToCancel.totalAmount.toLocaleString('vi-VN')}₫
+                      </p>
+                      <p className="text-sm text-red-800">
+                        Sản phẩm: {orderToCancel.orderItems.length} mặt hàng
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsCancelModalOpen(false)}
+                    className="flex-1 px-4 py-2 border border-brand-light rounded-lg text-brand-dark hover:bg-brand-light/50 transition-colors"
+                  >
+                    Giữ đơn hàng
+                  </button>
+                  <button
+                    onClick={confirmCancelOrder}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  >
+                    Xác nhận hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'payments' && (
@@ -171,7 +301,23 @@ export default function OrdersPage() {
 }
 
 // Orders Tab Component
-function OrdersTab({ orders }: { orders: Order[] }) {
+function OrdersTab({ 
+  orders, 
+  onCancelOrder, 
+  cancellingOrder,
+  onWriteReview,
+  isReviewChooserOpen,
+  setIsReviewChooserOpen,
+  currentOrderForReview
+}: { 
+  orders: Order[];
+  onCancelOrder: (orderId: string) => void;
+  cancellingOrder: string | null;
+  onWriteReview: (order: Order) => void;
+  isReviewChooserOpen: boolean;
+  setIsReviewChooserOpen: (open: boolean) => void;
+  currentOrderForReview: Order | null;
+}) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
@@ -191,7 +337,16 @@ function OrdersTab({ orders }: { orders: Order[] }) {
   return (
     <div className="space-y-6">
       {orders.map((order) => (
-        <OrderCard key={order.id} order={order} />
+        <OrderCard 
+          key={order.id} 
+          order={order} 
+          onCancel={onCancelOrder}
+          cancellingOrder={cancellingOrder}
+          onWriteReview={onWriteReview}
+          isReviewChooserOpen={isReviewChooserOpen}
+          setIsReviewChooserOpen={setIsReviewChooserOpen}
+          currentOrderForReview={currentOrderForReview}
+        />
       ))}
     </div>
   );
@@ -219,10 +374,11 @@ function PaymentsTab({ payments }: { payments: Payment[] }) {
 }
 
 // Order Progress Timeline Component
-function OrderProgressTimeline({ status, createdAt, estimatedDelivery }: {
+function OrderProgressTimeline({ status, createdAt, estimatedDelivery, paymentMethod }: {
   status: string;
   createdAt: Date;
   estimatedDelivery?: Date;
+  paymentMethod?: string;
 }) {
   const steps = [
     { key: 'ordered', label: 'Order Placed', icon: MdCheckCircle, color: 'text-blue-600' },
@@ -234,14 +390,18 @@ function OrderProgressTimeline({ status, createdAt, estimatedDelivery }: {
 
   const getCurrentStepIndex = () => {
     let statusIndex = steps.findIndex(step => step.key.toLowerCase() === status.toLowerCase());
-    // For online payment, if payment is completed, automatically show "Order Confirmed" as completed
-    if (statusIndex === 0) { // If still "ORDERED"
-      statusIndex = 1; // Show as "CONFIRMED"
+    
+    // For PAYOS (online payment), automatically show "Order Confirmed" as completed
+    // For COD, keep showing actual status (Order Placed for ORDERED status)
+    if (paymentMethod === 'PAYOS' && statusIndex === 0) {
+      statusIndex = 1; // Show as "CONFIRMED" for PAYOS
     }
-    // Show full progress to "Order Confirmed" button
-    if (statusIndex === 1) {
+    
+    // Show full progress to "Order Confirmed" button (only for PAYOS)
+    if (paymentMethod === 'PAYOS' && statusIndex === 1) {
       return 1.2; // Extend progress slightly beyond "Order Confirmed" to touch the button
     }
+    
     return statusIndex >= 0 ? statusIndex : 0;
   };
 
@@ -300,10 +460,25 @@ function OrderProgressTimeline({ status, createdAt, estimatedDelivery }: {
 }
 
 // Order Card Component
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({ 
+  order, 
+  onCancel, 
+  cancellingOrder,
+  onWriteReview,
+  isReviewChooserOpen,
+  setIsReviewChooserOpen,
+  currentOrderForReview
+}: { 
+  order: Order;
+  onCancel: (orderId: string) => void;
+  cancellingOrder: string | null;
+  onWriteReview: (order: Order) => void;
+  isReviewChooserOpen: boolean;
+  setIsReviewChooserOpen: (open: boolean) => void;
+  currentOrderForReview: Order | null;
+}) {
   const router = useRouter();
   const [showDetails, setShowDetails] = useState(order.payment.status === 'PENDING' || order.status === 'SHIPPED');
-  const [isReviewChooserOpen, setIsReviewChooserOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -334,11 +509,11 @@ function OrderCard({ order }: { order: Order }) {
     if (paymentStatus === 'failed') {
       return { text: 'Payment Failed', color: 'bg-red-600 text-white shadow-red-200', icon: MdKeyboardArrowRight };
     }
-    if (paymentStatus === 'paid') {
+    if (paymentStatus === 'SUCCESS') {
       return { text: 'Payment Completed', color: 'bg-green-600 text-white shadow-green-200', icon: MdDone };
     }
-    if (paymentStatus === 'pending') {
-      return { text: 'Payment Completed', color: 'bg-green-600 text-white shadow-green-200', icon: MdDone };
+    if (paymentStatus === 'PENDING') {
+      return { text: 'Awaiting Payment', color: 'bg-yellow-600 text-white shadow-yellow-200', icon: MdSchedule };
     }
     if (status === 'CONFIRMED') {
       return { text: 'Confirmed', color: 'bg-yellow-600 text-white shadow-yellow-200', icon: MdCheckCircle };
@@ -350,20 +525,6 @@ function OrderCard({ order }: { order: Order }) {
       return { text: 'Delivered', color: 'bg-green-600 text-white shadow-green-200', icon: MdDone };
     }
     return null;
-  };
-
-  const handleWriteReviewClick = () => {
-    if (order.orderItems.length === 1) {
-      const onlyItem = order.orderItems[0];
-      router.push(`/products/${onlyItem.product.slug}?review=1&fromOrder=${order.id}`);
-    } else {
-      setIsReviewChooserOpen(true);
-    }
-  };
-
-  const goToReview = (item: OrderItem) => {
-    router.push(`/products/${item.product.slug}?review=1&fromOrder=${order.id}`);
-    setIsReviewChooserOpen(false);
   };
 
   const urgencyBadge = getOrderUrgencyBadge(order.status, order.payment.status);
@@ -400,7 +561,7 @@ function OrderCard({ order }: { order: Order }) {
             <MdCheckCircle className="w-4 h-4 mr-1" />
             {order.status}
           </span>
-          {order.payment.status === 'paid' && (
+          {(order.payment.status === 'paid' || order.payment.status === 'SUCCESS') && (
             <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold border-2 shadow-sm bg-green-100 text-green-900 border-green-300 shadow-green-100">
               Payment: Completed
             </span>
@@ -415,7 +576,32 @@ function OrderCard({ order }: { order: Order }) {
 
       {/* Order Progress Timeline */}
       {order.payment.status !== 'FAILED' && (
-        <OrderProgressTimeline status={order.status} createdAt={order.createdAt} estimatedDelivery={order.estimatedDelivery} />
+        <OrderProgressTimeline 
+          status={order.status} 
+          createdAt={order.createdAt} 
+          estimatedDelivery={order.estimatedDelivery}
+          paymentMethod={order.payment.paymentMethod}
+        />
+      )}
+
+      {/* Cancel Order Button */}
+      {!['CANCELLED', 'DELIVERED', 'SHIPPED'].includes(order.status) && (
+        <div className="mb-6">
+          <button
+            onClick={() => onCancel(order.id)}
+            disabled={cancellingOrder === order.id}
+            className="w-full sm:w-auto px-6 py-3 bg-red-50 text-red-700 border border-red-200 rounded-xl hover:bg-red-100 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {cancellingOrder === order.id ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-700 border-t-transparent" />
+                Cancelling...
+              </>
+            ) : (
+              'Cancel Order'
+            )}
+          </button>
+        </div>
       )}
 
       {/* Payment Failed Notice */}
@@ -449,7 +635,13 @@ function OrderCard({ order }: { order: Order }) {
                 </div>
               </div>
               <button
-                onClick={handleWriteReviewClick}
+                onClick={() => {
+                  if (order.orderItems.length === 1) {
+                    router.push(`/products/${order.orderItems[0].product.slug}?review=1&fromOrder=${order.id}`);
+                  } else {
+                    setIsReviewChooserOpen(true);
+                  }
+                }}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
               >
                 Write Review
@@ -458,7 +650,7 @@ function OrderCard({ order }: { order: Order }) {
           </div>
 
           {/* Product chooser modal for multi-item orders */}
-          {isReviewChooserOpen && order.orderItems.length > 1 && (
+          {isReviewChooserOpen && currentOrderForReview?.id === order.id && order.orderItems.length > 1 && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
               <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
                 <div className="px-5 py-4 border-b flex items-center justify-between">
@@ -484,7 +676,10 @@ function OrderCard({ order }: { order: Order }) {
                         {item.size && <p className="text-xs text-gray-500">Size: {item.size}</p>}
                       </div>
                       <button
-                        onClick={() => goToReview(item)}
+                        onClick={() => {
+                          router.push(`/products/${item.product.slug}?review=1&fromOrder=${order.id}`);
+                          setIsReviewChooserOpen(false);
+                        }}
                         className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                       >
                         Đánh giá
@@ -815,13 +1010,13 @@ function PaymentCard({ payment }: { payment: Payment }) {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-            payment.status === 'paid' ? 'bg-green-100' :
+            (payment.status === 'paid' || payment.status === 'SUCCESS') ? 'bg-green-100' :
             payment.status === 'pending' ? 'bg-yellow-100' :
             payment.status === 'failed' ? 'bg-red-100' :
             'bg-gray-100'
           }`}>
             <StatusIcon className={`w-5 h-5 ${
-              payment.status === 'paid' ? 'text-green-600' :
+              (payment.status === 'paid' || payment.status === 'SUCCESS') ? 'text-green-600' :
               payment.status === 'pending' ? 'text-yellow-600' :
               payment.status === 'failed' ? 'text-red-600' :
               'text-gray-600'
@@ -847,6 +1042,41 @@ function PaymentCard({ payment }: { payment: Payment }) {
             <StatusIcon className="w-4 h-4 mr-1" />
             {statusInfo.label}
           </span>
+        </div>
+      </div>
+
+      {/* Payment Breakdown */}
+      <div className="mb-4 p-4 bg-brand-light/30 rounded-lg border border-brand-accent/30">
+        <h4 className="text-sm font-semibold text-brand-dark mb-3">Payment Breakdown</h4>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-brand-secondary">Products Total:</span>
+            <span className="font-medium text-brand-dark">
+              {/* Calculate products total from orders data - shows actual products cost */}
+              {payment.orders.length > 0 ?
+                formatVND(payment.orders.reduce((sum, order) => sum + order.totalAmount, 0)) :
+                formatVND(payment.amount - 15000) // Assume standard shipping if no orders data
+              }
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-brand-secondary">Shipping Fee:</span>
+            <span className="font-medium text-brand-dark">
+              {/* For COD: show shipping as 15,000 VND (standard shipping fee) */}
+              {/* For PAYOS: calculate shipping as difference */}
+              {payment.paymentMethod === 'COD' ?
+                formatVND(15000) :
+                payment.orders.length > 0 ?
+                  formatVND(Math.max(0, payment.amount - payment.orders.reduce((sum, order) => sum + order.totalAmount, 0))) :
+                  formatVND(15000) // Assume standard shipping
+              }
+            </span>
+          </div>
+          <hr className="border-brand-accent/30" />
+          <div className="flex justify-between text-sm font-semibold">
+            <span className="text-brand-dark">Total Amount:</span>
+            <span className="text-green-600">{formatVND(payment.amount)}</span>
+          </div>
         </div>
       </div>
 

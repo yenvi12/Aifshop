@@ -101,8 +101,7 @@ export async function GET(request: NextRequest) {
             firstName: true,
             lastName: true,
             email: true,
-            phoneNumber: true,
-            defaultAddress: true
+            phoneNumber: true
           }
         }
       },
@@ -190,11 +189,18 @@ export async function POST(request: NextRequest) {
       fullName: `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim()
     };
 
+    // Calculate products total from cart items
+    let productsTotal = 0;
+    for (const item of cartItems) {
+      const price = item.product.price || item.product.compareAtPrice || 0;
+      productsTotal += price * item.quantity;
+    }
+
     const order = await prisma.order.create({
       data: {
         orderNumber,
         status: orderStatus as OrderStatus,
-        totalAmount: amount,
+        totalAmount: productsTotal, // Store only products total, not including shipping
         userId: dbUser.id,
         paymentId: paymentRecord.id,
         shippingAddress: fullShippingAddress,
@@ -226,6 +232,16 @@ export async function POST(request: NextRequest) {
       });
       orderItems.push(orderItem);
     }
+
+    // Update payment record to include the order reference
+    await prisma.payment.update({
+      where: { id: paymentRecord.id },
+      data: {
+        orders: {
+          connect: { id: order.id }
+        }
+      }
+    });
 
     // Get final order with all relations
     const finalOrder = await prisma.order.findUnique({
