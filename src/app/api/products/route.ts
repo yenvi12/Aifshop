@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     } else {
       // List all products with pagination and filters
       const page = parseInt(searchParams.get('page') || '1')
-      const limit = parseInt(searchParams.get('limit') || '6')
+      const limit = parseInt(searchParams.get('limit') || '8')
       const search = searchParams.get('search') || ''
       const category = searchParams.get('category') || ''
       const status = searchParams.get('status') || ''
