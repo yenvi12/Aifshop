@@ -986,6 +986,14 @@ export default function ManageOrdersPage() {
                     </div>
                   </div>
 
+                  {/* Shipping Note */}
+                  <div className="bg-brand-light/30 p-4 rounded-lg">
+                    <h4 className="font-semibold text-brand-dark mb-2">Shipping Note</h4>
+                    <p className="text-brand-secondary">
+                      {selectedOrder.shippingNote || "Chưa có note cho đơn hàng"}
+                    </p>
+                  </div>
+
                   {/* Order Items */}
                   <div className="bg-white border border-brand-light rounded-lg p-4">
                     <h4 className="font-semibold text-brand-dark mb-4">Order Items ({selectedOrder.orderItems.length})</h4>

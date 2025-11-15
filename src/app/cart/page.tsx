@@ -539,9 +539,6 @@ const CartPage = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <button className="p-2 text-brand-secondary hover:text-red-500 hover:bg-red-50 rounded-full transition-all">
-                            <FiHeart className="w-4 h-4" />
-                          </button>
                           <button
                             onClick={() => handleRemoveItem(item)}
                             className="p-2 text-brand-secondary hover:text-red-500 hover:bg-red-50 rounded-full transition-all"

@@ -71,7 +71,8 @@ export default function PaymentSuccessPage() {
           },
           body: JSON.stringify({
             orderCode,
-            status: 'SUCCESS'
+            status: 'SUCCESS',
+            paymentMethod: 'PAYOS'
           }),
         });
 

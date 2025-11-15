@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient, PaymentStatus } from "@prisma/client";
+import { PrismaClient, PaymentStatus, OrderStatus } from "@prisma/client";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 const prisma = new PrismaClient();
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { orderCode, status } = body;
+    const { orderCode, status, paymentMethod } = body;
 
     if (!orderCode || !status) {
       return NextResponse.json({ error: 'OrderCode and status are required' }, { status: 400 });
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       }, { status: 404 });
     }
 
-    console.log(`Payment status updated successfully: orderCode=${orderCode}, status=${status}`);
+    console.log(`Payment status updated successfully: orderCode=${orderCode}, status=${status}, paymentMethod=${paymentMethod || 'N/A'}`);
 
     // Update Order status to CONFIRMED when payment is successful
     if (status === 'SUCCESS') {
@@ -65,10 +65,10 @@ export async function POST(req: Request) {
             payment: {
               orderCode
             },
-            status: 'ORDERED'
+            status: OrderStatus.ORDERED
           },
           data: {
-            status: 'CONFIRMED'
+            status: OrderStatus.CONFIRMED
           }
         });
 
