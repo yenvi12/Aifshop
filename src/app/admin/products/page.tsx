@@ -305,7 +305,7 @@ export default function ManageProductsPage() {
                   <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-secondary w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Search products by name or category..."
+                    placeholder="Tìm kiếm sản phẩm theo tên hoặc danh mục..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-brand-light rounded-lg focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
@@ -375,8 +375,8 @@ export default function ManageProductsPage() {
         {products.length === 0 && totalCount > 0 ? (
           <div className="text-center py-12">
             <MdSearch className="w-16 h-16 text-brand-secondary mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-brand-dark mb-2">No products found</h3>
-            <p className="text-brand-secondary">Try adjusting your search or filters</p>
+            <h3 className="text-lg font-semibold text-brand-dark mb-2">Không tìm thấy sản phẩm</h3>
+            <p className="text-brand-secondary">Hãy thử điều chỉnh từ khóa tìm kiếm hoặc bộ lọc</p>
           </div>
         ) : totalCount === 0 ? (
           <div className="text-center py-12">
