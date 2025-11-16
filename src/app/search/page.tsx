@@ -75,6 +75,14 @@ function SearchContent() {
     inStock: false
   });
 
+  // Check if filters are active
+  const hasActiveFilters = filters.category.length > 0 ||
+    filters.rating > 0 ||
+    filters.inStock ||
+    filters.priceRange[0] > 0 ||
+    filters.priceRange[1] < 100000000 ||
+    sortBy !== "relevance";
+
   // Lock scroll when filter drawer is open
   useEffect(() => {
     const el = document.documentElement;
@@ -303,6 +311,16 @@ function SearchContent() {
     router.push("/search");
   };
 
+  const clearFilters = () => {
+    setFilters({
+      category: [],
+      priceRange: [0, 100000000],
+      rating: 0,
+      inStock: false
+    });
+    setSortBy("relevance");
+  };
+
   const handleNewSearch = () => {
     clearSearch();
     // Focus the search input after navigation
@@ -490,6 +508,9 @@ function SearchContent() {
               query={query}
               hasSearched={hasSearched}
               onNewSearch={handleNewSearch}
+              hasActiveFilters={hasActiveFilters}
+              sortBy={sortBy}
+              onClearFilters={clearFilters}
             />
           )
         ) : (

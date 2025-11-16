@@ -108,11 +108,11 @@ export default function AddProductPage() {
 
     // Required fields
     if (!formData.name.trim()) {
-      newErrors.name = "Product name is required";
+      newErrors.name = "Tên sản phẩm là bắt buộc";
     }
 
     if (!formData.category) {
-      newErrors.category = "Category is required";
+      newErrors.category = "Danh mục là bắt buộc";
     }
 
     // Price validation (optional)
@@ -163,7 +163,7 @@ export default function AddProductPage() {
 
     // Image validation
     if (!formData.image) {
-      newErrors.image = "Main product image is required";
+      newErrors.image = "Ảnh chính sản phẩm là bắt buộc";
     }
 
     setErrors(newErrors);
@@ -263,8 +263,8 @@ export default function AddProductPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <div>
-            <h1 className="text-xl font-bold text-brand-dark">Add New Product</h1>
-            <p className="text-brand-secondary">Create a new product for your store</p>
+            <h1 className="text-xl font-bold text-brand-dark">Thêm sản phẩm mới</h1>
+            <p className="text-brand-secondary">Tạo sản phẩm mới cho cửa hàng của bạn</p>
           </div>
         </div>
 
@@ -285,11 +285,11 @@ export default function AddProductPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-brand-dark">Basic Information</h2>
+              <h2 className="text-lg font-semibold text-brand-dark">Thông tin cơ bản</h2>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Product Name *</label>
+                  <label className="block text-sm font-medium mb-1">Tên sản phẩm *</label>
                   <input
                     type="text"
                     name="name"
@@ -299,7 +299,7 @@ export default function AddProductPage() {
                     className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary ${
                       errors.name ? 'border-red-500' : 'border-brand-light'
                     }`}
-                    placeholder="Enter product name"
+                    placeholder="Nhập tên sản phẩm"
                   />
                   {errors.name && (
                     <p className="text-red-500 text-xs mt-1">{errors.name}</p>
@@ -307,7 +307,7 @@ export default function AddProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category *</label>
+                  <label className="block text-sm font-medium mb-1">Danh mục *</label>
                   <select
                     name="category"
                     value={formData.category}
@@ -317,7 +317,7 @@ export default function AddProductPage() {
                       errors.category ? 'border-red-500' : 'border-brand-light'
                     }`}
                   >
-                    <option value="">Select category</option>
+                    <option value="">Lựa chọn danh mục</option>
                     {staticCategories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -460,7 +460,7 @@ export default function AddProductPage() {
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-accent text-white hover:opacity-90 text-sm"
                 >
                   <MdAdd className="w-4 h-4" />
-                  Add Size
+                  Thêm kích thước
                 </button>
               </div>
 

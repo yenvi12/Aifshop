@@ -18,7 +18,7 @@ interface EnhancedSearchBarProps {
 export default function EnhancedSearchBar({
   onSearch,
   initialValue = "",
-  placeholder = "Search for products...",
+  placeholder = "Tìm kiếm sản phẩm...",
   className = "",
   showSuggestions = true,
   usePortal = false

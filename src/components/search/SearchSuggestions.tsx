@@ -211,7 +211,7 @@ export default function SearchSuggestions({
         <div className="border-t border-brand-light">
           <div className="px-4 py-2">
             <p className="text-xs text-brand-secondary font-medium uppercase tracking-wide">
-              Recent Searches
+              Tìm kiếm gần đây
             </p>
           </div>
           {searchHistory.slice(0, 3).map((item, index) => (
