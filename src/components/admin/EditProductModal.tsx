@@ -207,11 +207,11 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "Product name is required";
+      newErrors.name = "Tên sản phẩm là bắt buộc";
     }
 
     if (!formData.category) {
-      newErrors.category = "Category is required";
+      newErrors.category = "Danh mục là bắt buộc";
     }
 
     if (formData.price.trim() && (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) <= 0)) {
@@ -380,7 +380,7 @@ export default function EditProductModal({ product, isOpen, onClose, onSave }: E
                     className={`w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent ${
                       errors.name ? 'border-red-500' : 'border-brand-light'
                     }`}
-                    placeholder="Enter product name"
+                    placeholder="Nhập tên sản phẩm"
                   />
                   {errors.name && (
                     <p className="text-red-500 text-xs mt-1">{errors.name}</p>

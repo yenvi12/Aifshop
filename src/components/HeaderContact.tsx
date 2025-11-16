@@ -40,7 +40,7 @@ export default function HeaderContact({ phone = "+89789123456", onSearch }: Prop
         <div className="relative">
           <input
             type="text"
-            placeholder="Search in site"
+            placeholder="Tìm kiếm trên trang"
             onKeyDown={(e) => {
               if (e.key === "Enter" && onSearch) onSearch((e.target as HTMLInputElement).value);
             }}

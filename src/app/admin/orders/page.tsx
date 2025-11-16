@@ -413,7 +413,7 @@ export default function ManageOrdersPage() {
                   <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-secondary w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Search orders by order number or customer name..."
+                    placeholder="Tìm kiếm đơn hàng theo mã đơn hoặc tên khách hàng..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-brand-light rounded-lg focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary"
@@ -489,8 +489,8 @@ export default function ManageOrdersPage() {
         {orders.length === 0 && totalCount > 0 ? (
           <div className="text-center py-12">
             <MdSearch className="w-16 h-16 text-brand-secondary mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-brand-dark mb-2">No orders found</h3>
-            <p className="text-brand-secondary">Try adjusting your search or filters</p>
+            <h3 className="text-lg font-semibold text-brand-dark mb-2">Không tìm thấy đơn hàng</h3>
+            <p className="text-brand-secondary">Hãy thử điều chỉnh từ khóa tìm kiếm hoặc bộ lọc</p>
           </div>
         ) : totalCount === 0 ? (
           <div className="text-center py-12">
@@ -984,6 +984,14 @@ export default function ManageOrdersPage() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Shipping Note */}
+                  <div className="bg-brand-light/30 p-4 rounded-lg">
+                    <h4 className="font-semibold text-brand-dark mb-2">Shipping Note</h4>
+                    <p className="text-brand-secondary">
+                      {selectedOrder.shippingNote || "Chưa có note cho đơn hàng"}
+                    </p>
                   </div>
 
                   {/* Order Items */}

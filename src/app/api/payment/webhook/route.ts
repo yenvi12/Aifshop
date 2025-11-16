@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { payos } from "@/lib/payos";
-import { PrismaClient, PaymentStatus } from "@prisma/client";
+import { PrismaClient, PaymentStatus, OrderStatus } from "@prisma/client";
 import { validateStockAvailability, deductStock } from "@/lib/inventory";
 
 const prisma = new PrismaClient();
@@ -43,12 +43,22 @@ export async function POST(req: Request) {
           newStatus = PaymentStatus.CANCELLED;
         }
 
-        await prisma.payment.update({
-          where: { orderCode },
-          data: {
-            status: newStatus,
-          }
-        });
+        // Update payment status to SUCCESS for successful payments
+        if (newStatus === PaymentStatus.SUCCESS) {
+          await prisma.payment.update({
+            where: { orderCode },
+            data: {
+              status: PaymentStatus.SUCCESS,
+            }
+          });
+        } else {
+          await prisma.payment.update({
+            where: { orderCode },
+            data: {
+              status: newStatus,
+            }
+          });
+        }
 
         console.log(`Payment ${orderCode} marked as ${newStatus.toString()}`);
 
@@ -59,10 +69,10 @@ export async function POST(req: Request) {
             const updatedOrders = await prisma.order.updateMany({
               where: {
                 paymentId: payment.id,
-                status: 'ORDERED'
+                status: OrderStatus.ORDERED
               },
               data: {
-                status: 'CONFIRMED'
+                status: OrderStatus.CONFIRMED
               }
             });
 
@@ -121,12 +131,12 @@ export async function POST(req: Request) {
         if (hasInsufficientStock) {
           await prisma.payment.update({
             where: { orderCode },
-            data: { status: "CANCELLED" },
+            data: { status: PaymentStatus.CANCELLED },
           });
 
           await prisma.order.updateMany({
             where: { paymentId: payment.id },
-            data: { status: "CANCELLED" },
+            data: { status: OrderStatus.CANCELLED },
           });
 
           const failedItem = stockValidations.find(
@@ -171,10 +181,10 @@ export async function POST(req: Request) {
               );
             }
 
-            // Update payment status
+            // Update payment status to SUCCESS
             await tx.payment.update({
               where: { orderCode },
-              data: { status: "SUCCESS" },
+              data: { status: PaymentStatus.SUCCESS },
             });
 
             console.log(`Payment ${orderCode} marked as successful`);
@@ -183,9 +193,9 @@ export async function POST(req: Request) {
             await tx.order.updateMany({
               where: {
                 paymentId: payment.id,
-                status: "ORDERED",
+                status: OrderStatus.ORDERED,
               },
-              data: { status: "CONFIRMED" },
+              data: { status: OrderStatus.CONFIRMED },
             });
 
             console.log(`Orders confirmed for payment ${orderCode}`);
@@ -208,12 +218,12 @@ export async function POST(req: Request) {
           // Rollback: cancel payment and orders
           await prisma.payment.update({
             where: { orderCode },
-            data: { status: "CANCELLED" },
+            data: { status: PaymentStatus.CANCELLED },
           });
 
           await prisma.order.updateMany({
             where: { paymentId: payment.id },
-            data: { status: "CANCELLED" },
+            data: { status: OrderStatus.CANCELLED },
           });
 
           return NextResponse.json(

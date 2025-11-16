@@ -129,8 +129,8 @@ export default function SearchBar({
 
   // Placeholder text
   const defaultPlaceholder = variant === "hero" 
-    ? "Tìm kiếm sản phẩm, thương hiệu..." 
-    : "Search in site";
+    ? "Tìm kiếm sản phẩm, thương hiệu..."
+    : "Tìm kiếm trên trang";
 
   // Quick filter chips for hero variant when no query
   const quickFilterChips = variant === "hero" && !query ? (
